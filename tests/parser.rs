@@ -18,16 +18,31 @@ fn parse_int() {
 }
 
 #[test]
-fn parse_symbol() {
-    let ast = parse("foo bar baz");
+fn parse_float() {
+    let ast = parse("10.5 -20.2 .350");
     assert_eq!(
         ast,
         Ast {
             index: vec![0, 1, 2],
-            kind: vec![Kind::Symbol, Kind::Symbol, Kind::Symbol],
-            strings: vec!["foo", "bar", "baz"],
+            kind: vec![Kind::Float, Kind::Float, Kind::Float],
+            strings: vec!["10.5", "-20.2", ".350"],
             children: vec![],
             top_level: vec![0, 1, 2],
+        }
+    )
+}
+
+#[test]
+fn parse_symbol() {
+    let ast = parse("foo bar baz .");
+    assert_eq!(
+        ast,
+        Ast {
+            index: vec![0, 1, 2, 3],
+            kind: vec![Kind::Symbol, Kind::Symbol, Kind::Symbol, Kind::Symbol],
+            strings: vec!["foo", "bar", "baz", "."],
+            children: vec![],
+            top_level: vec![0, 1, 2, 3],
         }
     )
 }

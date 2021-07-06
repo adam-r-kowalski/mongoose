@@ -1,6 +1,9 @@
+use std::convert::identity;
+
 #[derive(Debug, PartialEq)]
 pub enum Kind {
     Int,
+    Float,
     Symbol,
     Keyword,
     Brackets,
@@ -26,19 +29,35 @@ enum Sign {
     Positive,
 }
 
-fn number<'a>(sign: Sign, source: &'a str, mut ast: Ast<'a>) -> (&'a str, Ast<'a>, usize) {
+struct Decimals(u64);
+
+fn number<'a>(
+    sign: Sign,
+    Decimals(decimals): Decimals,
+    source: &'a str,
+    mut ast: Ast<'a>,
+) -> (&'a str, Ast<'a>, usize) {
     let skip = match sign {
         Sign::Negative => 1,
+        Sign::Positive if decimals == 1 => 1,
         Sign::Positive => 0,
     };
-    let length = source
+    let (length, decimals) = source
         .chars()
         .skip(skip)
-        .take_while(|&c| c.is_numeric())
-        .count()
-        + skip;
+        .try_fold((skip, decimals), |(length, decimals), val| match val {
+            c if c.is_numeric() => Ok((length + 1, decimals)),
+            '.' => Ok((length + 1, decimals + 1)),
+            _ => Err((length, decimals)),
+        })
+        .map_or_else(identity, identity);
     let index = ast.index.len();
-    ast.kind.push(Kind::Int);
+    let kind = match length {
+        1 if skip == 1 => Kind::Symbol,
+        _ if decimals > 0 => Kind::Float,
+        _ => Kind::Int,
+    };
+    ast.kind.push(kind);
     ast.index.push(ast.strings.len());
     ast.strings.push(&source[..length]);
     (&source[length..], ast, index)
@@ -70,8 +89,7 @@ fn list<'a>(
 
 fn is_reserved(c: char) -> bool {
     match c {
-        '[' | ']' => true,
-        '(' | ')' => true,
+        '[' | ']' | '(' | ')' => true,
         _ if c.is_whitespace() => true,
         _ => false,
     }
@@ -88,8 +106,9 @@ fn identifier<'a>(kind: Kind, source: &'a str, mut ast: Ast<'a>) -> (&'a str, As
 
 fn expression<'a>(source: &'a str, ast: Ast<'a>) -> (&'a str, Ast<'a>, usize) {
     match source.chars().next() {
-        Some(c) if c.is_numeric() => number(Sign::Positive, source, ast),
-        Some('-') => number(Sign::Negative, source, ast),
+        Some(c) if c.is_numeric() => number(Sign::Positive, Decimals(0), source, ast),
+        Some('-') => number(Sign::Negative, Decimals(0), source, ast),
+        Some('.') => number(Sign::Positive, Decimals(1), source, ast),
         Some('[') => list(Kind::Brackets, ']', &source[1..], ast, vec![]),
         Some('(') => list(Kind::Parens, ')', &source[1..], ast, vec![]),
         Some(':') => identifier(Kind::Keyword, source, ast),
