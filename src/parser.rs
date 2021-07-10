@@ -1,23 +1,6 @@
 use std::convert::identity;
 
-#[derive(Debug, PartialEq)]
-pub enum Kind {
-    Int,
-    Float,
-    Symbol,
-    Keyword,
-    Brackets,
-    Parens,
-}
-
-#[derive(Debug, PartialEq)]
-pub struct Ast<'a> {
-    pub index: Vec<usize>,
-    pub kind: Vec<Kind>,
-    pub strings: Vec<&'a str>,
-    pub children: Vec<Vec<usize>>,
-    pub top_level: Vec<usize>,
-}
+use crate::types::{Ast, AstKind};
 
 fn trim_whitespace(source: &str) -> &str {
     let length = source.chars().take_while(|c| c.is_whitespace()).count();
@@ -51,20 +34,20 @@ fn number<'a>(
             _ => Err((length, decimals)),
         })
         .map_or_else(identity, identity);
-    let index = ast.index.len();
+    let index = ast.indices.len();
     let kind = match length {
-        1 if skip == 1 => Kind::Symbol,
-        _ if decimals > 0 => Kind::Float,
-        _ => Kind::Int,
+        1 if skip == 1 => AstKind::Symbol,
+        _ if decimals > 0 => AstKind::Float,
+        _ => AstKind::Int,
     };
-    ast.kind.push(kind);
-    ast.index.push(ast.strings.len());
+    ast.kinds.push(kind);
+    ast.indices.push(ast.strings.len());
     ast.strings.push(&source[..length]);
     (&source[length..], ast, index)
 }
 
 fn list<'a>(
-    kind: Kind,
+    kind: AstKind,
     delimiter: char,
     source: &'a str,
     mut ast: Ast<'a>,
@@ -73,9 +56,9 @@ fn list<'a>(
     let source = trim_whitespace(source);
     match source.chars().next() {
         Some(c) if c == delimiter => {
-            let index = ast.index.len();
-            ast.index.push(ast.children.len());
-            ast.kind.push(kind);
+            let index = ast.indices.len();
+            ast.indices.push(ast.children.len());
+            ast.kinds.push(kind);
             ast.children.push(children);
             (&source[1..], ast, index)
         }
@@ -95,11 +78,11 @@ fn is_reserved(c: char) -> bool {
     }
 }
 
-fn identifier<'a>(kind: Kind, source: &'a str, mut ast: Ast<'a>) -> (&'a str, Ast<'a>, usize) {
+fn identifier<'a>(kind: AstKind, source: &'a str, mut ast: Ast<'a>) -> (&'a str, Ast<'a>, usize) {
     let length = source.chars().take_while(|&c| !is_reserved(c)).count();
-    let index = ast.index.len();
-    ast.kind.push(kind);
-    ast.index.push(ast.strings.len());
+    let index = ast.indices.len();
+    ast.kinds.push(kind);
+    ast.indices.push(ast.strings.len());
     ast.strings.push(&source[..length]);
     (&source[length..], ast, index)
 }
@@ -109,10 +92,10 @@ fn expression<'a>(source: &'a str, ast: Ast<'a>) -> (&'a str, Ast<'a>, usize) {
         Some(c) if c.is_numeric() => number(Sign::Positive, Decimals(0), source, ast),
         Some('-') => number(Sign::Negative, Decimals(0), source, ast),
         Some('.') => number(Sign::Positive, Decimals(1), source, ast),
-        Some('[') => list(Kind::Brackets, ']', &source[1..], ast, vec![]),
-        Some('(') => list(Kind::Parens, ')', &source[1..], ast, vec![]),
-        Some(':') => identifier(Kind::Keyword, source, ast),
-        _ => identifier(Kind::Symbol, source, ast),
+        Some('[') => list(AstKind::Brackets, ']', &source[1..], ast, vec![]),
+        Some('(') => list(AstKind::Parens, ')', &source[1..], ast, vec![]),
+        Some(':') => identifier(AstKind::Keyword, source, ast),
+        _ => identifier(AstKind::Symbol, source, ast),
     }
 }
 
@@ -132,8 +115,8 @@ pub fn parse(source: &str) -> Ast {
     parse_impl(
         source,
         Ast {
-            index: vec![],
-            kind: vec![],
+            indices: vec![],
+            kinds: vec![],
             strings: vec![],
             children: vec![],
             top_level: vec![],

@@ -1,6 +1,9 @@
 use pretty_assertions::assert_eq;
 
-use ra::parser::{parse, Ast, Kind};
+use ra::{
+    parser::parse,
+    types::{Ast, AstKind},
+};
 
 #[test]
 fn parse_int() {
@@ -8,8 +11,8 @@ fn parse_int() {
     assert_eq!(
         ast,
         Ast {
-            index: vec![0, 1, 2],
-            kind: vec![Kind::Int, Kind::Int, Kind::Int],
+            indices: vec![0, 1, 2],
+            kinds: vec![AstKind::Int, AstKind::Int, AstKind::Int],
             strings: vec!["10", "-20", "350"],
             children: vec![],
             top_level: vec![0, 1, 2],
@@ -23,8 +26,8 @@ fn parse_float() {
     assert_eq!(
         ast,
         Ast {
-            index: vec![0, 1, 2],
-            kind: vec![Kind::Float, Kind::Float, Kind::Float],
+            indices: vec![0, 1, 2],
+            kinds: vec![AstKind::Float, AstKind::Float, AstKind::Float],
             strings: vec!["10.5", "-20.2", ".350"],
             children: vec![],
             top_level: vec![0, 1, 2],
@@ -34,15 +37,21 @@ fn parse_float() {
 
 #[test]
 fn parse_symbol() {
-    let ast = parse("foo bar baz .");
+    let ast = parse("foo bar baz . -");
     assert_eq!(
         ast,
         Ast {
-            index: vec![0, 1, 2, 3],
-            kind: vec![Kind::Symbol, Kind::Symbol, Kind::Symbol, Kind::Symbol],
-            strings: vec!["foo", "bar", "baz", "."],
+            indices: vec![0, 1, 2, 3, 4],
+            kinds: vec![
+                AstKind::Symbol,
+                AstKind::Symbol,
+                AstKind::Symbol,
+                AstKind::Symbol,
+                AstKind::Symbol
+            ],
+            strings: vec!["foo", "bar", "baz", ".", "-"],
             children: vec![],
-            top_level: vec![0, 1, 2, 3],
+            top_level: vec![0, 1, 2, 3, 4],
         }
     )
 }
@@ -53,8 +62,8 @@ fn parse_keyword() {
     assert_eq!(
         ast,
         Ast {
-            index: vec![0, 1, 2],
-            kind: vec![Kind::Keyword, Kind::Keyword, Kind::Keyword],
+            indices: vec![0, 1, 2],
+            kinds: vec![AstKind::Keyword, AstKind::Keyword, AstKind::Keyword],
             strings: vec![":foo", ":bar", ":baz"],
             children: vec![],
             top_level: vec![0, 1, 2],
@@ -68,15 +77,15 @@ fn parse_brackets() {
     assert_eq!(
         ast,
         Ast {
-            index: vec![0, 1, 0, 2, 3, 1, 2],
-            kind: vec![
-                Kind::Symbol,
-                Kind::Symbol,
-                Kind::Brackets,
-                Kind::Symbol,
-                Kind::Symbol,
-                Kind::Brackets,
-                Kind::Brackets
+            indices: vec![0, 1, 0, 2, 3, 1, 2],
+            kinds: vec![
+                AstKind::Symbol,
+                AstKind::Symbol,
+                AstKind::Brackets,
+                AstKind::Symbol,
+                AstKind::Symbol,
+                AstKind::Brackets,
+                AstKind::Brackets
             ],
             strings: vec!["a", "b", "c", "d"],
             children: vec![vec![0, 1], vec![3, 4], vec![2, 5]],
@@ -91,18 +100,18 @@ fn parse_parens() {
     assert_eq!(
         ast,
         Ast {
-            index: vec![0, 1, 2, 3, 0, 4, 5, 6, 1, 2],
-            kind: vec![
-                Kind::Symbol,
-                Kind::Symbol,
-                Kind::Int,
-                Kind::Int,
-                Kind::Parens,
-                Kind::Symbol,
-                Kind::Int,
-                Kind::Int,
-                Kind::Parens,
-                Kind::Parens,
+            indices: vec![0, 1, 2, 3, 0, 4, 5, 6, 1, 2],
+            kinds: vec![
+                AstKind::Symbol,
+                AstKind::Symbol,
+                AstKind::Int,
+                AstKind::Int,
+                AstKind::Parens,
+                AstKind::Symbol,
+                AstKind::Int,
+                AstKind::Int,
+                AstKind::Parens,
+                AstKind::Parens,
             ],
             strings: vec!["add", "mul", "1", "2", "div", "3", "4"],
             children: vec![vec![1, 2, 3], vec![5, 6, 7], vec![0, 4, 8]],
