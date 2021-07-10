@@ -10,13 +10,16 @@ pub enum AstKind {
     Parens,
 }
 
+#[derive(Debug, PartialEq, Copy, Clone)]
+pub struct AstEntity(pub usize);
+
 #[derive(Debug, PartialEq)]
 pub struct Ast<'a> {
     pub indices: Vec<usize>,
     pub kinds: Vec<AstKind>,
     pub strings: Vec<&'a str>,
-    pub children: Vec<Vec<usize>>,
-    pub top_level: Vec<usize>,
+    pub children: Vec<Vec<AstEntity>>,
+    pub top_level: Vec<AstEntity>,
 }
 
 pub enum ExpressionKind {
@@ -24,27 +27,28 @@ pub enum ExpressionKind {
     Return,
 }
 
-pub struct Entity(usize);
+pub struct IrEntity(pub usize);
 
 pub struct Entities<'a> {
-    pub literals: HashMap<Entity, &'a str>,
+    pub literals: HashMap<IrEntity, &'a str>,
 }
 
 pub struct Calls {
-    pub func: Vec<Entity>,
-    pub args: Vec<Entity>,
+    pub func: Vec<IrEntity>,
+    pub args: Vec<IrEntity>,
 }
 
 pub struct BasicBlock {
     pub kinds: Vec<ExpressionKind>,
     pub indices: Vec<usize>,
     pub calls: Calls,
-    pub returns: Vec<Entity>,
+    pub returns: Vec<IrEntity>,
 }
 
 pub struct Environment<'a> {
     pub basic_blocks: Vec<BasicBlock>,
     pub entities: Entities<'a>,
+    pub current_basic_block: usize,
 }
 
 pub struct TopLevel<'a> {

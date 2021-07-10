@@ -1,6 +1,6 @@
 use std::convert::identity;
 
-use crate::types::{Ast, AstKind};
+use crate::types::{Ast, AstEntity, AstKind};
 
 fn trim_whitespace(source: &str) -> &str {
     let length = source.chars().take_while(|c| c.is_whitespace()).count();
@@ -19,7 +19,7 @@ fn number<'a>(
     Decimals(decimals): Decimals,
     source: &'a str,
     mut ast: Ast<'a>,
-) -> (&'a str, Ast<'a>, usize) {
+) -> (&'a str, Ast<'a>, AstEntity) {
     let skip = match sign {
         Sign::Negative => 1,
         Sign::Positive if decimals == 1 => 1,
@@ -34,7 +34,7 @@ fn number<'a>(
             _ => Err((length, decimals)),
         })
         .map_or_else(identity, identity);
-    let index = ast.indices.len();
+    let entity = AstEntity(ast.indices.len());
     let kind = match length {
         1 if skip == 1 => AstKind::Symbol,
         _ if decimals > 0 => AstKind::Float,
@@ -43,7 +43,7 @@ fn number<'a>(
     ast.kinds.push(kind);
     ast.indices.push(ast.strings.len());
     ast.strings.push(&source[..length]);
-    (&source[length..], ast, index)
+    (&source[length..], ast, entity)
 }
 
 fn list<'a>(
@@ -51,16 +51,16 @@ fn list<'a>(
     delimiter: char,
     source: &'a str,
     mut ast: Ast<'a>,
-    mut children: Vec<usize>,
-) -> (&'a str, Ast<'a>, usize) {
+    mut children: Vec<AstEntity>,
+) -> (&'a str, Ast<'a>, AstEntity) {
     let source = trim_whitespace(source);
     match source.chars().next() {
         Some(c) if c == delimiter => {
-            let index = ast.indices.len();
+            let entity = AstEntity(ast.indices.len());
             ast.indices.push(ast.children.len());
             ast.kinds.push(kind);
             ast.children.push(children);
-            (&source[1..], ast, index)
+            (&source[1..], ast, entity)
         }
         _ => {
             let (source, ast, index) = expression(source, ast);
@@ -78,16 +78,20 @@ fn is_reserved(c: char) -> bool {
     }
 }
 
-fn identifier<'a>(kind: AstKind, source: &'a str, mut ast: Ast<'a>) -> (&'a str, Ast<'a>, usize) {
+fn identifier<'a>(
+    kind: AstKind,
+    source: &'a str,
+    mut ast: Ast<'a>,
+) -> (&'a str, Ast<'a>, AstEntity) {
     let length = source.chars().take_while(|&c| !is_reserved(c)).count();
-    let index = ast.indices.len();
+    let entity = AstEntity(ast.indices.len());
     ast.kinds.push(kind);
     ast.indices.push(ast.strings.len());
     ast.strings.push(&source[..length]);
-    (&source[length..], ast, index)
+    (&source[length..], ast, entity)
 }
 
-fn expression<'a>(source: &'a str, ast: Ast<'a>) -> (&'a str, Ast<'a>, usize) {
+fn expression<'a>(source: &'a str, ast: Ast<'a>) -> (&'a str, Ast<'a>, AstEntity) {
     match source.chars().next() {
         Some(c) if c.is_numeric() => number(Sign::Positive, Decimals(0), source, ast),
         Some('-') => number(Sign::Negative, Decimals(0), source, ast),
@@ -104,8 +108,8 @@ fn parse_impl<'a>(source: &'a str, ast: Ast<'a>) -> Ast<'a> {
     match source.is_empty() {
         true => ast,
         false => {
-            let (source, mut ast, id) = expression(source, ast);
-            ast.top_level.push(id);
+            let (source, mut ast, entity) = expression(source, ast);
+            ast.top_level.push(entity);
             parse_impl(source, ast)
         }
     }

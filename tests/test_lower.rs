@@ -1,4 +1,4 @@
-use ra::{ir::lower, parser::parse};
+use ra::{lower::lower, parser::parse};
 
 #[test]
 fn lower_start() {
