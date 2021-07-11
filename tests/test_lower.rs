@@ -1,8 +1,55 @@
-use ra::{lower::lower, parser::parse};
+use pretty_assertions::assert_eq;
+use std::collections::HashMap;
+use std::iter::FromIterator;
+
+use ra::{
+    lower::lower,
+    parser::parse,
+    types::{BasicBlock, Calls, Entities, Environment, ExpressionKind, Ir, IrEntity, TopLevel},
+};
 
 #[test]
 fn lower_start() {
     let source = "(let start (Fn [] I32) (fn [] 0))";
     let ast = parse(source);
-    let _ = lower(&ast);
+    let ir = lower(&ast);
+    assert_eq!(
+        ir,
+        Ir {
+            top_level: vec![TopLevel {
+                name: "start",
+                environment: Environment {
+                    basic_blocks: vec![BasicBlock {
+                        kinds: vec![ExpressionKind::Call, ExpressionKind::Call],
+                        indices: vec![0, 1],
+                        calls: Calls {
+                            functions: vec![IrEntity(0), IrEntity(4)],
+                            arguments: vec![
+                                vec![IrEntity(1), IrEntity(2)],
+                                vec![IrEntity(5), IrEntity(6)],
+                            ],
+                            returns: vec![IrEntity(3), IrEntity(7)],
+                        },
+                    }],
+                    entities: Entities {
+                        name_to_entity: HashMap::from_iter([
+                            ("Fn", IrEntity(0)),
+                            ("I32", IrEntity(2)),
+                            ("fn", IrEntity(4))
+                        ]),
+                        literals: HashMap::from_iter([
+                            (IrEntity(0), "Fn"),
+                            (IrEntity(2), "I32"),
+                            (IrEntity(4), "fn"),
+                            (IrEntity(6), "0")
+                        ]),
+                        next_entity: IrEntity(8)
+                    },
+                    current_basic_block: 0
+                },
+                type_entity: IrEntity(3),
+                value_entity: IrEntity(7)
+            }]
+        }
+    )
 }

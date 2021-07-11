@@ -2,13 +2,16 @@ use rayon::prelude::*;
 use std::collections::HashMap;
 
 use crate::types::{
-    Ast, AstEntity, AstKind, BasicBlock, Calls, Entities, Environment, Ir, IrEntity, TopLevel,
+    Ast, AstEntity, AstKind, BasicBlock, Calls, Entities, Environment, ExpressionKind, Ir,
+    IrEntity, TopLevel,
 };
 
 impl<'a> Entities<'a> {
     fn new() -> Entities<'a> {
         Entities {
+            name_to_entity: HashMap::new(),
             literals: HashMap::new(),
+            next_entity: IrEntity(0),
         }
     }
 }
@@ -16,8 +19,9 @@ impl<'a> Entities<'a> {
 impl Calls {
     fn new() -> Calls {
         Calls {
-            func: vec![],
-            args: vec![],
+            functions: vec![],
+            arguments: vec![],
+            returns: vec![],
         }
     }
 }
@@ -28,7 +32,6 @@ impl BasicBlock {
             kinds: vec![],
             indices: vec![],
             calls: Calls::new(),
-            returns: vec![],
         }
     }
 }
@@ -43,17 +46,99 @@ impl<'a> Environment<'a> {
     }
 }
 
-fn ast_string<'a>(ast: &'a Ast, AstEntity(index): AstEntity) -> &'a str {
+fn ast_symbol<'a>(ast: &'a Ast, AstEntity(index): AstEntity) -> &'a str {
     assert_eq!(ast.kinds[index], AstKind::Symbol);
     return ast.strings[ast.indices[index]];
+}
+
+fn ast_int<'a>(ast: &'a Ast, AstEntity(index): AstEntity) -> &'a str {
+    assert_eq!(ast.kinds[index], AstKind::Int);
+    return ast.strings[ast.indices[index]];
+}
+
+fn ast_parens<'a>(ast: &'a Ast, AstEntity(index): AstEntity) -> &'a [AstEntity] {
+    assert_eq!(ast.kinds[index], AstKind::Parens);
+    return &ast.children[ast.indices[index]];
+}
+
+fn ast_brackets<'a>(ast: &'a Ast, AstEntity(index): AstEntity) -> &'a [AstEntity] {
+    assert_eq!(ast.kinds[index], AstKind::Brackets);
+    return &ast.children[ast.indices[index]];
+}
+
+fn fresh_entity(mut env: Environment) -> (Environment, IrEntity) {
+    let entity = env.entities.next_entity;
+    let IrEntity(index) = entity;
+    env.entities.next_entity = IrEntity(index + 1);
+    (env, entity)
+}
+
+fn lower_symbol<'a>(
+    env: Environment<'a>,
+    ast: &'a Ast,
+    entity: AstEntity,
+) -> (Environment<'a>, IrEntity) {
+    let symbol = ast_symbol(ast, entity);
+    match env.entities.name_to_entity.get(symbol) {
+        Some(&entity) => (env, entity),
+        None => {
+            let (mut env, entity) = fresh_entity(env);
+            env.entities.literals.try_insert(entity, symbol).unwrap();
+            env.entities
+                .name_to_entity
+                .try_insert(symbol, entity)
+                .unwrap();
+            (env, entity)
+        }
+    }
+}
+
+fn lower_int<'a>(
+    env: Environment<'a>,
+    ast: &'a Ast,
+    entity: AstEntity,
+) -> (Environment<'a>, IrEntity) {
+    let int = ast_int(ast, entity);
+    let (mut env, entity) = fresh_entity(env);
+    env.entities.literals.try_insert(entity, int).unwrap();
+    (env, entity)
 }
 
 fn lower_call<'a>(
     env: Environment<'a>,
     ast: &'a Ast,
-    AstEntity(index): AstEntity,
+    entity: AstEntity,
 ) -> (Environment<'a>, IrEntity) {
-    panic!("lower call");
+    let children = ast_parens(ast, entity);
+    assert!(children.len() > 0);
+    let (env, func) = lower_expression(env, ast, children[0]);
+    let children = &children[1..];
+    let (env, args) =
+        children
+            .iter()
+            .fold((env, Vec::<IrEntity>::new()), |(env, mut args), &entity| {
+                let (env, arg) = lower_expression(env, ast, entity);
+                args.push(arg);
+                (env, args)
+            });
+    let (mut env, entity) = fresh_entity(env);
+    let basic_block = &mut env.basic_blocks[env.current_basic_block];
+    basic_block.kinds.push(ExpressionKind::Call);
+    basic_block.indices.push(basic_block.calls.functions.len());
+    basic_block.calls.functions.push(func);
+    basic_block.calls.arguments.push(args);
+    basic_block.calls.returns.push(entity);
+    (env, entity)
+}
+
+fn lower_array<'a>(
+    env: Environment<'a>,
+    ast: &'a Ast,
+    entity: AstEntity,
+) -> (Environment<'a>, IrEntity) {
+    assert_eq!(ast_brackets(ast, entity).len(), 0);
+    let (env, entity) = fresh_entity(env);
+    (env, entity)
 }
 
 fn lower_expression<'a>(
@@ -62,21 +147,29 @@ fn lower_expression<'a>(
     entity: AstEntity,
 ) -> (Environment<'a>, IrEntity) {
     let AstEntity(index) = entity;
-    match ast.kinds[index] {
+    match &ast.kinds[index] {
+        AstKind::Symbol => lower_symbol(env, ast, entity),
         AstKind::Parens => lower_call(env, ast, entity),
-        _ => panic!("unimplemented"),
+        AstKind::Brackets => lower_array(env, ast, entity),
+        AstKind::Int => lower_int(env, ast, entity),
+        kind => panic!("lower expression unimplemented for {:?}", kind),
     }
 }
 
-fn lower_top_level<'a>(ast: &'a Ast, AstEntity(index): AstEntity) -> TopLevel<'a> {
-    assert_eq!(ast.kinds[index], AstKind::Parens);
-    let children = &ast.children[ast.indices[index]];
+fn lower_top_level<'a>(ast: &'a Ast, entity: AstEntity) -> TopLevel<'a> {
+    let children = ast_parens(ast, entity);
     assert_eq!(children.len(), 4);
-    assert_eq!(ast_string(ast, children[0]), "let");
-    let name = ast_string(ast, children[1]);
+    assert_eq!(ast_symbol(ast, children[0]), "let");
+    let name = ast_symbol(ast, children[1]);
     let env = Environment::new();
     let (env, type_entity) = lower_expression(env, ast, children[2]);
-    TopLevel { name, env }
+    let (env, value_entity) = lower_expression(env, ast, children[3]);
+    TopLevel {
+        name,
+        type_entity,
+        value_entity,
+        environment: env,
+    }
 }
 
 pub fn lower<'a>(ast: &'a Ast) -> Ir<'a> {
