@@ -19,18 +19,28 @@ fn lower_start() {
             top_level: vec![TopLevel {
                 name: "start",
                 environment: Environment {
-                    basic_blocks: vec![BasicBlock {
-                        kinds: vec![ExpressionKind::Call, ExpressionKind::Call],
-                        indices: vec![0, 1],
-                        calls: Calls {
-                            functions: vec![IrEntity(0), IrEntity(4)],
-                            arguments: vec![
-                                vec![IrEntity(1), IrEntity(2)],
-                                vec![IrEntity(5), IrEntity(6)],
-                            ],
-                            returns: vec![IrEntity(3), IrEntity(7)],
+                    basic_blocks: vec![
+                        BasicBlock {
+                            kinds: vec![ExpressionKind::Call],
+                            indices: vec![0],
+                            calls: Calls {
+                                functions: vec![IrEntity(0)],
+                                arguments: vec![vec![IrEntity(1), IrEntity(2)],],
+                                returns: vec![IrEntity(3)],
+                            },
+                            returns: vec![],
                         },
-                    }],
+                        BasicBlock {
+                            kinds: vec![ExpressionKind::Return],
+                            indices: vec![0],
+                            calls: Calls {
+                                functions: vec![],
+                                arguments: vec![],
+                                returns: vec![],
+                            },
+                            returns: vec![IrEntity(5)],
+                        },
+                    ],
                     entities: Entities {
                         name_to_entity: HashMap::from_iter([
                             ("Fn", IrEntity(0)),
@@ -41,14 +51,14 @@ fn lower_start() {
                             (IrEntity(0), "Fn"),
                             (IrEntity(2), "I32"),
                             (IrEntity(4), "fn"),
-                            (IrEntity(6), "0")
+                            (IrEntity(5), "0")
                         ]),
-                        next_entity: IrEntity(8)
+                        next_entity: IrEntity(6)
                     },
-                    current_basic_block: 0
+                    current_basic_block: 1
                 },
                 type_entity: IrEntity(3),
-                value_entity: IrEntity(7)
+                value_entity: IrEntity(5)
             }]
         }
     )

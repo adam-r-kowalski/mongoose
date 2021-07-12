@@ -32,6 +32,7 @@ impl BasicBlock {
             kinds: vec![],
             indices: vec![],
             calls: Calls::new(),
+            returns: vec![],
         }
     }
 }
@@ -104,15 +105,41 @@ fn lower_int<'a>(
     (env, entity)
 }
 
-fn lower_call<'a>(
+fn lower_lambda<'a>(
     env: Environment<'a>,
     ast: &'a Ast,
-    entity: AstEntity,
+    children: &'a [AstEntity],
 ) -> (Environment<'a>, IrEntity) {
-    let children = ast_parens(ast, entity);
-    assert!(children.len() > 0);
-    let (env, func) = lower_expression(env, ast, children[0]);
-    let children = &children[1..];
+    assert!(children.len() > 1);
+    let (env, args) = ast_brackets(ast, children[0]).iter().fold(
+        (env, Vec::<IrEntity>::new()),
+        |(env, mut args), &entity| {
+            let (env, arg) = lower_symbol(env, ast, entity);
+            args.push(arg);
+            (env, args)
+        },
+    );
+    assert_eq!(args.len(), 0);
+    let sentinel = IrEntity(0);
+    let (mut env, entity) = children[1..]
+        .iter()
+        .fold((env, sentinel), |(env, _), &entity| {
+            lower_expression(env, ast, entity)
+        });
+    assert_ne!(entity, sentinel);
+    let basic_block = &mut env.basic_blocks[env.current_basic_block];
+    basic_block.kinds.push(ExpressionKind::Return);
+    basic_block.indices.push(basic_block.returns.len());
+    basic_block.returns.push(entity);
+    (env, entity)
+}
+
+fn lower_function_call<'a>(
+    env: Environment<'a>,
+    ast: &'a Ast,
+    func: IrEntity,
+    children: &'a [AstEntity],
+) -> (Environment<'a>, IrEntity) {
     let (env, args) =
         children
             .iter()
@@ -129,6 +156,21 @@ fn lower_call<'a>(
     basic_block.calls.arguments.push(args);
     basic_block.calls.returns.push(entity);
     (env, entity)
+}
+
+fn lower_call<'a>(
+    env: Environment<'a>,
+    ast: &'a Ast,
+    entity: AstEntity,
+) -> (Environment<'a>, IrEntity) {
+    let children = ast_parens(ast, entity);
+    assert!(children.len() > 0);
+    let (env, func) = lower_expression(env, ast, children[0]);
+    let children = &children[1..];
+    match env.entities.literals.get(&func) {
+        Some(&"fn") => lower_lambda(env, ast, children),
+        _ => lower_function_call(env, ast, func, children),
+    }
 }
 
 fn lower_array<'a>(
@@ -162,7 +204,9 @@ fn lower_top_level<'a>(ast: &'a Ast, entity: AstEntity) -> TopLevel<'a> {
     assert_eq!(ast_symbol(ast, children[0]), "let");
     let name = ast_symbol(ast, children[1]);
     let env = Environment::new();
-    let (env, type_entity) = lower_expression(env, ast, children[2]);
+    let (mut env, type_entity) = lower_expression(env, ast, children[2]);
+    env.current_basic_block = env.basic_blocks.len();
+    env.basic_blocks.push(BasicBlock::new());
     let (env, value_entity) = lower_expression(env, ast, children[3]);
     TopLevel {
         name,

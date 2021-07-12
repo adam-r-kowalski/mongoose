@@ -50,6 +50,7 @@ pub struct BasicBlock {
     pub kinds: Vec<ExpressionKind>,
     pub indices: Vec<usize>,
     pub calls: Calls,
+    pub returns: Vec<IrEntity>,
 }
 
 #[derive(Debug, PartialEq)]
