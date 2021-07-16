@@ -5,11 +5,11 @@ use std::iter::FromIterator;
 use ra::{
     lower::lower,
     parser::parse,
-    types::{IrBlock, Calls, Entities, Environment, ExpressionKind, Ir, IrEntity, TopLevel},
+    types::{Calls, Entities, Environment, ExpressionKind, Ir, IrBlock, IrEntity, TopLevel},
 };
 
 #[test]
-fn lower_start_explicitly_typed() {
+fn lower_trivial() {
     let source = "(let start (Fn [] I32) (fn [] 0))";
     let ast = parse(source);
     let ir = lower(&ast);

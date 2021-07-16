@@ -10,7 +10,8 @@ use ra::{
 };
 
 #[test]
-fn lower_start_explicitly_typed() {
+#[ignore]
+fn codegen_literal() {
     let source = "(let start (Fn [] I32) (fn [] 0))";
     let ast = parse(source);
     let ir = lower(&ast);
