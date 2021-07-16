@@ -2,7 +2,7 @@ use rayon::prelude::*;
 use std::collections::HashMap;
 
 use crate::types::{
-    Ast, AstEntity, AstKind, BasicBlock, Calls, Entities, Environment, ExpressionKind, Ir,
+    Ast, AstEntity, AstKind, IrBlock, Calls, Entities, Environment, ExpressionKind, Ir,
     IrEntity, TopLevel,
 };
 
@@ -26,9 +26,9 @@ impl Calls {
     }
 }
 
-impl BasicBlock {
-    fn new() -> BasicBlock {
-        BasicBlock {
+impl IrBlock {
+    fn new() -> IrBlock {
+        IrBlock {
             kinds: vec![],
             indices: vec![],
             calls: Calls::new(),
@@ -40,7 +40,7 @@ impl BasicBlock {
 impl<'a> Environment<'a> {
     fn new() -> Environment<'a> {
         Environment {
-            basic_blocks: vec![BasicBlock::new()],
+            basic_blocks: vec![IrBlock::new()],
             entities: Entities::new(),
             current_basic_block: 0,
         }
@@ -204,14 +204,18 @@ fn lower_top_level<'a>(ast: &'a Ast, entity: AstEntity) -> TopLevel<'a> {
     assert_eq!(ast_symbol(ast, children[0]), "let");
     let name = ast_symbol(ast, children[1]);
     let env = Environment::new();
+    let type_basic_block = env.current_basic_block;
     let (mut env, type_entity) = lower_expression(env, ast, children[2]);
     env.current_basic_block = env.basic_blocks.len();
-    env.basic_blocks.push(BasicBlock::new());
+    env.basic_blocks.push(IrBlock::new());
+    let value_basic_block = env.current_basic_block;
     let (env, value_entity) = lower_expression(env, ast, children[3]);
     TopLevel {
         name,
         type_entity,
+        type_basic_block,
         value_entity,
+        value_basic_block,
         environment: env,
     }
 }

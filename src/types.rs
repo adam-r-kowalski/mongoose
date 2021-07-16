@@ -46,7 +46,7 @@ pub struct Calls {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct BasicBlock {
+pub struct IrBlock {
     pub kinds: Vec<ExpressionKind>,
     pub indices: Vec<usize>,
     pub calls: Calls,
@@ -55,7 +55,7 @@ pub struct BasicBlock {
 
 #[derive(Debug, PartialEq)]
 pub struct Environment<'a> {
-    pub basic_blocks: Vec<BasicBlock>,
+    pub basic_blocks: Vec<IrBlock>,
     pub entities: Entities<'a>,
     pub current_basic_block: usize,
 }
@@ -65,10 +65,47 @@ pub struct TopLevel<'a> {
     pub name: &'a str,
     pub environment: Environment<'a>,
     pub type_entity: IrEntity,
+    pub type_basic_block: usize,
     pub value_entity: IrEntity,
+    pub value_basic_block: usize,
 }
 
 #[derive(Debug, PartialEq)]
 pub struct Ir<'a> {
     pub top_level: Vec<TopLevel<'a>>,
+}
+
+#[derive(Debug, PartialEq)]
+pub enum Instruction {
+    Push,
+    Mov,
+    Syscall,
+}
+
+#[derive(Debug, PartialEq)]
+pub enum OperandKind {
+    Register,
+    Literal,
+    Int,
+}
+
+#[derive(Debug, PartialEq)]
+pub enum Register {
+    Rbp,
+    Rsp,
+    Edi,
+    Rax,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct X86Block<'a> {
+    pub instructions: Vec<Instruction>,
+    pub operand_kinds: Vec<Vec<OperandKind>>,
+    pub operands: Vec<Vec<usize>>,
+    pub literals: Vec<&'a str>,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct X86<'a> {
+    pub blocks: Vec<X86Block<'a>>,
 }

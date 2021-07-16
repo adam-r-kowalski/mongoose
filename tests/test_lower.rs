@@ -5,11 +5,11 @@ use std::iter::FromIterator;
 use ra::{
     lower::lower,
     parser::parse,
-    types::{BasicBlock, Calls, Entities, Environment, ExpressionKind, Ir, IrEntity, TopLevel},
+    types::{IrBlock, Calls, Entities, Environment, ExpressionKind, Ir, IrEntity, TopLevel},
 };
 
 #[test]
-fn lower_start() {
+fn lower_start_explicitly_typed() {
     let source = "(let start (Fn [] I32) (fn [] 0))";
     let ast = parse(source);
     let ir = lower(&ast);
@@ -20,7 +20,7 @@ fn lower_start() {
                 name: "start",
                 environment: Environment {
                     basic_blocks: vec![
-                        BasicBlock {
+                        IrBlock {
                             kinds: vec![ExpressionKind::Call],
                             indices: vec![0],
                             calls: Calls {
@@ -30,7 +30,7 @@ fn lower_start() {
                             },
                             returns: vec![],
                         },
-                        BasicBlock {
+                        IrBlock {
                             kinds: vec![ExpressionKind::Return],
                             indices: vec![0],
                             calls: Calls {
@@ -58,7 +58,9 @@ fn lower_start() {
                     current_basic_block: 1
                 },
                 type_entity: IrEntity(3),
-                value_entity: IrEntity(5)
+                type_basic_block: 0,
+                value_entity: IrEntity(5),
+                value_basic_block: 1,
             }]
         }
     )
