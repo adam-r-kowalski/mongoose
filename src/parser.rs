@@ -1,6 +1,6 @@
 use std::convert::identity;
 
-use crate::types::{Ast, AstEntity, AstKind};
+use crate::types::ast::{Ast, Entity, Kind};
 
 fn trim_whitespace(source: &str) -> &str {
     let length = source.chars().take_while(|c| c.is_whitespace()).count();
@@ -19,7 +19,7 @@ fn number<'a>(
     Decimals(decimals): Decimals,
     source: &'a str,
     mut ast: Ast<'a>,
-) -> (&'a str, Ast<'a>, AstEntity) {
+) -> (&'a str, Ast<'a>, Entity) {
     let skip = match sign {
         Sign::Negative => 1,
         Sign::Positive if decimals == 1 => 1,
@@ -34,11 +34,11 @@ fn number<'a>(
             _ => Err((length, decimals)),
         })
         .map_or_else(identity, identity);
-    let entity = AstEntity(ast.indices.len());
+    let entity = Entity(ast.indices.len());
     let kind = match length {
-        1 if skip == 1 => AstKind::Symbol,
-        _ if decimals > 0 => AstKind::Float,
-        _ => AstKind::Int,
+        1 if skip == 1 => Kind::Symbol,
+        _ if decimals > 0 => Kind::Float,
+        _ => Kind::Int,
     };
     ast.kinds.push(kind);
     ast.indices.push(ast.strings.len());
@@ -47,16 +47,16 @@ fn number<'a>(
 }
 
 fn list<'a>(
-    kind: AstKind,
+    kind: Kind,
     delimiter: char,
     source: &'a str,
     mut ast: Ast<'a>,
-    mut children: Vec<AstEntity>,
-) -> (&'a str, Ast<'a>, AstEntity) {
+    mut children: Vec<Entity>,
+) -> (&'a str, Ast<'a>, Entity) {
     let source = trim_whitespace(source);
     match source.chars().next() {
         Some(c) if c == delimiter => {
-            let entity = AstEntity(ast.indices.len());
+            let entity = Entity(ast.indices.len());
             ast.indices.push(ast.children.len());
             ast.kinds.push(kind);
             ast.children.push(children);
@@ -78,28 +78,24 @@ fn is_reserved(c: char) -> bool {
     }
 }
 
-fn identifier<'a>(
-    kind: AstKind,
-    source: &'a str,
-    mut ast: Ast<'a>,
-) -> (&'a str, Ast<'a>, AstEntity) {
+fn identifier<'a>(kind: Kind, source: &'a str, mut ast: Ast<'a>) -> (&'a str, Ast<'a>, Entity) {
     let length = source.chars().take_while(|&c| !is_reserved(c)).count();
-    let entity = AstEntity(ast.indices.len());
+    let entity = Entity(ast.indices.len());
     ast.kinds.push(kind);
     ast.indices.push(ast.strings.len());
     ast.strings.push(&source[..length]);
     (&source[length..], ast, entity)
 }
 
-fn expression<'a>(source: &'a str, ast: Ast<'a>) -> (&'a str, Ast<'a>, AstEntity) {
+fn expression<'a>(source: &'a str, ast: Ast<'a>) -> (&'a str, Ast<'a>, Entity) {
     match source.chars().next() {
         Some(c) if c.is_numeric() => number(Sign::Positive, Decimals(0), source, ast),
         Some('-') => number(Sign::Negative, Decimals(0), source, ast),
         Some('.') => number(Sign::Positive, Decimals(1), source, ast),
-        Some('[') => list(AstKind::Brackets, ']', &source[1..], ast, vec![]),
-        Some('(') => list(AstKind::Parens, ')', &source[1..], ast, vec![]),
-        Some(':') => identifier(AstKind::Keyword, source, ast),
-        _ => identifier(AstKind::Symbol, source, ast),
+        Some('[') => list(Kind::Brackets, ']', &source[1..], ast, vec![]),
+        Some('(') => list(Kind::Parens, ')', &source[1..], ast, vec![]),
+        Some(':') => identifier(Kind::Keyword, source, ast),
+        _ => identifier(Kind::Symbol, source, ast),
     }
 }
 

@@ -1,12 +1,10 @@
 use pretty_assertions::assert_eq;
-use std::collections::HashMap;
-use std::iter::FromIterator;
 
 use ra::{
     codegen::codegen,
     lower::lower,
     parser::parse,
-    types::{Instruction, OperandKind, Register, X86Block, X86},
+    types::x86::{Block, Instruction, Kind, Register, X86},
 };
 
 #[test]
@@ -19,7 +17,7 @@ fn codegen_literal() {
     assert_eq!(
         x86,
         X86 {
-            blocks: vec![X86Block {
+            blocks: vec![Block {
                 instructions: vec![
                     Instruction::Push,
                     Instruction::Mov,
@@ -28,10 +26,10 @@ fn codegen_literal() {
                     Instruction::Syscall
                 ],
                 operand_kinds: vec![
-                    vec![OperandKind::Register],
-                    vec![OperandKind::Register, OperandKind::Register],
-                    vec![OperandKind::Register, OperandKind::Literal],
-                    vec![OperandKind::Register, OperandKind::Int],
+                    vec![Kind::Register],
+                    vec![Kind::Register, Kind::Register],
+                    vec![Kind::Register, Kind::Literal],
+                    vec![Kind::Register, Kind::Int],
                     vec![],
                 ],
                 operands: vec![

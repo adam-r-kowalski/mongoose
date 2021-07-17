@@ -2,7 +2,7 @@ use pretty_assertions::assert_eq;
 
 use ra::{
     parser::parse,
-    types::{Ast, AstEntity, AstKind},
+    types::ast::{Ast, Entity, Kind},
 };
 
 #[test]
@@ -12,10 +12,10 @@ fn parse_int() {
         ast,
         Ast {
             indices: vec![0, 1, 2],
-            kinds: vec![AstKind::Int, AstKind::Int, AstKind::Int],
+            kinds: vec![Kind::Int, Kind::Int, Kind::Int],
             strings: vec!["10", "-20", "350"],
             children: vec![],
-            top_level: vec![AstEntity(0), AstEntity(1), AstEntity(2)],
+            top_level: vec![Entity(0), Entity(1), Entity(2)],
         }
     )
 }
@@ -27,10 +27,10 @@ fn parse_float() {
         ast,
         Ast {
             indices: vec![0, 1, 2],
-            kinds: vec![AstKind::Float, AstKind::Float, AstKind::Float],
+            kinds: vec![Kind::Float, Kind::Float, Kind::Float],
             strings: vec!["10.5", "-20.2", ".350"],
             children: vec![],
-            top_level: vec![AstEntity(0), AstEntity(1), AstEntity(2)],
+            top_level: vec![Entity(0), Entity(1), Entity(2)],
         }
     )
 }
@@ -43,21 +43,15 @@ fn parse_symbol() {
         Ast {
             indices: vec![0, 1, 2, 3, 4],
             kinds: vec![
-                AstKind::Symbol,
-                AstKind::Symbol,
-                AstKind::Symbol,
-                AstKind::Symbol,
-                AstKind::Symbol
+                Kind::Symbol,
+                Kind::Symbol,
+                Kind::Symbol,
+                Kind::Symbol,
+                Kind::Symbol
             ],
             strings: vec!["foo", "bar", "baz", ".", "-"],
             children: vec![],
-            top_level: vec![
-                AstEntity(0),
-                AstEntity(1),
-                AstEntity(2),
-                AstEntity(3),
-                AstEntity(4)
-            ],
+            top_level: vec![Entity(0), Entity(1), Entity(2), Entity(3), Entity(4)],
         }
     )
 }
@@ -69,10 +63,10 @@ fn parse_keyword() {
         ast,
         Ast {
             indices: vec![0, 1, 2],
-            kinds: vec![AstKind::Keyword, AstKind::Keyword, AstKind::Keyword],
+            kinds: vec![Kind::Keyword, Kind::Keyword, Kind::Keyword],
             strings: vec![":foo", ":bar", ":baz"],
             children: vec![],
-            top_level: vec![AstEntity(0), AstEntity(1), AstEntity(2)],
+            top_level: vec![Entity(0), Entity(1), Entity(2)],
         }
     )
 }
@@ -85,21 +79,21 @@ fn parse_brackets() {
         Ast {
             indices: vec![0, 1, 0, 2, 3, 1, 2],
             kinds: vec![
-                AstKind::Symbol,
-                AstKind::Symbol,
-                AstKind::Brackets,
-                AstKind::Symbol,
-                AstKind::Symbol,
-                AstKind::Brackets,
-                AstKind::Brackets
+                Kind::Symbol,
+                Kind::Symbol,
+                Kind::Brackets,
+                Kind::Symbol,
+                Kind::Symbol,
+                Kind::Brackets,
+                Kind::Brackets
             ],
             strings: vec!["a", "b", "c", "d"],
             children: vec![
-                vec![AstEntity(0), AstEntity(1)],
-                vec![AstEntity(3), AstEntity(4)],
-                vec![AstEntity(2), AstEntity(5)]
+                vec![Entity(0), Entity(1)],
+                vec![Entity(3), Entity(4)],
+                vec![Entity(2), Entity(5)]
             ],
-            top_level: vec![AstEntity(6)],
+            top_level: vec![Entity(6)],
         }
     )
 }
@@ -112,24 +106,24 @@ fn parse_parens() {
         Ast {
             indices: vec![0, 1, 2, 3, 0, 4, 5, 6, 1, 2],
             kinds: vec![
-                AstKind::Symbol,
-                AstKind::Symbol,
-                AstKind::Int,
-                AstKind::Int,
-                AstKind::Parens,
-                AstKind::Symbol,
-                AstKind::Int,
-                AstKind::Int,
-                AstKind::Parens,
-                AstKind::Parens,
+                Kind::Symbol,
+                Kind::Symbol,
+                Kind::Int,
+                Kind::Int,
+                Kind::Parens,
+                Kind::Symbol,
+                Kind::Int,
+                Kind::Int,
+                Kind::Parens,
+                Kind::Parens,
             ],
             strings: vec!["add", "mul", "1", "2", "div", "3", "4"],
             children: vec![
-                vec![AstEntity(1), AstEntity(2), AstEntity(3)],
-                vec![AstEntity(5), AstEntity(6), AstEntity(7)],
-                vec![AstEntity(0), AstEntity(4), AstEntity(8)]
+                vec![Entity(1), Entity(2), Entity(3)],
+                vec![Entity(5), Entity(6), Entity(7)],
+                vec![Entity(0), Entity(4), Entity(8)]
             ],
-            top_level: vec![AstEntity(9)],
+            top_level: vec![Entity(9)],
         }
     )
 }
