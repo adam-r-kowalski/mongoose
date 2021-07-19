@@ -51,4 +51,5 @@ pub struct TopLevel<'a> {
 #[derive(Debug, PartialEq)]
 pub struct Ir<'a> {
     pub top_level: Vec<TopLevel<'a>>,
+    pub entities: Entities<'a>,
 }

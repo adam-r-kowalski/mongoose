@@ -67,15 +67,15 @@ fn ast_brackets<'a>(ast: &'a Ast, ast::Entity(index): ast::Entity) -> &'a [ast::
     return &ast.children[ast.indices[index]];
 }
 
-fn fresh_entity(mut env: Environment) -> (Environment, Entity) {
-    let entity = env.entities.next_entity;
+fn fresh_entity(mut entities: Entities) -> (Entities, Entity) {
+    let entity = entities.next_entity;
     let Entity(index) = entity;
-    env.entities.next_entity = Entity(index + 1);
-    (env, entity)
+    entities.next_entity = Entity(index + 1);
+    (entities, entity)
 }
 
 fn lower_symbol<'a>(
-    env: Environment<'a>,
+    mut env: Environment<'a>,
     ast: &'a Ast,
     entity: ast::Entity,
 ) -> (Environment<'a>, Entity) {
@@ -83,7 +83,8 @@ fn lower_symbol<'a>(
     match env.entities.name_to_entity.get(symbol) {
         Some(&entity) => (env, entity),
         None => {
-            let (mut env, entity) = fresh_entity(env);
+            let (entities, entity) = fresh_entity(env.entities);
+            env.entities = entities;
             env.entities.literals.try_insert(entity, symbol).unwrap();
             env.entities
                 .name_to_entity
@@ -95,12 +96,13 @@ fn lower_symbol<'a>(
 }
 
 fn lower_int<'a>(
-    env: Environment<'a>,
+    mut env: Environment<'a>,
     ast: &'a Ast,
     entity: ast::Entity,
 ) -> (Environment<'a>, Entity) {
     let int = ast_int(ast, entity);
-    let (mut env, entity) = fresh_entity(env);
+    let (entities, entity) = fresh_entity(env.entities);
+    env.entities = entities;
     env.entities.literals.try_insert(entity, int).unwrap();
     (env, entity)
 }
@@ -140,7 +142,7 @@ fn lower_function_call<'a>(
     func: Entity,
     children: &'a [ast::Entity],
 ) -> (Environment<'a>, Entity) {
-    let (env, args) =
+    let (mut env, args) =
         children
             .iter()
             .fold((env, Vec::<Entity>::new()), |(env, mut args), &entity| {
@@ -148,7 +150,8 @@ fn lower_function_call<'a>(
                 args.push(arg);
                 (env, args)
             });
-    let (mut env, entity) = fresh_entity(env);
+    let (entities, entity) = fresh_entity(env.entities);
+    env.entities = entities;
     let block = &mut env.blocks[env.current_block];
     block.kinds.push(Kind::Call);
     block.indices.push(block.calls.functions.len());
@@ -174,12 +177,13 @@ fn lower_call<'a>(
 }
 
 fn lower_array<'a>(
-    env: Environment<'a>,
+    mut env: Environment<'a>,
     ast: &'a Ast,
     entity: ast::Entity,
 ) -> (Environment<'a>, Entity) {
     assert_eq!(ast_brackets(ast, entity).len(), 0);
-    let (env, entity) = fresh_entity(env);
+    let (entities, entity) = fresh_entity(env.entities);
+    env.entities = entities;
     (env, entity)
 }
 
@@ -222,9 +226,20 @@ fn lower_top_level<'a>(ast: &'a Ast, entity: ast::Entity) -> TopLevel<'a> {
 
 pub fn lower<'a>(ast: &'a Ast) -> Ir<'a> {
     let top_level_entities = &ast.top_level;
-    let top_level: Vec<TopLevel> = top_level_entities
+    let top_level = top_level_entities
         .par_iter()
         .map(|&entity| lower_top_level(ast, entity))
-        .collect();
-    Ir { top_level }
+        .collect::<Vec<TopLevel>>();
+    let entities = top_level
+        .iter()
+        .fold(Entities::new(), |entities, top_level| {
+            let (mut entities, entity) = fresh_entity(entities);
+            entities.name_to_entity.insert(top_level.name, entity);
+            entities.literals.insert(entity, top_level.name);
+            return entities;
+        });
+    Ir {
+        top_level,
+        entities,
+    }
 }

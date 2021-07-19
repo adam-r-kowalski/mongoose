@@ -61,7 +61,12 @@ fn lower_trivial() {
                 type_block: 0,
                 value_entity: Entity(5),
                 value_block: 1,
-            }]
-        }
+            }],
+            entities: Entities {
+                name_to_entity: HashMap::from_iter([("start", Entity(0)),]),
+                literals: HashMap::from_iter([(Entity(0), "start"),]),
+                next_entity: Entity(1)
+            }
+        },
     )
 }
