@@ -1,4 +1,6 @@
 use pretty_assertions::assert_eq;
+use std::collections::HashMap;
+use std::iter::FromIterator;
 
 use ra::{
     codegen::codegen,
@@ -37,10 +39,12 @@ fn codegen_literal() {
                         vec![Register::Rbp as usize, Register::Rsp as usize],
                         vec![Register::Edi as usize, 0],
                         vec![Register::Rax as usize, 201],
+                        vec![],
                     ],
+                    literals: vec!["0"]
                 }],
-                literals: vec!["0"]
-            }]
+            }],
+            name_to_top_level: HashMap::from_iter([("start", 0)])
         }
     );
 }
