@@ -14,7 +14,13 @@ fn write_instruction<W: Write>(mut write: W, instruction: Instruction) -> Result
     Ok(write)
 }
 
-fn write_register<W: Write>(write: W, register: Register) -> Result<W, Error> {
+fn write_register<W: Write>(mut write: W, register: Register) -> Result<W, Error> {
+    match register {
+        Register::Rax => write!(write, "rax")?,
+        Register::Edi => write!(write, "edi")?,
+        Register::Rbp => write!(write, "rbp")?,
+        Register::Rsp => write!(write, "rsp")?,
+    };
     Ok(write)
 }
 
@@ -24,20 +30,19 @@ fn write_arguments<W: Write>(
     operand_kinds: &[Kind],
     operands: &[usize],
 ) -> Result<W, Error> {
-    operand_kinds.iter().zip(operands.iter()).try_fold(
-        write,
-        |mut write, (operand_kind, &operand)| match operand_kind {
-            Kind::Int => {
-                write!(write, "{}", operand)?;
-                Ok(write)
-            }
-            Kind::Literal => {
-                write!(write, "{}", literals[operand])?;
-                Ok(write)
-            }
-            Kind::Register => write_register(write, unsafe { transmute(operand) }),
-        },
-    )
+    operand_kinds
+        .iter()
+        .zip(operands.iter())
+        .enumerate()
+        .try_fold(write, |mut write, (i, (operand_kind, &operand))| {
+            write!(write, "{}", if i == 0 { " " } else { ", " })?;
+            match operand_kind {
+                Kind::Int => write!(write, "{}", operand)?,
+                Kind::Literal => write!(write, "{}", literals[operand])?,
+                Kind::Register => write = write_register(write, unsafe { transmute(operand) })?,
+            };
+            Ok(write)
+        })
 }
 
 pub fn write_assembly<W: Write>(mut write: W, x86: &X86) -> Result<W, Error> {
@@ -47,8 +52,7 @@ pub fn write_assembly<W: Write>(mut write: W, x86: &X86) -> Result<W, Error> {
 
     section .text
 
-_main:
-";
+_main:";
     write!(write, "{}", header)?;
     let &start_index = x86.name_to_top_level.get("start").unwrap();
     let start = &x86.top_level[start_index];
@@ -59,7 +63,8 @@ _main:
             .instructions
             .iter()
             .enumerate()
-            .try_fold(write, |write, (i, &instruction)| {
+            .try_fold(write, |mut write, (i, &instruction)| {
+                write!(write, "\n    ")?;
                 let write = write_instruction(write, instruction)?;
                 let write = write_arguments(
                     write,

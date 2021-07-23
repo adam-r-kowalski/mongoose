@@ -21,7 +21,7 @@ fn write_assembly_literal() {
 _main:
     push rbp
     mov rbp, rsp
-    mov edi, 42 
+    mov edi, 0
     mov rax, 201
     syscall";
     assert_eq!(actual, expected);
