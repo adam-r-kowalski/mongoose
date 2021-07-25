@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::tokenizer::{self, Tokens};
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Copy, Clone)]
 pub struct Entity(pub usize);
 
 struct Token(usize);
