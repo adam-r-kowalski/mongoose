@@ -11,6 +11,8 @@ struct Token {
 #[derive(Debug, PartialEq)]
 pub enum Kind {
     Symbol,
+    Int,
+    Function,
 }
 
 pub struct Ast {
@@ -33,11 +35,21 @@ fn parse_symbol(mut ast: Ast, tokens: &Tokens, token: Token) -> (Ast, Token, Ent
     (ast, inc_token(token), entity)
 }
 
+fn parse_int(mut ast: Ast, tokens: &Tokens, token: Token) -> (Ast, Token, Entity) {
+    let entity = Entity {
+        index: ast.kinds.len(),
+    };
+    ast.kinds.push(Kind::Int);
+    ast.indices.push(tokens.indices[token.index]);
+    (ast, inc_token(token), entity)
+}
+
 type PrefixParser = impl Fn(Ast, &Tokens, Token) -> (Ast, Token, Entity);
 
 fn prefix_parser(kind: tokenizer::Kind) -> PrefixParser {
     match kind {
         tokenizer::Kind::Symbol => parse_symbol,
+        tokenizer::Kind::Int => parse_int,
         token => panic!("no prefix parser for {:?}", token),
     }
 }
@@ -51,7 +63,10 @@ fn parse_function(ast: Ast, tokens: &Tokens, token: Token, name: Entity) -> (Ast
     assert_eq!(ast.kinds[name.index], Kind::Symbol);
     let token = consume(tokens, token, tokenizer::Kind::RightParen);
     let token = consume(tokens, token, tokenizer::Kind::Arrow);
-    let (_ast, _token, _return_type) = parse_expression(ast, tokens, token);
+    let (ast, token, return_type) = parse_expression(ast, tokens, token);
+    assert_eq!(ast.kinds[return_type.index], Kind::Symbol);
+    let token = consume(tokens, token, tokenizer::Kind::Equal);
+    let (ast, token, body) = parse_expression(ast, tokens, token);
     panic!("got here");
 }
 
@@ -67,9 +82,14 @@ fn infix_parser(kind: tokenizer::Kind) -> Option<InfixParser> {
 fn parse_expression(ast: Ast, tokens: &Tokens, token: Token) -> (Ast, Token, Entity) {
     let parse_prefix = prefix_parser(tokens.kinds[token.index]);
     let (ast, token, left) = parse_prefix(ast, tokens, token);
-    match infix_parser(tokens.kinds[token.index]) {
+    let parse_infix = tokens
+        .kinds
+        .get(token.index)
+        .map(|&kind| infix_parser(kind))
+        .flatten();
+    match parse_infix {
         Some(parse_infix) => parse_infix(ast, tokens, inc_token(token), left),
-        None => (ast, token, left),
+        _ => (ast, token, left),
     }
 }
 
