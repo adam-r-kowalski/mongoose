@@ -1,4 +1,4 @@
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Copy, Clone)]
 pub enum Kind {
     Symbol,
     LeftParen,
@@ -12,7 +12,8 @@ pub enum Kind {
 pub struct Tokens {
     pub indices: Vec<usize>,
     pub kinds: Vec<Kind>,
-    pub strings: Vec<String>,
+    pub symbols: Vec<String>,
+    pub ints: Vec<String>,
 }
 
 fn tokenize_symbol(mut tokens: Tokens, source: &str) -> Tokens {
@@ -21,8 +22,8 @@ fn tokenize_symbol(mut tokens: Tokens, source: &str) -> Tokens {
         .take_while(|c| c.is_alphanumeric())
         .count();
     tokens.kinds.push(Kind::Symbol);
-    tokens.indices.push(tokens.strings.len());
-    tokens.strings.push(source[..length].to_string());
+    tokens.indices.push(tokens.symbols.len());
+    tokens.symbols.push(source[..length].to_string());
     tokenize_impl(tokens, &source[length..])
 }
 
@@ -52,8 +53,8 @@ fn tokenize_equal(mut tokens: Tokens, source: &str) -> Tokens {
 fn tokenize_number(mut tokens: Tokens, source: &str) -> Tokens {
     let length = 1 + source[1..].chars().take_while(|c| c.is_numeric()).count();
     tokens.kinds.push(Kind::Int);
-    tokens.indices.push(tokens.strings.len());
-    tokens.strings.push(source[..length].to_string());
+    tokens.indices.push(tokens.ints.len());
+    tokens.ints.push(source[..length].to_string());
     tokenize_impl(tokens, &source[1..])
 }
 
@@ -80,7 +81,8 @@ pub fn tokenize(source: &str) -> Tokens {
     let tokens = Tokens {
         indices: vec![],
         kinds: vec![],
-        strings: vec![],
+        symbols: vec![],
+        ints: vec![],
     };
     tokenize_impl(tokens, source)
 }

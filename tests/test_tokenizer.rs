@@ -1,12 +1,16 @@
 use ra::tokenizer::{tokenize, Kind, Tokens};
 
+fn strings<const N: usize>(data: [&str; N]) -> Vec<String> {
+    data.iter().map(|s| s.to_string()).collect()
+}
+
 #[test]
 fn test_start() {
     let tokens = tokenize("start() -> i64 = 0");
     assert_eq!(
         tokens,
         Tokens {
-            indices: vec![0, 0, 0, 0, 1, 0, 2],
+            indices: vec![0, 0, 0, 0, 1, 0, 0],
             kinds: vec![
                 Kind::Symbol,
                 Kind::LeftParen,
@@ -16,10 +20,8 @@ fn test_start() {
                 Kind::Equal,
                 Kind::Int
             ],
-            strings: vec!["start", "i64", "0"]
-                .iter()
-                .map(|s| s.to_string())
-                .collect(),
+            symbols: strings(["start", "i64"]),
+            ints: strings(["0"]),
         }
     )
 }
