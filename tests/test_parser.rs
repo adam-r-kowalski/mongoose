@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use pretty_assertions::assert_eq;
 
 use ra::{
@@ -23,6 +24,7 @@ fn test_parser() {
             },
             symbols: strings(["start", "i64"]),
             ints: strings(["0"]),
+            top_level: HashMap::from_iter([(String::from("start"), Entity(3))])
         }
     )
 }

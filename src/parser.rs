@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::tokenizer::{self, Tokens};
 
 #[derive(Debug, PartialEq)]
@@ -26,6 +28,7 @@ pub struct Ast {
     pub functions: Functions,
     pub symbols: Vec<String>,
     pub ints: Vec<String>,
+    pub top_level: HashMap<String, Entity>,
 }
 
 fn inc_token(Token(index): Token) -> Token {
@@ -111,8 +114,13 @@ pub fn parse(tokens: Tokens) -> Ast {
         },
         symbols: vec![],
         ints: vec![],
+        top_level: HashMap::new()
     };
-    let (mut ast, _, _) = parse_expression(ast, &tokens, Token(0));
+    let (mut ast, _, function) = parse_expression(ast, &tokens, Token(0));
+    assert_eq!(ast.kinds[function.0], Kind::Function);
+    let name = &ast.functions.names[ast.indices[function.0]];
+    assert_eq!(ast.kinds[name.0], Kind::Symbol);
+    ast.top_level.try_insert(tokens.symbols[ast.indices[name.0]].clone(), function).unwrap();
     ast.symbols = tokens.symbols;
     ast.ints = tokens.ints;
     ast
