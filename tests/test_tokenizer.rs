@@ -1,8 +1,7 @@
-use ra::tokenizer::{tokenize, Kind, Tokens};
+use pretty_assertions::assert_eq;
 
-fn strings<const N: usize>(data: [&str; N]) -> Vec<String> {
-    data.iter().map(|s| s.to_string()).collect()
-}
+use ra::tokenizer::{tokenize, Kind, Tokens};
+use test_utilities::strings;
 
 #[test]
 fn test_start() {

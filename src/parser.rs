@@ -1,73 +1,80 @@
 use crate::tokenizer::{self, Tokens};
 
-struct Entity {
-    index: usize,
-}
-
-struct Token {
-    index: usize,
-}
-
 #[derive(Debug, PartialEq)]
+pub struct Entity(pub usize);
+
+struct Token(usize);
+
+#[derive(Debug, PartialEq, Copy, Clone)]
 pub enum Kind {
     Symbol,
     Int,
     Function,
 }
 
+#[derive(Debug, PartialEq)]
+pub struct Functions {
+    pub names: Vec<Entity>,
+    pub return_types: Vec<Entity>,
+    pub bodies: Vec<Entity>,
+}
+
+#[derive(Debug, PartialEq)]
 pub struct Ast {
     pub kinds: Vec<Kind>,
     pub indices: Vec<usize>,
+    pub functions: Functions,
     pub symbols: Vec<String>,
     pub ints: Vec<String>,
 }
 
-fn inc_token(Token { index }: Token) -> Token {
-    Token { index: index + 1 }
+fn inc_token(Token(index): Token) -> Token {
+    Token(index + 1)
 }
 
-fn parse_symbol(mut ast: Ast, tokens: &Tokens, token: Token) -> (Ast, Token, Entity) {
-    let entity = Entity {
-        index: ast.kinds.len(),
-    };
-    ast.kinds.push(Kind::Symbol);
-    ast.indices.push(tokens.indices[token.index]);
-    (ast, inc_token(token), entity)
-}
-
-fn parse_int(mut ast: Ast, tokens: &Tokens, token: Token) -> (Ast, Token, Entity) {
-    let entity = Entity {
-        index: ast.kinds.len(),
-    };
-    ast.kinds.push(Kind::Int);
-    ast.indices.push(tokens.indices[token.index]);
-    (ast, inc_token(token), entity)
+fn fresh_entity(ast: &Ast) -> Entity {
+    Entity(ast.kinds.len())
 }
 
 type PrefixParser = impl Fn(Ast, &Tokens, Token) -> (Ast, Token, Entity);
 
+fn parse_primitive(kind: Kind) -> PrefixParser {
+    return move |mut ast: Ast, tokens: &Tokens, token: Token| {
+        let entity = fresh_entity(&ast);
+        ast.kinds.push(kind);
+        ast.indices.push(tokens.indices[token.0]);
+        (ast, inc_token(token), entity)
+    }
+}
+
 fn prefix_parser(kind: tokenizer::Kind) -> PrefixParser {
     match kind {
-        tokenizer::Kind::Symbol => parse_symbol,
-        tokenizer::Kind::Int => parse_int,
+        tokenizer::Kind::Symbol => parse_primitive(Kind::Symbol),
+        tokenizer::Kind::Int => parse_primitive(Kind::Int),
         token => panic!("no prefix parser for {:?}", token),
     }
 }
 
 fn consume(tokens: &Tokens, token: Token, kind: tokenizer::Kind) -> Token {
-    assert_eq!(tokens.kinds[token.index], kind);
+    assert_eq!(tokens.kinds[token.0], kind);
     inc_token(token)
 }
 
 fn parse_function(ast: Ast, tokens: &Tokens, token: Token, name: Entity) -> (Ast, Token, Entity) {
-    assert_eq!(ast.kinds[name.index], Kind::Symbol);
+    assert_eq!(ast.kinds[name.0], Kind::Symbol);
     let token = consume(tokens, token, tokenizer::Kind::RightParen);
     let token = consume(tokens, token, tokenizer::Kind::Arrow);
     let (ast, token, return_type) = parse_expression(ast, tokens, token);
-    assert_eq!(ast.kinds[return_type.index], Kind::Symbol);
+    assert_eq!(ast.kinds[return_type.0], Kind::Symbol);
     let token = consume(tokens, token, tokenizer::Kind::Equal);
-    let (ast, token, body) = parse_expression(ast, tokens, token);
-    panic!("got here");
+    let (mut ast, token, body) = parse_expression(ast, tokens, token);
+    let entity = fresh_entity(&ast);
+    ast.kinds.push(Kind::Function);
+    ast.indices.push(ast.functions.names.len());
+    ast.functions.names.push(name);
+    ast.functions.return_types.push(return_type);
+    ast.functions.bodies.push(body);
+    (ast, inc_token(token), entity)
 }
 
 type InfixParser = impl Fn(Ast, &Tokens, Token, Entity) -> (Ast, Token, Entity);
@@ -80,11 +87,11 @@ fn infix_parser(kind: tokenizer::Kind) -> Option<InfixParser> {
 }
 
 fn parse_expression(ast: Ast, tokens: &Tokens, token: Token) -> (Ast, Token, Entity) {
-    let parse_prefix = prefix_parser(tokens.kinds[token.index]);
+    let parse_prefix = prefix_parser(tokens.kinds[token.0]);
     let (ast, token, left) = parse_prefix(ast, tokens, token);
     let parse_infix = tokens
         .kinds
-        .get(token.index)
+        .get(token.0)
         .map(|&kind| infix_parser(kind))
         .flatten();
     match parse_infix {
@@ -97,10 +104,15 @@ pub fn parse(tokens: Tokens) -> Ast {
     let ast = Ast {
         kinds: vec![],
         indices: vec![],
+        functions: Functions {
+            names: vec![],
+            return_types: vec![],
+            bodies: vec![],
+        },
         symbols: vec![],
         ints: vec![],
     };
-    let (mut ast, _, _) = parse_expression(ast, &tokens, Token { index: 0 });
+    let (mut ast, _, _) = parse_expression(ast, &tokens, Token(0));
     ast.symbols = tokens.symbols;
     ast.ints = tokens.ints;
     ast
