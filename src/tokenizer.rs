@@ -4,7 +4,7 @@ pub enum Kind {
     LeftParen,
     RightParen,
     Arrow,
-    Equal,
+    Colon,
     Int,
 }
 
@@ -44,8 +44,8 @@ fn tokenize_arrow(mut tokens: Tokens, source: &str) -> Tokens {
     }
 }
 
-fn tokenize_equal(mut tokens: Tokens, source: &str) -> Tokens {
-    tokens.kinds.push(Kind::Equal);
+fn tokenize_colon(mut tokens: Tokens, source: &str) -> Tokens {
+    tokens.kinds.push(Kind::Colon);
     tokens.indices.push(0);
     tokenize_impl(tokens, &source[1..])
 }
@@ -70,7 +70,7 @@ fn tokenize_impl(tokens: Tokens, source: &str) -> Tokens {
         Some('(') => tokenize_paren(tokens, source, Kind::LeftParen),
         Some(')') => tokenize_paren(tokens, source, Kind::RightParen),
         Some('-') => tokenize_arrow(tokens, source),
-        Some('=') => tokenize_equal(tokens, source),
+        Some(':') => tokenize_colon(tokens, source),
         Some('0'..='9') => tokenize_number(tokens, source),
         Some(c) => panic!("not implemented for char {}", c),
         None => tokens,

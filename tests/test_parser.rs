@@ -1,8 +1,8 @@
-use std::collections::HashMap;
 use pretty_assertions::assert_eq;
+use std::collections::HashMap;
 
 use ra::{
-    parser::{parse, Ast, Functions, Kind, Entity},
+    parser::{parse, Ast, Entity, Functions, Kind},
     tokenizer::tokenize,
 };
 
@@ -10,7 +10,7 @@ use test_utilities::strings;
 
 #[test]
 fn test_parser() {
-    let tokens = tokenize("start() -> i64 = 0");
+    let tokens = tokenize("start() -> i64: 0");
     let ast = parse(tokens);
     assert_eq!(
         ast,

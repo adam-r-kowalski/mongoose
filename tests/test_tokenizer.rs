@@ -5,7 +5,7 @@ use test_utilities::strings;
 
 #[test]
 fn test_start() {
-    let tokens = tokenize("start() -> i64 = 0");
+    let tokens = tokenize("start() -> i64: 0");
     assert_eq!(
         tokens,
         Tokens {
@@ -16,7 +16,7 @@ fn test_start() {
                 Kind::RightParen,
                 Kind::Arrow,
                 Kind::Symbol,
-                Kind::Equal,
+                Kind::Colon,
                 Kind::Int
             ],
             symbols: strings(["start", "i64"]),

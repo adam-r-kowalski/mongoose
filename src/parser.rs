@@ -47,7 +47,7 @@ fn parse_primitive(kind: Kind) -> PrefixParser {
         ast.kinds.push(kind);
         ast.indices.push(tokens.indices[token.0]);
         (ast, inc_token(token), entity)
-    }
+    };
 }
 
 fn prefix_parser(kind: tokenizer::Kind) -> PrefixParser {
@@ -69,7 +69,7 @@ fn parse_function(ast: Ast, tokens: &Tokens, token: Token, name: Entity) -> (Ast
     let token = consume(tokens, token, tokenizer::Kind::Arrow);
     let (ast, token, return_type) = parse_expression(ast, tokens, token);
     assert_eq!(ast.kinds[return_type.0], Kind::Symbol);
-    let token = consume(tokens, token, tokenizer::Kind::Equal);
+    let token = consume(tokens, token, tokenizer::Kind::Colon);
     let (mut ast, token, body) = parse_expression(ast, tokens, token);
     let entity = fresh_entity(&ast);
     ast.kinds.push(Kind::Function);
@@ -114,13 +114,15 @@ pub fn parse(tokens: Tokens) -> Ast {
         },
         symbols: vec![],
         ints: vec![],
-        top_level: HashMap::new()
+        top_level: HashMap::new(),
     };
     let (mut ast, _, function) = parse_expression(ast, &tokens, Token(0));
     assert_eq!(ast.kinds[function.0], Kind::Function);
     let name = &ast.functions.names[ast.indices[function.0]];
     assert_eq!(ast.kinds[name.0], Kind::Symbol);
-    ast.top_level.try_insert(tokens.symbols[ast.indices[name.0]].clone(), function).unwrap();
+    ast.top_level
+        .try_insert(tokens.symbols[ast.indices[name.0]].clone(), function)
+        .unwrap();
     ast.symbols = tokens.symbols;
     ast.ints = tokens.ints;
     ast
