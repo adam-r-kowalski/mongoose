@@ -14,6 +14,11 @@ pub fn write_i32_const<W: Write>(mut buffer: W, wasm: &Wasm, i: usize) -> Result
     Ok(buffer)
 }
 
+pub fn write_i32_add<W: Write>(mut buffer: W) -> Result<W> {
+    write!(buffer, "\n    i32.add")?;
+    Ok(buffer)
+}
+
 pub fn write<W: Write>(mut buffer: W, wasm: Wasm) -> Result<W> {
     write!(
         buffer,
@@ -26,6 +31,7 @@ pub fn write<W: Write>(mut buffer: W, wasm: Wasm) -> Result<W> {
         .enumerate()
         .try_fold(buffer, |buffer, (i, instruction)| match instruction {
             Instruction::I32Const => write_i32_const(buffer, &wasm, i),
+            Instruction::I32Add => write_i32_add(buffer),
         })
         .and_then(|mut buffer| {
             write!(
