@@ -4,7 +4,7 @@ use ra::tokenizer::{tokenize, Kind, Tokens};
 use test_utilities::strings;
 
 #[test]
-fn test_tokenize_literal() {
+fn test_tokenize_int() {
     let tokens = tokenize("start() -> i64: 0");
     assert_eq!(
         tokens,
@@ -26,7 +26,7 @@ fn test_tokenize_literal() {
 }
 
 #[test]
-fn test_tokenize_operator() {
+fn test_tokenize_add() {
     let tokens = tokenize("start() -> i64: 5 + 10");
     assert_eq!(
         tokens,
@@ -41,6 +41,30 @@ fn test_tokenize_operator() {
                 Kind::Colon,
                 Kind::Int,
                 Kind::Plus,
+                Kind::Int
+            ],
+            symbols: strings(["start", "i64"]),
+            ints: strings(["5", "10"]),
+        }
+    )
+}
+
+#[test]
+fn test_tokenize_multiply() {
+    let tokens = tokenize("start() -> i64: 5 * 10");
+    assert_eq!(
+        tokens,
+        Tokens {
+            indices: vec![0, 0, 0, 0, 1, 0, 0, 0, 1],
+            kinds: vec![
+                Kind::Symbol,
+                Kind::LeftParen,
+                Kind::RightParen,
+                Kind::Arrow,
+                Kind::Symbol,
+                Kind::Colon,
+                Kind::Int,
+                Kind::Times,
                 Kind::Int
             ],
             symbols: strings(["start", "i64"]),

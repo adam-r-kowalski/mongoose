@@ -6,6 +6,7 @@ pub enum Kind {
     Arrow,
     Colon,
     Plus,
+    Times,
     Int,
 }
 
@@ -28,14 +29,8 @@ fn tokenize_symbol(mut tokens: Tokens, source: &str) -> Tokens {
     tokenize_impl(tokens, &source[length..])
 }
 
-fn tokenize_paren(mut tokens: Tokens, source: &str, kind: Kind) -> Tokens {
+fn tokenize_one(mut tokens: Tokens, source: &str, kind: Kind) -> Tokens {
     tokens.kinds.push(kind);
-    tokens.indices.push(0);
-    tokenize_impl(tokens, &source[1..])
-}
-
-fn tokenize_plus(mut tokens: Tokens, source: &str) -> Tokens {
-    tokens.kinds.push(Kind::Plus);
     tokens.indices.push(0);
     tokenize_impl(tokens, &source[1..])
 }
@@ -49,12 +44,6 @@ fn tokenize_arrow(mut tokens: Tokens, source: &str) -> Tokens {
         }
         c => panic!("tokenize arrow expected '>' found {:?}", c),
     }
-}
-
-fn tokenize_colon(mut tokens: Tokens, source: &str) -> Tokens {
-    tokens.kinds.push(Kind::Colon);
-    tokens.indices.push(0);
-    tokenize_impl(tokens, &source[1..])
 }
 
 fn tokenize_number(mut tokens: Tokens, source: &str) -> Tokens {
@@ -74,11 +63,12 @@ fn tokenize_impl(tokens: Tokens, source: &str) -> Tokens {
     let source = trim_whitespace(source);
     match source.chars().next() {
         Some(c) if c.is_alphabetic() => tokenize_symbol(tokens, source),
-        Some('(') => tokenize_paren(tokens, source, Kind::LeftParen),
-        Some(')') => tokenize_paren(tokens, source, Kind::RightParen),
+        Some('(') => tokenize_one(tokens, source, Kind::LeftParen),
+        Some(')') => tokenize_one(tokens, source, Kind::RightParen),
+        Some(':') => tokenize_one(tokens, source, Kind::Colon),
+        Some('+') => tokenize_one(tokens, source, Kind::Plus),
+        Some('*') => tokenize_one(tokens, source, Kind::Times),
         Some('-') => tokenize_arrow(tokens, source),
-        Some('+') => tokenize_plus(tokens, source),
-        Some(':') => tokenize_colon(tokens, source),
         Some('0'..='9') => tokenize_number(tokens, source),
         Some(c) => panic!("not implemented for char {}", c),
         None => tokens,

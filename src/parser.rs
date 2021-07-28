@@ -22,9 +22,10 @@ pub struct Functions {
     pub bodies: Vec<Entity>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Copy, Clone)]
 pub enum BinaryOperator {
     Add,
+    Multiply,
 }
 
 #[derive(Debug, PartialEq)]
@@ -53,21 +54,19 @@ fn fresh_entity(ast: &Ast) -> Entity {
     Entity(ast.kinds.len())
 }
 
-type PrefixParser = impl Fn(Ast, &Tokens, Token) -> (Ast, Token, Entity);
+struct ParseResult(Ast, Token, Entity);
 
-fn parse_primitive(kind: Kind) -> PrefixParser {
-    return move |mut ast: Ast, tokens: &Tokens, token: Token| {
-        let entity = fresh_entity(&ast);
-        ast.kinds.push(kind);
-        ast.indices.push(tokens.indices[token.0]);
-        (ast, inc_token(token), entity)
-    };
+fn parse_primitive(mut ast: Ast, tokens: &Tokens, token: Token, kind: Kind) -> ParseResult {
+    let entity = fresh_entity(&ast);
+    ast.kinds.push(kind);
+    ast.indices.push(tokens.indices[token.0]);
+    ParseResult(ast, inc_token(token), entity)
 }
 
-fn prefix_parser(kind: tokenizer::Kind) -> PrefixParser {
+fn prefix_parser(ast: Ast, tokens: &Tokens, token: Token, kind: tokenizer::Kind) -> ParseResult {
     match kind {
-        tokenizer::Kind::Symbol => parse_primitive(Kind::Symbol),
-        tokenizer::Kind::Int => parse_primitive(Kind::Int),
+        tokenizer::Kind::Symbol => parse_primitive(ast, tokens, token, Kind::Symbol),
+        tokenizer::Kind::Int => parse_primitive(ast, tokens, token, Kind::Int),
         token => panic!("no prefix parser for {:?}", token),
     }
 }
@@ -77,49 +76,64 @@ fn consume(tokens: &Tokens, token: Token, kind: tokenizer::Kind) -> Token {
     inc_token(token)
 }
 
-fn parse_function(ast: Ast, tokens: &Tokens, token: Token, name: Entity) -> (Ast, Token, Entity) {
+fn parse_function(ast: Ast, tokens: &Tokens, token: Token, name: Entity) -> ParseResult {
     assert_eq!(ast.kinds[name.0], Kind::Symbol);
     let token = consume(tokens, token, tokenizer::Kind::RightParen);
     let token = consume(tokens, token, tokenizer::Kind::Arrow);
-    let (ast, token, return_type) = parse_expression(ast, tokens, token);
+    let ParseResult(ast, token, return_type) = parse_expression(ast, tokens, token);
     assert_eq!(ast.kinds[return_type.0], Kind::Symbol);
     let token = consume(tokens, token, tokenizer::Kind::Colon);
-    let (mut ast, token, body) = parse_expression(ast, tokens, token);
+    let ParseResult(mut ast, token, body) = parse_expression(ast, tokens, token);
     let entity = fresh_entity(&ast);
     ast.kinds.push(Kind::Function);
     ast.indices.push(ast.functions.names.len());
     ast.functions.names.push(name);
     ast.functions.return_types.push(return_type);
     ast.functions.bodies.push(body);
-    (ast, inc_token(token), entity)
+    ParseResult(ast, inc_token(token), entity)
 }
 
-fn parse_add(ast: Ast, tokens: &Tokens, token: Token, left: Entity) -> (Ast, Token, Entity) {
+type InfixParser = fn(Ast, &Tokens, Token, Entity) -> ParseResult;
+
+fn parse_binary_operator(
+    operator: BinaryOperator,
+    ast: Ast,
+    tokens: &Tokens,
+    token: Token,
+    left: Entity,
+) -> ParseResult {
     assert_eq!(ast.kinds[left.0], Kind::Int);
-    let (mut ast, token, right) = parse_expression(ast, tokens, token);
+    let ParseResult(mut ast, token, right) = parse_expression(ast, tokens, token);
     assert_eq!(ast.kinds[right.0], Kind::Int);
     let entity = fresh_entity(&ast);
     ast.kinds.push(Kind::BinaryOperator);
     ast.indices.push(ast.binary_operators.lefts.len());
-    ast.binary_operators.operators.push(BinaryOperator::Add);
+    ast.binary_operators.operators.push(operator);
     ast.binary_operators.lefts.push(left);
     ast.binary_operators.rights.push(right);
-    (ast, inc_token(token), entity)
+    ParseResult(ast, inc_token(token), entity)
 }
 
-type InfixParser = fn(Ast, &Tokens, Token, Entity) -> (Ast, Token, Entity);
+fn parse_add(ast: Ast, tokens: &Tokens, token: Token, left: Entity) -> ParseResult {
+    parse_binary_operator(BinaryOperator::Add, ast, tokens, token, left)
+}
+
+fn parse_mul(ast: Ast, tokens: &Tokens, token: Token, left: Entity) -> ParseResult {
+    parse_binary_operator(BinaryOperator::Multiply, ast, tokens, token, left)
+}
 
 fn infix_parser(kind: tokenizer::Kind) -> Option<InfixParser> {
     match kind {
         tokenizer::Kind::LeftParen => Some(parse_function),
         tokenizer::Kind::Plus => Some(parse_add),
+        tokenizer::Kind::Times => Some(parse_mul),
         _ => None,
     }
 }
 
-fn parse_expression(ast: Ast, tokens: &Tokens, token: Token) -> (Ast, Token, Entity) {
-    let parse_prefix = prefix_parser(tokens.kinds[token.0]);
-    let (ast, token, left) = parse_prefix(ast, tokens, token);
+fn parse_expression(ast: Ast, tokens: &Tokens, token: Token) -> ParseResult {
+    let kind = tokens.kinds[token.0];
+    let ParseResult(ast, token, left) = prefix_parser(ast, tokens, token, kind);
     let parse_infix = tokens
         .kinds
         .get(token.0)
@@ -127,7 +141,7 @@ fn parse_expression(ast: Ast, tokens: &Tokens, token: Token) -> (Ast, Token, Ent
         .flatten();
     match parse_infix {
         Some(parse_infix) => parse_infix(ast, tokens, inc_token(token), left),
-        _ => (ast, token, left),
+        _ => ParseResult(ast, token, left),
     }
 }
 
@@ -149,7 +163,7 @@ pub fn parse(tokens: Tokens) -> Ast {
         ints: vec![],
         top_level: HashMap::new(),
     };
-    let (mut ast, _, function) = parse_expression(ast, &tokens, Token(0));
+    let ParseResult(mut ast, _, function) = parse_expression(ast, &tokens, Token(0));
     assert_eq!(ast.kinds[function.0], Kind::Function);
     let name = &ast.functions.names[ast.indices[function.0]];
     assert_eq!(ast.kinds[name.0], Kind::Symbol);

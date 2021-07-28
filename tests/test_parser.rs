@@ -9,7 +9,7 @@ use ra::{
 use test_utilities::strings;
 
 #[test]
-fn test_parse_literal() {
+fn test_parse_int() {
     let tokens = tokenize("start() -> i64: 0");
     let ast = parse(tokens);
     assert_eq!(
@@ -35,7 +35,7 @@ fn test_parse_literal() {
 }
 
 #[test]
-fn test_parse_operator() {
+fn test_parse_add() {
     let tokens = tokenize("start() -> i64: 5 + 10");
     let ast = parse(tokens);
     assert_eq!(
@@ -57,6 +57,39 @@ fn test_parse_operator() {
             },
             binary_operators: BinaryOperators {
                 operators: vec![BinaryOperator::Add],
+                lefts: vec![Entity(2)],
+                rights: vec![Entity(3)],
+            },
+            symbols: strings(["start", "i64"]),
+            ints: strings(["5", "10"]),
+            top_level: HashMap::from_iter([(String::from("start"), Entity(5))])
+        }
+    )
+}
+
+#[test]
+fn test_parse_multiply() {
+    let tokens = tokenize("start() -> i64: 5 * 10");
+    let ast = parse(tokens);
+    assert_eq!(
+        ast,
+        Ast {
+            kinds: vec![
+                Kind::Symbol,
+                Kind::Symbol,
+                Kind::Int,
+                Kind::Int,
+                Kind::BinaryOperator,
+                Kind::Function
+            ],
+            indices: vec![0, 1, 0, 1, 0, 0],
+            functions: Functions {
+                names: vec![Entity(0)],
+                return_types: vec![Entity(1)],
+                bodies: vec![Entity(4)],
+            },
+            binary_operators: BinaryOperators {
+                operators: vec![BinaryOperator::Multiply],
                 lefts: vec![Entity(2)],
                 rights: vec![Entity(3)],
             },
