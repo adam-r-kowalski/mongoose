@@ -1,123 +1,80 @@
-use std::collections::HashMap;
+use crate::parser::{self, Ast};
 
-use crate::types::{
-    ir::{self, Ir},
-    x86::{self, Instruction, Kind, Register, TopLevel, X86},
-};
+#[derive(Debug, PartialEq)]
+pub enum Instruction {
+    I32Const,
+    I32Add,
+    I32Mul,
+}
 
-impl<'a> x86::Block<'a> {
-    fn new() -> x86::Block<'a> {
-        x86::Block {
+#[derive(Debug, PartialEq)]
+pub enum OperandKind {
+    IntLiteral,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct Function {
+    pub instructions: Vec<Instruction>,
+    pub operand_kinds: Vec<Vec<OperandKind>>,
+    pub operands: Vec<Vec<usize>>,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct Wasm {
+    pub function: Function,
+    pub symbols: Vec<String>,
+    pub ints: Vec<String>,
+}
+
+fn codegen_int(mut wasm: Wasm, ast: &Ast, entity: parser::Entity) -> Wasm {
+    wasm.function.instructions.push(Instruction::I32Const);
+    wasm.function
+        .operand_kinds
+        .push(vec![OperandKind::IntLiteral]);
+    wasm.function.operands.push(vec![ast.indices[entity.0]]);
+    wasm
+}
+
+fn codegen_binary_op(wasm: Wasm, ast: &Ast, entity: parser::Entity) -> Wasm {
+    let index = ast.indices[entity.0];
+    let wasm = codegen_expression(wasm, ast, ast.binary_ops.lefts[index]);
+    let mut wasm = codegen_expression(wasm, ast, ast.binary_ops.rights[index]);
+    let instruction = match ast.binary_ops.ops[index] {
+        parser::BinaryOp::Add => Instruction::I32Add,
+        parser::BinaryOp::Multiply => Instruction::I32Mul,
+    };
+    wasm.function.instructions.push(instruction);
+    wasm.function.operand_kinds.push(vec![]);
+    wasm.function.operands.push(vec![]);
+    wasm
+}
+
+fn codegen_expression(wasm: Wasm, ast: &Ast, entity: parser::Entity) -> Wasm {
+    match ast.kinds[entity.0] {
+        parser::Kind::Int => codegen_int(wasm, ast, entity),
+        parser::Kind::BinaryOp => codegen_binary_op(wasm, ast, entity),
+        kind => panic!("codegen expression for kind {:?} not implemented", kind),
+    }
+}
+
+pub fn codegen(ast: Ast) -> Wasm {
+    let start = ast.top_level.get("start").unwrap();
+    let start_index = ast.indices[start.0];
+    let return_type = ast.functions.return_types[start_index];
+    assert_eq!(ast.kinds[return_type.0], parser::Kind::Symbol);
+    assert_eq!(ast.symbols[ast.indices[return_type.0]], "i64");
+    let wasm = Wasm {
+        function: Function {
             instructions: vec![],
             operand_kinds: vec![],
             operands: vec![],
-            literals: vec![],
-        }
-    }
-}
-
-fn instruction(mut block: x86::Block, instruction: Instruction) -> x86::Block {
-    block.instructions.push(instruction);
-    block.operand_kinds.push(vec![]);
-    block.operands.push(vec![]);
-    block
-}
-
-fn instruction_register(
-    mut block: x86::Block,
-    instruction: Instruction,
-    register: Register,
-) -> x86::Block {
-    block.instructions.push(instruction);
-    block.operand_kinds.push(vec![Kind::Register]);
-    block.operands.push(vec![register as usize]);
-    block
-}
-
-fn instruction_register_register(
-    mut block: x86::Block,
-    instruction: Instruction,
-    to: Register,
-    from: Register,
-) -> x86::Block {
-    block.instructions.push(instruction);
-    block
-        .operand_kinds
-        .push(vec![Kind::Register, Kind::Register]);
-    block.operands.push(vec![to as usize, from as usize]);
-    block
-}
-
-fn instruction_register_literal<'a>(
-    mut block: x86::Block<'a>,
-    instruction: Instruction,
-    register: Register,
-    literal: &'a str,
-) -> x86::Block<'a> {
-    block.instructions.push(instruction);
-    block
-        .operand_kinds
-        .push(vec![Kind::Register, Kind::Literal]);
-    block
-        .operands
-        .push(vec![register as usize, block.literals.len()]);
-    block.literals.push(literal);
-    block
-}
-
-fn instruction_register_int(
-    mut block: x86::Block,
-    instruction: Instruction,
-    register: Register,
-    value: usize,
-) -> x86::Block {
-    block.instructions.push(instruction);
-    block.operand_kinds.push(vec![Kind::Register, Kind::Int]);
-    block.operands.push(vec![register as usize, value]);
-    block
-}
-
-pub fn codegen<'a>(ir: &'a Ir) -> X86<'a> {
-    let mut name_to_top_level = HashMap::new();
-    let &ir::Entity(start) = ir.entities.name_to_entity.get("start").unwrap();
-    let ir_top_level = &ir.top_level[start];
-    name_to_top_level
-        .try_insert(ir_top_level.name, start)
-        .unwrap();
-    let ir_block = &ir_top_level.environment.blocks[ir_top_level.value_block];
-    let x86_block = x86::Block::new();
-    let x86_block = instruction_register(x86_block, Instruction::Push, Register::Rbp);
-    let x86_block =
-        instruction_register_register(x86_block, Instruction::Mov, Register::Rbp, Register::Rsp);
-    let x86_block =
-        ir_block
-            .kinds
-            .iter()
-            .enumerate()
-            .fold(x86_block, |x86_block, (index, kind)| match kind {
-                ir::Kind::Return => {
-                    let return_entity = &ir_block.returns[ir_block.indices[index]];
-                    let literal = ir_top_level
-                        .environment
-                        .entities
-                        .literals
-                        .get(return_entity)
-                        .unwrap();
-                    instruction_register_literal(
-                        x86_block,
-                        Instruction::Mov,
-                        Register::Edi,
-                        literal,
-                    )
-                }
-                kind => panic!("kind {:?} is not yet supported in codegen", kind),
-            });
-    let x86_block = instruction_register_int(x86_block, Instruction::Mov, Register::Rax, 201);
-    let x86_block = instruction(x86_block, Instruction::Syscall);
-    X86 {
-        top_level: vec![TopLevel {
-            blocks: vec![x86_block],
-        }],
-        name_to_top_level,
-    }
+        },
+        symbols: vec![],
+        ints: vec![],
+    };
+    let body = ast.functions.bodies[start_index];
+    let mut wasm = codegen_expression(wasm, &ast, body);
+    wasm.symbols = ast.symbols;
+    wasm.ints = ast.ints;
+    wasm
 }

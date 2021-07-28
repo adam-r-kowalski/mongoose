@@ -1,125 +1,170 @@
-use std::convert::identity;
+use std::collections::HashMap;
 
-use crate::types::ast::{Ast, Entity, Kind};
+use crate::tokenizer::{self, Tokens};
 
-fn trim_whitespace(source: &str) -> &str {
-    let length = source.chars().take_while(|c| c.is_whitespace()).count();
-    &source[length..]
+#[derive(Debug, PartialEq, Copy, Clone)]
+pub struct Entity(pub usize);
+
+#[derive(Copy, Clone)]
+struct Token(usize);
+
+#[derive(Debug, PartialEq, Copy, Clone)]
+pub enum Kind {
+    Symbol,
+    Int,
+    Function,
+    BinaryOp,
 }
 
-enum Sign {
-    Negative,
-    Positive,
+#[derive(Debug, PartialEq)]
+pub struct Functions {
+    pub names: Vec<Entity>,
+    pub return_types: Vec<Entity>,
+    pub bodies: Vec<Entity>,
 }
 
-struct Decimals(u64);
+#[derive(Debug, PartialEq, Copy, Clone)]
+pub enum BinaryOp {
+    Add,
+    Multiply,
+}
 
-fn number<'a>(
-    sign: Sign,
-    Decimals(decimals): Decimals,
-    source: &'a str,
-    mut ast: Ast<'a>,
-) -> (&'a str, Ast<'a>, Entity) {
-    let skip = match sign {
-        Sign::Negative => 1,
-        Sign::Positive if decimals == 1 => 1,
-        Sign::Positive => 0,
-    };
-    let (length, decimals) = source
-        .chars()
-        .skip(skip)
-        .try_fold((skip, decimals), |(length, decimals), val| match val {
-            c if c.is_numeric() => Ok((length + 1, decimals)),
-            '.' => Ok((length + 1, decimals + 1)),
-            _ => Err((length, decimals)),
-        })
-        .map_or_else(identity, identity);
-    let entity = Entity(ast.indices.len());
-    let kind = match length {
-        1 if skip == 1 => Kind::Symbol,
-        _ if decimals > 0 => Kind::Float,
-        _ => Kind::Int,
-    };
+#[derive(Debug, PartialEq)]
+pub struct BinaryOps {
+    pub ops: Vec<BinaryOp>,
+    pub lefts: Vec<Entity>,
+    pub rights: Vec<Entity>,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct Ast {
+    pub kinds: Vec<Kind>,
+    pub indices: Vec<usize>,
+    pub functions: Functions,
+    pub binary_ops: BinaryOps,
+    pub symbols: Vec<String>,
+    pub ints: Vec<String>,
+    pub top_level: HashMap<String, Entity>,
+}
+
+fn inc_token(Token(index): Token) -> Token {
+    Token(index + 1)
+}
+
+fn fresh_entity(ast: &Ast) -> Entity {
+    Entity(ast.kinds.len())
+}
+
+struct ParseResult(Ast, Token, Entity);
+
+fn parse_primitive(mut ast: Ast, tokens: &Tokens, token: Token, kind: Kind) -> ParseResult {
+    let entity = fresh_entity(&ast);
     ast.kinds.push(kind);
-    ast.indices.push(ast.strings.len());
-    ast.strings.push(&source[..length]);
-    (&source[length..], ast, entity)
+    ast.indices.push(tokens.indices[token.0]);
+    ParseResult(ast, inc_token(token), entity)
 }
 
-fn list<'a>(
-    kind: Kind,
-    delimiter: char,
-    source: &'a str,
-    mut ast: Ast<'a>,
-    mut children: Vec<Entity>,
-) -> (&'a str, Ast<'a>, Entity) {
-    let source = trim_whitespace(source);
-    match source.chars().next() {
-        Some(c) if c == delimiter => {
-            let entity = Entity(ast.indices.len());
-            ast.indices.push(ast.children.len());
-            ast.kinds.push(kind);
-            ast.children.push(children);
-            (&source[1..], ast, entity)
+fn prefix_parser(ast: Ast, tokens: &Tokens, token: Token, kind: tokenizer::Kind) -> ParseResult {
+    match kind {
+        tokenizer::Kind::Symbol => parse_primitive(ast, tokens, token, Kind::Symbol),
+        tokenizer::Kind::Int => parse_primitive(ast, tokens, token, Kind::Int),
+        token => panic!("no prefix parser for {:?}", token),
+    }
+}
+
+fn consume(tokens: &Tokens, token: Token, kind: tokenizer::Kind) -> Token {
+    assert_eq!(tokens.kinds[token.0], kind);
+    inc_token(token)
+}
+
+fn parse_function(ast: Ast, tokens: &Tokens, token: Token, name: Entity) -> ParseResult {
+    let token = inc_token(token);
+    assert_eq!(ast.kinds[name.0], Kind::Symbol);
+    let token = consume(tokens, token, tokenizer::Kind::RightParen);
+    let token = consume(tokens, token, tokenizer::Kind::Arrow);
+    let ParseResult(ast, token, return_type) = parse_expression(ast, tokens, token);
+    assert_eq!(ast.kinds[return_type.0], Kind::Symbol);
+    let token = consume(tokens, token, tokenizer::Kind::Colon);
+    let ParseResult(mut ast, token, body) = parse_expression(ast, tokens, token);
+    let entity = fresh_entity(&ast);
+    ast.kinds.push(Kind::Function);
+    ast.indices.push(ast.functions.names.len());
+    ast.functions.names.push(name);
+    ast.functions.return_types.push(return_type);
+    ast.functions.bodies.push(body);
+    ParseResult(ast, inc_token(token), entity)
+}
+
+fn parse_binary_op(
+    ast: Ast,
+    tokens: &Tokens,
+    token: Token,
+    left: Entity,
+    op: BinaryOp,
+) -> ParseResult {
+    let token = inc_token(token);
+    assert_eq!(ast.kinds[left.0], Kind::Int);
+    let ParseResult(mut ast, token, right) = parse_expression(ast, tokens, token);
+    assert_eq!(ast.kinds[right.0], Kind::Int);
+    let entity = fresh_entity(&ast);
+    ast.kinds.push(Kind::BinaryOp);
+    ast.indices.push(ast.binary_ops.lefts.len());
+    ast.binary_ops.ops.push(op);
+    ast.binary_ops.lefts.push(left);
+    ast.binary_ops.rights.push(right);
+    ParseResult(ast, inc_token(token), entity)
+}
+
+fn infix_parser(
+    ast: Ast,
+    tokens: &Tokens,
+    token: Token,
+    kind: Option<&tokenizer::Kind>,
+    left: Entity,
+) -> ParseResult {
+    match kind {
+        Some(tokenizer::Kind::LeftParen) => parse_function(ast, tokens, token, left),
+        Some(tokenizer::Kind::Plus) => parse_binary_op(ast, tokens, token, left, BinaryOp::Add),
+        Some(tokenizer::Kind::Times) => {
+            parse_binary_op(ast, tokens, token, left, BinaryOp::Multiply)
         }
-        _ => {
-            let (source, ast, index) = expression(source, ast);
-            children.push(index);
-            list(kind, delimiter, source, ast, children)
-        }
+        _ => ParseResult(ast, token, left),
     }
 }
 
-fn is_reserved(c: char) -> bool {
-    match c {
-        '[' | ']' | '(' | ')' => true,
-        _ if c.is_whitespace() => true,
-        _ => false,
-    }
+fn parse_expression(ast: Ast, tokens: &Tokens, token: Token) -> ParseResult {
+    let kind = tokens.kinds[token.0];
+    let ParseResult(ast, token, left) = prefix_parser(ast, tokens, token, kind);
+    let kind = tokens.kinds.get(token.0);
+    infix_parser(ast, tokens, token, kind, left)
 }
 
-fn identifier<'a>(kind: Kind, source: &'a str, mut ast: Ast<'a>) -> (&'a str, Ast<'a>, Entity) {
-    let length = source.chars().take_while(|&c| !is_reserved(c)).count();
-    let entity = Entity(ast.indices.len());
-    ast.kinds.push(kind);
-    ast.indices.push(ast.strings.len());
-    ast.strings.push(&source[..length]);
-    (&source[length..], ast, entity)
-}
-
-fn expression<'a>(source: &'a str, ast: Ast<'a>) -> (&'a str, Ast<'a>, Entity) {
-    match source.chars().next() {
-        Some(c) if c.is_numeric() => number(Sign::Positive, Decimals(0), source, ast),
-        Some('-') => number(Sign::Negative, Decimals(0), source, ast),
-        Some('.') => number(Sign::Positive, Decimals(1), source, ast),
-        Some('[') => list(Kind::Brackets, ']', &source[1..], ast, vec![]),
-        Some('(') => list(Kind::Parens, ')', &source[1..], ast, vec![]),
-        Some(':') => identifier(Kind::Keyword, source, ast),
-        _ => identifier(Kind::Symbol, source, ast),
-    }
-}
-
-fn parse_impl<'a>(source: &'a str, ast: Ast<'a>) -> Ast<'a> {
-    let source = trim_whitespace(source);
-    match source.is_empty() {
-        true => ast,
-        false => {
-            let (source, mut ast, entity) = expression(source, ast);
-            ast.top_level.push(entity);
-            parse_impl(source, ast)
-        }
-    }
-}
-
-pub fn parse(source: &str) -> Ast {
-    parse_impl(
-        source,
-        Ast {
-            indices: vec![],
-            kinds: vec![],
-            strings: vec![],
-            children: vec![],
-            top_level: vec![],
+pub fn parse(tokens: Tokens) -> Ast {
+    let ast = Ast {
+        kinds: vec![],
+        indices: vec![],
+        functions: Functions {
+            names: vec![],
+            return_types: vec![],
+            bodies: vec![],
         },
-    )
+        binary_ops: BinaryOps {
+            ops: vec![],
+            lefts: vec![],
+            rights: vec![],
+        },
+        symbols: vec![],
+        ints: vec![],
+        top_level: HashMap::new(),
+    };
+    let ParseResult(mut ast, _, function) = parse_expression(ast, &tokens, Token(0));
+    assert_eq!(ast.kinds[function.0], Kind::Function);
+    let name = &ast.functions.names[ast.indices[function.0]];
+    assert_eq!(ast.kinds[name.0], Kind::Symbol);
+    ast.top_level
+        .try_insert(tokens.symbols[ast.indices[name.0]].clone(), function)
+        .unwrap();
+    ast.symbols = tokens.symbols;
+    ast.ints = tokens.ints;
+    ast
 }

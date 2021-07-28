@@ -1,50 +1,82 @@
 use pretty_assertions::assert_eq;
-use std::collections::HashMap;
-use std::iter::FromIterator;
 
 use ra::{
-    codegen::codegen,
-    lower::lower,
+    codegen::{codegen, Function, Instruction, OperandKind, Wasm},
     parser::parse,
-    types::x86::{Block, Instruction, Kind, Register, TopLevel, X86},
+    tokenizer::tokenize,
 };
 
+use test_utilities::strings;
+
 #[test]
-fn codegen_literal() {
-    let source = "(let start (Fn [] I32) (fn [] 0))";
-    let ast = parse(source);
-    let ir = lower(&ast);
-    let x86 = codegen(&ir);
+fn test_codegen_int() {
+    let tokens = tokenize("start() -> i64: 0");
+    let ast = parse(tokens);
+    let wasm = codegen(ast);
     assert_eq!(
-        x86,
-        X86 {
-            top_level: vec![TopLevel {
-                blocks: vec![Block {
-                    instructions: vec![
-                        Instruction::Push,
-                        Instruction::Mov,
-                        Instruction::Mov,
-                        Instruction::Mov,
-                        Instruction::Syscall
-                    ],
-                    operand_kinds: vec![
-                        vec![Kind::Register],
-                        vec![Kind::Register, Kind::Register],
-                        vec![Kind::Register, Kind::Literal],
-                        vec![Kind::Register, Kind::Int],
-                        vec![],
-                    ],
-                    operands: vec![
-                        vec![Register::Rbp as usize],
-                        vec![Register::Rbp as usize, Register::Rsp as usize],
-                        vec![Register::Edi as usize, 0],
-                        vec![Register::Rax as usize, 201],
-                        vec![],
-                    ],
-                    literals: vec!["0"]
-                }],
-            }],
-            name_to_top_level: HashMap::from_iter([("start", 0)])
+        wasm,
+        Wasm {
+            function: Function {
+                instructions: vec![Instruction::I32Const],
+                operand_kinds: vec![vec![OperandKind::IntLiteral]],
+                operands: vec![vec![0]],
+            },
+            symbols: strings(["start", "i64"]),
+            ints: strings(["0"]),
+        }
+    );
+}
+
+#[test]
+fn test_codegen_add() {
+    let tokens = tokenize("start() -> i64: 5 + 10");
+    let ast = parse(tokens);
+    let wasm = codegen(ast);
+    assert_eq!(
+        wasm,
+        Wasm {
+            function: Function {
+                instructions: vec![
+                    Instruction::I32Const,
+                    Instruction::I32Const,
+                    Instruction::I32Add
+                ],
+                operand_kinds: vec![
+                    vec![OperandKind::IntLiteral],
+                    vec![OperandKind::IntLiteral],
+                    vec![]
+                ],
+                operands: vec![vec![0], vec![1], vec![]],
+            },
+            symbols: strings(["start", "i64"]),
+            ints: strings(["5", "10"]),
+        }
+    );
+}
+
+#[test]
+fn test_codegen_multiply() {
+    let tokens = tokenize("start() -> i64: 5 * 10");
+    let ast = parse(tokens);
+    let wasm = codegen(ast);
+    assert_eq!(
+        wasm,
+        Wasm {
+            function: Function {
+                instructions: vec![
+                    Instruction::I32Const,
+                    Instruction::I32Const,
+                    Instruction::I32Mul
+                ],
+                operand_kinds: vec![
+                    vec![OperandKind::IntLiteral],
+                    vec![OperandKind::IntLiteral],
+                    vec![]
+                ],
+                operands: vec![vec![0], vec![1], vec![]],
+            },
+            symbols: strings(["start", "i64"]),
+            ints: strings(["5", "10"]),
         }
     );
 }
