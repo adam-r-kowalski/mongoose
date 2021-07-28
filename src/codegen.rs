@@ -35,13 +35,13 @@ fn codegen_int(mut wasm: Wasm, ast: &Ast, entity: parser::Entity) -> Wasm {
     wasm
 }
 
-fn codegen_binary_operator(wasm: Wasm, ast: &Ast, entity: parser::Entity) -> Wasm {
+fn codegen_binary_op(wasm: Wasm, ast: &Ast, entity: parser::Entity) -> Wasm {
     let index = ast.indices[entity.0];
-    let wasm = codegen_expression(wasm, ast, ast.binary_operators.lefts[index]);
-    let mut wasm = codegen_expression(wasm, ast, ast.binary_operators.rights[index]);
-    let instruction = match ast.binary_operators.operators[index] {
-        parser::BinaryOperator::Add => Instruction::I32Add,
-        parser::BinaryOperator::Multiply => Instruction::I32Mul,
+    let wasm = codegen_expression(wasm, ast, ast.binary_ops.lefts[index]);
+    let mut wasm = codegen_expression(wasm, ast, ast.binary_ops.rights[index]);
+    let instruction = match ast.binary_ops.ops[index] {
+        parser::BinaryOp::Add => Instruction::I32Add,
+        parser::BinaryOp::Multiply => Instruction::I32Mul,
     };
     wasm.function.instructions.push(instruction);
     wasm.function.operand_kinds.push(vec![]);
@@ -52,7 +52,7 @@ fn codegen_binary_operator(wasm: Wasm, ast: &Ast, entity: parser::Entity) -> Was
 fn codegen_expression(wasm: Wasm, ast: &Ast, entity: parser::Entity) -> Wasm {
     match ast.kinds[entity.0] {
         parser::Kind::Int => codegen_int(wasm, ast, entity),
-        parser::Kind::BinaryOperator => codegen_binary_operator(wasm, ast, entity),
+        parser::Kind::BinaryOp => codegen_binary_op(wasm, ast, entity),
         kind => panic!("codegen expression for kind {:?} not implemented", kind),
     }
 }

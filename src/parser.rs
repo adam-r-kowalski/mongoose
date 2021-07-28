@@ -5,6 +5,7 @@ use crate::tokenizer::{self, Tokens};
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub struct Entity(pub usize);
 
+#[derive(Copy, Clone)]
 struct Token(usize);
 
 #[derive(Debug, PartialEq, Copy, Clone)]
@@ -12,7 +13,7 @@ pub enum Kind {
     Symbol,
     Int,
     Function,
-    BinaryOperator,
+    BinaryOp,
 }
 
 #[derive(Debug, PartialEq)]
@@ -23,14 +24,14 @@ pub struct Functions {
 }
 
 #[derive(Debug, PartialEq, Copy, Clone)]
-pub enum BinaryOperator {
+pub enum BinaryOp {
     Add,
     Multiply,
 }
 
 #[derive(Debug, PartialEq)]
-pub struct BinaryOperators {
-    pub operators: Vec<BinaryOperator>,
+pub struct BinaryOps {
+    pub ops: Vec<BinaryOp>,
     pub lefts: Vec<Entity>,
     pub rights: Vec<Entity>,
 }
@@ -40,7 +41,7 @@ pub struct Ast {
     pub kinds: Vec<Kind>,
     pub indices: Vec<usize>,
     pub functions: Functions,
-    pub binary_operators: BinaryOperators,
+    pub binary_ops: BinaryOps,
     pub symbols: Vec<String>,
     pub ints: Vec<String>,
     pub top_level: HashMap<String, Entity>,
@@ -77,6 +78,7 @@ fn consume(tokens: &Tokens, token: Token, kind: tokenizer::Kind) -> Token {
 }
 
 fn parse_function(ast: Ast, tokens: &Tokens, token: Token, name: Entity) -> ParseResult {
+    let token = inc_token(token);
     assert_eq!(ast.kinds[name.0], Kind::Symbol);
     let token = consume(tokens, token, tokenizer::Kind::RightParen);
     let token = consume(tokens, token, tokenizer::Kind::Arrow);
@@ -93,56 +95,48 @@ fn parse_function(ast: Ast, tokens: &Tokens, token: Token, name: Entity) -> Pars
     ParseResult(ast, inc_token(token), entity)
 }
 
-type InfixParser = fn(Ast, &Tokens, Token, Entity) -> ParseResult;
-
-fn parse_binary_operator(
-    operator: BinaryOperator,
+fn parse_binary_op(
     ast: Ast,
     tokens: &Tokens,
     token: Token,
     left: Entity,
+    op: BinaryOp,
 ) -> ParseResult {
+    let token = inc_token(token);
     assert_eq!(ast.kinds[left.0], Kind::Int);
     let ParseResult(mut ast, token, right) = parse_expression(ast, tokens, token);
     assert_eq!(ast.kinds[right.0], Kind::Int);
     let entity = fresh_entity(&ast);
-    ast.kinds.push(Kind::BinaryOperator);
-    ast.indices.push(ast.binary_operators.lefts.len());
-    ast.binary_operators.operators.push(operator);
-    ast.binary_operators.lefts.push(left);
-    ast.binary_operators.rights.push(right);
+    ast.kinds.push(Kind::BinaryOp);
+    ast.indices.push(ast.binary_ops.lefts.len());
+    ast.binary_ops.ops.push(op);
+    ast.binary_ops.lefts.push(left);
+    ast.binary_ops.rights.push(right);
     ParseResult(ast, inc_token(token), entity)
 }
 
-fn parse_add(ast: Ast, tokens: &Tokens, token: Token, left: Entity) -> ParseResult {
-    parse_binary_operator(BinaryOperator::Add, ast, tokens, token, left)
-}
-
-fn parse_mul(ast: Ast, tokens: &Tokens, token: Token, left: Entity) -> ParseResult {
-    parse_binary_operator(BinaryOperator::Multiply, ast, tokens, token, left)
-}
-
-fn infix_parser(kind: tokenizer::Kind) -> Option<InfixParser> {
+fn infix_parser(
+    ast: Ast,
+    tokens: &Tokens,
+    token: Token,
+    kind: Option<&tokenizer::Kind>,
+    left: Entity,
+) -> ParseResult {
     match kind {
-        tokenizer::Kind::LeftParen => Some(parse_function),
-        tokenizer::Kind::Plus => Some(parse_add),
-        tokenizer::Kind::Times => Some(parse_mul),
-        _ => None,
+        Some(tokenizer::Kind::LeftParen) => parse_function(ast, tokens, token, left),
+        Some(tokenizer::Kind::Plus) => parse_binary_op(ast, tokens, token, left, BinaryOp::Add),
+        Some(tokenizer::Kind::Times) => {
+            parse_binary_op(ast, tokens, token, left, BinaryOp::Multiply)
+        }
+        _ => ParseResult(ast, token, left),
     }
 }
 
 fn parse_expression(ast: Ast, tokens: &Tokens, token: Token) -> ParseResult {
     let kind = tokens.kinds[token.0];
     let ParseResult(ast, token, left) = prefix_parser(ast, tokens, token, kind);
-    let parse_infix = tokens
-        .kinds
-        .get(token.0)
-        .map(|&kind| infix_parser(kind))
-        .flatten();
-    match parse_infix {
-        Some(parse_infix) => parse_infix(ast, tokens, inc_token(token), left),
-        _ => ParseResult(ast, token, left),
-    }
+    let kind = tokens.kinds.get(token.0);
+    infix_parser(ast, tokens, token, kind, left)
 }
 
 pub fn parse(tokens: Tokens) -> Ast {
@@ -154,8 +148,8 @@ pub fn parse(tokens: Tokens) -> Ast {
             return_types: vec![],
             bodies: vec![],
         },
-        binary_operators: BinaryOperators {
-            operators: vec![],
+        binary_ops: BinaryOps {
+            ops: vec![],
             lefts: vec![],
             rights: vec![],
         },

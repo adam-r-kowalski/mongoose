@@ -2,7 +2,7 @@ use pretty_assertions::assert_eq;
 use std::collections::HashMap;
 
 use ra::{
-    parser::{parse, Ast, BinaryOperator, BinaryOperators, Entity, Functions, Kind},
+    parser::{parse, Ast, BinaryOp, BinaryOps, Entity, Functions, Kind},
     tokenizer::tokenize,
 };
 
@@ -22,8 +22,8 @@ fn test_parse_int() {
                 return_types: vec![Entity(1)],
                 bodies: vec![Entity(2)],
             },
-            binary_operators: BinaryOperators {
-                operators: vec![],
+            binary_ops: BinaryOps {
+                ops: vec![],
                 lefts: vec![],
                 rights: vec![],
             },
@@ -46,7 +46,7 @@ fn test_parse_add() {
                 Kind::Symbol,
                 Kind::Int,
                 Kind::Int,
-                Kind::BinaryOperator,
+                Kind::BinaryOp,
                 Kind::Function
             ],
             indices: vec![0, 1, 0, 1, 0, 0],
@@ -55,8 +55,8 @@ fn test_parse_add() {
                 return_types: vec![Entity(1)],
                 bodies: vec![Entity(4)],
             },
-            binary_operators: BinaryOperators {
-                operators: vec![BinaryOperator::Add],
+            binary_ops: BinaryOps {
+                ops: vec![BinaryOp::Add],
                 lefts: vec![Entity(2)],
                 rights: vec![Entity(3)],
             },
@@ -79,7 +79,7 @@ fn test_parse_multiply() {
                 Kind::Symbol,
                 Kind::Int,
                 Kind::Int,
-                Kind::BinaryOperator,
+                Kind::BinaryOp,
                 Kind::Function
             ],
             indices: vec![0, 1, 0, 1, 0, 0],
@@ -88,8 +88,8 @@ fn test_parse_multiply() {
                 return_types: vec![Entity(1)],
                 bodies: vec![Entity(4)],
             },
-            binary_operators: BinaryOperators {
-                operators: vec![BinaryOperator::Multiply],
+            binary_ops: BinaryOps {
+                ops: vec![BinaryOp::Multiply],
                 lefts: vec![Entity(2)],
                 rights: vec![Entity(3)],
             },
