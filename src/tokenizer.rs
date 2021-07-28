@@ -5,6 +5,7 @@ pub enum Kind {
     RightParen,
     Arrow,
     Colon,
+    Plus,
     Int,
 }
 
@@ -33,6 +34,12 @@ fn tokenize_paren(mut tokens: Tokens, source: &str, kind: Kind) -> Tokens {
     tokenize_impl(tokens, &source[1..])
 }
 
+fn tokenize_plus(mut tokens: Tokens, source: &str) -> Tokens {
+    tokens.kinds.push(Kind::Plus);
+    tokens.indices.push(0);
+    tokenize_impl(tokens, &source[1..])
+}
+
 fn tokenize_arrow(mut tokens: Tokens, source: &str) -> Tokens {
     match source[1..].chars().next() {
         Some('>') => {
@@ -55,7 +62,7 @@ fn tokenize_number(mut tokens: Tokens, source: &str) -> Tokens {
     tokens.kinds.push(Kind::Int);
     tokens.indices.push(tokens.ints.len());
     tokens.ints.push(source[..length].to_string());
-    tokenize_impl(tokens, &source[1..])
+    tokenize_impl(tokens, &source[length..])
 }
 
 fn trim_whitespace(source: &str) -> &str {
@@ -70,6 +77,7 @@ fn tokenize_impl(tokens: Tokens, source: &str) -> Tokens {
         Some('(') => tokenize_paren(tokens, source, Kind::LeftParen),
         Some(')') => tokenize_paren(tokens, source, Kind::RightParen),
         Some('-') => tokenize_arrow(tokens, source),
+        Some('+') => tokenize_plus(tokens, source),
         Some(':') => tokenize_colon(tokens, source),
         Some('0'..='9') => tokenize_number(tokens, source),
         Some(c) => panic!("not implemented for char {}", c),

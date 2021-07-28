@@ -12,6 +12,7 @@ pub enum Kind {
     Symbol,
     Int,
     Function,
+    BinaryOperator,
 }
 
 #[derive(Debug, PartialEq)]
@@ -22,10 +23,23 @@ pub struct Functions {
 }
 
 #[derive(Debug, PartialEq)]
+pub enum BinaryOperator {
+    Add,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct BinaryOperators {
+    pub operators: Vec<BinaryOperator>,
+    pub lefts: Vec<Entity>,
+    pub rights: Vec<Entity>,
+}
+
+#[derive(Debug, PartialEq)]
 pub struct Ast {
     pub kinds: Vec<Kind>,
     pub indices: Vec<usize>,
     pub functions: Functions,
+    pub binary_operators: BinaryOperators,
     pub symbols: Vec<String>,
     pub ints: Vec<String>,
     pub top_level: HashMap<String, Entity>,
@@ -80,11 +94,25 @@ fn parse_function(ast: Ast, tokens: &Tokens, token: Token, name: Entity) -> (Ast
     (ast, inc_token(token), entity)
 }
 
-type InfixParser = impl Fn(Ast, &Tokens, Token, Entity) -> (Ast, Token, Entity);
+fn parse_add(ast: Ast, tokens: &Tokens, token: Token, left: Entity) -> (Ast, Token, Entity) {
+    assert_eq!(ast.kinds[left.0], Kind::Int);
+    let (mut ast, token, right) = parse_expression(ast, tokens, token);
+    assert_eq!(ast.kinds[right.0], Kind::Int);
+    let entity = fresh_entity(&ast);
+    ast.kinds.push(Kind::BinaryOperator);
+    ast.indices.push(ast.binary_operators.lefts.len());
+    ast.binary_operators.operators.push(BinaryOperator::Add);
+    ast.binary_operators.lefts.push(left);
+    ast.binary_operators.rights.push(right);
+    (ast, inc_token(token), entity)
+}
+
+type InfixParser = fn(Ast, &Tokens, Token, Entity) -> (Ast, Token, Entity);
 
 fn infix_parser(kind: tokenizer::Kind) -> Option<InfixParser> {
     match kind {
         tokenizer::Kind::LeftParen => Some(parse_function),
+        tokenizer::Kind::Plus => Some(parse_add),
         _ => None,
     }
 }
@@ -111,6 +139,11 @@ pub fn parse(tokens: Tokens) -> Ast {
             names: vec![],
             return_types: vec![],
             bodies: vec![],
+        },
+        binary_operators: BinaryOperators {
+            operators: vec![],
+            lefts: vec![],
+            rights: vec![],
         },
         symbols: vec![],
         ints: vec![],
