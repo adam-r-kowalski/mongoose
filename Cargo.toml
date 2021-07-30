@@ -1,13 +1,10 @@
-cargo-features = ["edition2021"]
-
 [package]
 name = "ra"
 version = "0.1.0"
-edition = "2021"
+edition = "2018"
 
 [dependencies]
 rayon = "1.5.1"
 
 [dev-dependencies]
-pretty_assertions = "0.7.2"
 test_utilities = { path = "test_utilities" }

@@ -1,5 +1,3 @@
-use pretty_assertions::assert_eq;
-
 use ra::tokenizer::{tokenize, Kind, Tokens};
 use test_utilities::strings;
 

@@ -1,4 +1,3 @@
-use pretty_assertions::assert_eq;
 use std::str;
 
 use ra::{codegen::codegen, parser::parse, tokenizer::tokenize, writer::write};

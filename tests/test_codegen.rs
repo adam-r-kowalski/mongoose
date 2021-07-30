@@ -1,5 +1,3 @@
-use pretty_assertions::assert_eq;
-
 use ra::{
     codegen::{codegen, Function, Instruction, OperandKind, Wasm},
     parser::parse,
