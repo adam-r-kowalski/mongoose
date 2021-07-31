@@ -56,3 +56,24 @@ fn test_write_multiply() {
   (export "_start" (func $start)))"#
     );
 }
+
+#[test]
+fn test_write_add_then_multiply() {
+    let tokens = tokenize("start() -> i64: 3 + 5 * 10");
+    let ast = parse(tokens);
+    let wasm = codegen(ast);
+    let buffer = Vec::<u8>::new();
+    let buffer = write(buffer, wasm).unwrap();
+    assert_eq!(
+        str::from_utf8(&buffer).unwrap(),
+        r#"(module
+  (func $start (result i32)
+    (i32.const 3)
+    (i32.const 5)
+    (i32.const 10)
+    i32.mul
+    i32.add)
+
+  (export "_start" (func $start)))"#
+    );
+}

@@ -103,9 +103,9 @@ fn parse_binary_op(
     left: Entity,
 ) -> ParseResult {
     let token = inc_token(token);
-    assert_eq!(ast.kinds[left.0], Kind::Int);
+    // assert_eq!(ast.kinds[left.0], Kind::Int);
     let ParseResult(mut ast, token, right) = parse_expression(ast, tokens, token);
-    assert_eq!(ast.kinds[right.0], Kind::Int);
+    // assert_eq!(ast.kinds[right.0], Kind::Int);
     let entity = fresh_entity(&ast);
     ast.kinds.push(Kind::BinaryOp);
     ast.indices.push(ast.binary_ops.lefts.len());
