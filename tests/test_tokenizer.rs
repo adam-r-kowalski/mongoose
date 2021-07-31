@@ -5,12 +5,13 @@ use test_utilities::strings;
 
 #[test]
 fn test_tokenize_int() {
-    let tokens = tokenize("start(): 0");
+    let tokens = tokenize("def start(): 0");
     assert_eq!(
         tokens,
         Tokens {
-            indices: vec![0, 0, 0, 0, 0],
+            indices: vec![0, 0, 0, 0, 0, 0],
             kinds: vec![
+                Kind::Def,
                 Kind::Symbol,
                 Kind::LeftParen,
                 Kind::RightParen,
@@ -25,12 +26,13 @@ fn test_tokenize_int() {
 
 #[test]
 fn test_tokenize_add() {
-    let tokens = tokenize("start(): 5 + 10");
+    let tokens = tokenize("def start(): 5 + 10");
     assert_eq!(
         tokens,
         Tokens {
-            indices: vec![0, 0, 0, 0, 0, 0, 1],
+            indices: vec![0, 0, 0, 0, 0, 0, 0, 1],
             kinds: vec![
+                Kind::Def,
                 Kind::Symbol,
                 Kind::LeftParen,
                 Kind::RightParen,
@@ -47,12 +49,13 @@ fn test_tokenize_add() {
 
 #[test]
 fn test_tokenize_subtract() {
-    let tokens = tokenize("start(): 5 - 10");
+    let tokens = tokenize("def start(): 5 - 10");
     assert_eq!(
         tokens,
         Tokens {
-            indices: vec![0, 0, 0, 0, 0, 0, 1],
+            indices: vec![0, 0, 0, 0, 0, 0, 0, 1],
             kinds: vec![
+                Kind::Def,
                 Kind::Symbol,
                 Kind::LeftParen,
                 Kind::RightParen,
@@ -69,12 +72,13 @@ fn test_tokenize_subtract() {
 
 #[test]
 fn test_tokenize_multiply() {
-    let tokens = tokenize("start(): 5 * 10");
+    let tokens = tokenize("def start(): 5 * 10");
     assert_eq!(
         tokens,
         Tokens {
-            indices: vec![0, 0, 0, 0, 0, 0, 1],
+            indices: vec![0, 0, 0, 0, 0, 0, 0, 1],
             kinds: vec![
+                Kind::Def,
                 Kind::Symbol,
                 Kind::LeftParen,
                 Kind::RightParen,
@@ -91,12 +95,13 @@ fn test_tokenize_multiply() {
 
 #[test]
 fn test_tokenize_divide() {
-    let tokens = tokenize("start(): 10 / 5");
+    let tokens = tokenize("def start(): 10 / 5");
     assert_eq!(
         tokens,
         Tokens {
-            indices: vec![0, 0, 0, 0, 0, 0, 1],
+            indices: vec![0, 0, 0, 0, 0, 0, 0, 1],
             kinds: vec![
+                Kind::Def,
                 Kind::Symbol,
                 Kind::LeftParen,
                 Kind::RightParen,

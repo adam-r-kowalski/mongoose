@@ -9,7 +9,7 @@ use test_utilities::strings;
 
 #[test]
 fn test_codegen_int() {
-    let tokens = tokenize("start(): 0");
+    let tokens = tokenize("def start(): 0");
     let ast = parse(tokens);
     let wasm = codegen(ast);
     assert_eq!(
@@ -28,7 +28,7 @@ fn test_codegen_int() {
 
 #[test]
 fn test_codegen_add() {
-    let tokens = tokenize("start(): 5 + 10");
+    let tokens = tokenize("def start(): 5 + 10");
     let ast = parse(tokens);
     let wasm = codegen(ast);
     assert_eq!(
@@ -55,7 +55,7 @@ fn test_codegen_add() {
 
 #[test]
 fn test_codegen_subtract() {
-    let tokens = tokenize("start(): 5 - 10");
+    let tokens = tokenize("def start(): 5 - 10");
     let ast = parse(tokens);
     let wasm = codegen(ast);
     assert_eq!(
@@ -82,7 +82,7 @@ fn test_codegen_subtract() {
 
 #[test]
 fn test_codegen_multiply() {
-    let tokens = tokenize("start(): 5 * 10");
+    let tokens = tokenize("def start(): 5 * 10");
     let ast = parse(tokens);
     let wasm = codegen(ast);
     assert_eq!(
@@ -109,7 +109,7 @@ fn test_codegen_multiply() {
 
 #[test]
 fn test_codegen_divide() {
-    let tokens = tokenize("start(): 10 / 5");
+    let tokens = tokenize("def start(): 10 / 5");
     let ast = parse(tokens);
     let wasm = codegen(ast);
     assert_eq!(
@@ -136,7 +136,7 @@ fn test_codegen_divide() {
 
 #[test]
 fn test_codegen_add_then_multiply() {
-    let tokens = tokenize("start(): 3 + 5 * 10");
+    let tokens = tokenize("def start(): 3 + 5 * 10");
     let ast = parse(tokens);
     let wasm = codegen(ast);
     assert_eq!(
@@ -167,7 +167,7 @@ fn test_codegen_add_then_multiply() {
 
 #[test]
 fn test_codegen_multiply_then_add() {
-    let tokens = tokenize("start(): 3 * 5 + 10");
+    let tokens = tokenize("def start(): 3 * 5 + 10");
     let ast = parse(tokens);
     let wasm = codegen(ast);
     assert_eq!(

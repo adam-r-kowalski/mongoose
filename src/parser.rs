@@ -52,21 +52,20 @@ type Precedence = u8;
 
 #[derive(Debug)]
 enum InfixParser {
-    Function,
     BinaryOp(Precedence, BinaryOp),
 }
 
 struct ParseResult(Ast, Token, Entity);
 
-const FUNCTION: Precedence = 100;
+const LOWEST: Precedence = 0;
 const ADD: Precedence = 10;
 const SUBTRACT: Precedence = ADD;
 const MULTIPLY: Precedence = 20;
 const DIVIDE: Precedence = MULTIPLY;
+const HIGHEST: Precedence = 100;
 
 fn precedence_of(parser: &InfixParser) -> Precedence {
     match parser {
-        InfixParser::Function => FUNCTION,
         InfixParser::BinaryOp(precedence, _) => *precedence,
     }
 }
@@ -86,8 +85,24 @@ fn parse_primitive(mut ast: Ast, tokens: &Tokens, token: Token, kind: Kind) -> P
     ParseResult(ast, token, entity)
 }
 
+fn parse_function(ast: Ast, tokens: &Tokens, token: Token) -> ParseResult {
+    let ParseResult(ast, token, name) = parse_expression(ast, tokens, inc_token(token), HIGHEST);
+    assert_eq!(ast.kinds[name.0], Kind::Symbol);
+    let token = consume(tokens, token, tokenizer::Kind::LeftParen);
+    let token = consume(tokens, token, tokenizer::Kind::RightParen);
+    let token = consume(tokens, token, tokenizer::Kind::Colon);
+    let ParseResult(mut ast, token, body) = parse_expression(ast, tokens, token, LOWEST);
+    let entity = fresh_entity(&ast);
+    ast.kinds.push(Kind::Function);
+    ast.indices.push(ast.functions.names.len());
+    ast.functions.names.push(name);
+    ast.functions.bodies.push(body);
+    ParseResult(ast, token, entity)
+}
+
 fn prefix_parser(ast: Ast, tokens: &Tokens, token: Token, kind: tokenizer::Kind) -> ParseResult {
     match kind {
+        tokenizer::Kind::Def => parse_function(ast, tokens, token),
         tokenizer::Kind::Symbol => parse_primitive(ast, tokens, token, Kind::Symbol),
         tokenizer::Kind::Int => parse_primitive(ast, tokens, token, Kind::Int),
         token => panic!("no prefix parser for {:?}", token),
@@ -97,19 +112,6 @@ fn prefix_parser(ast: Ast, tokens: &Tokens, token: Token, kind: tokenizer::Kind)
 fn consume(tokens: &Tokens, token: Token, kind: tokenizer::Kind) -> Token {
     assert_eq!(tokens.kinds[token.0], kind);
     inc_token(token)
-}
-
-fn parse_function(ast: Ast, tokens: &Tokens, token: Token, name: Entity) -> ParseResult {
-    assert_eq!(ast.kinds[name.0], Kind::Symbol);
-    let token = consume(tokens, token, tokenizer::Kind::RightParen);
-    let token = consume(tokens, token, tokenizer::Kind::Colon);
-    let ParseResult(mut ast, token, body) = parse_expression(ast, tokens, token, 0);
-    let entity = fresh_entity(&ast);
-    ast.kinds.push(Kind::Function);
-    ast.indices.push(ast.functions.names.len());
-    ast.functions.names.push(name);
-    ast.functions.bodies.push(body);
-    ParseResult(ast, token, entity)
 }
 
 fn parse_binary_op(
@@ -132,7 +134,6 @@ fn parse_binary_op(
 
 fn infix_parser(kind: tokenizer::Kind) -> Option<InfixParser> {
     match kind {
-        tokenizer::Kind::LeftParen => Some(InfixParser::Function),
         tokenizer::Kind::Plus => Some(InfixParser::BinaryOp(ADD, BinaryOp::Add)),
         tokenizer::Kind::Minus => Some(InfixParser::BinaryOp(SUBTRACT, BinaryOp::Subtract)),
         tokenizer::Kind::Times => Some(InfixParser::BinaryOp(MULTIPLY, BinaryOp::Multiply)),
@@ -149,7 +150,6 @@ fn run_infix_parser(
     left: Entity,
 ) -> ParseResult {
     match parser {
-        InfixParser::Function => parse_function(ast, tokens, token, left),
         InfixParser::BinaryOp(precedence, binary_op) => {
             parse_binary_op(precedence, binary_op, ast, tokens, token, left)
         }

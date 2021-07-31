@@ -1,5 +1,6 @@
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum Kind {
+    Def,
     Symbol,
     LeftParen,
     RightParen,
@@ -24,9 +25,14 @@ fn tokenize_symbol(mut tokens: Tokens, source: &str) -> Tokens {
         .chars()
         .take_while(|c| c.is_alphanumeric())
         .count();
-    tokens.kinds.push(Kind::Symbol);
-    tokens.indices.push(tokens.symbols.len());
-    tokens.symbols.push(source[..length].to_string());
+    if &source[..length] == "def" {
+        tokens.kinds.push(Kind::Def);
+        tokens.indices.push(0);
+    } else {
+        tokens.kinds.push(Kind::Symbol);
+        tokens.indices.push(tokens.symbols.len());
+        tokens.symbols.push(source[..length].to_string());
+    }
     tokenize_impl(tokens, &source[length..])
 }
 

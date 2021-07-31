@@ -6,7 +6,7 @@ use ra::{codegen::codegen, parser::parse, tokenizer::tokenize, writer::write};
 
 #[test]
 fn test_write_int() {
-    let tokens = tokenize("start(): 0");
+    let tokens = tokenize("def start(): 0");
     let ast = parse(tokens);
     let wasm = codegen(ast);
     let buffer = Vec::<u8>::new();
@@ -23,7 +23,7 @@ fn test_write_int() {
 
 #[test]
 fn test_write_add() {
-    let tokens = tokenize("start(): 5 + 10");
+    let tokens = tokenize("def start(): 5 + 10");
     let ast = parse(tokens);
     let wasm = codegen(ast);
     let buffer = Vec::<u8>::new();
@@ -42,7 +42,7 @@ fn test_write_add() {
 
 #[test]
 fn test_write_subtract() {
-    let tokens = tokenize("start(): 5 - 10");
+    let tokens = tokenize("def start(): 5 - 10");
     let ast = parse(tokens);
     let wasm = codegen(ast);
     let buffer = Vec::<u8>::new();
@@ -61,7 +61,7 @@ fn test_write_subtract() {
 
 #[test]
 fn test_write_multiply() {
-    let tokens = tokenize("start(): 5 * 10");
+    let tokens = tokenize("def start(): 5 * 10");
     let ast = parse(tokens);
     let wasm = codegen(ast);
     let buffer = Vec::<u8>::new();
@@ -80,7 +80,7 @@ fn test_write_multiply() {
 
 #[test]
 fn test_write_divide() {
-    let tokens = tokenize("start(): 10 / 5");
+    let tokens = tokenize("def start(): 10 / 5");
     let ast = parse(tokens);
     let wasm = codegen(ast);
     let buffer = Vec::<u8>::new();
@@ -99,7 +99,7 @@ fn test_write_divide() {
 
 #[test]
 fn test_write_add_then_multiply() {
-    let tokens = tokenize("start(): 3 + 5 * 10");
+    let tokens = tokenize("def start(): 3 + 5 * 10");
     let ast = parse(tokens);
     let wasm = codegen(ast);
     let buffer = Vec::<u8>::new();
@@ -120,7 +120,7 @@ fn test_write_add_then_multiply() {
 
 #[test]
 fn test_write_multiply_then_add() {
-    let tokens = tokenize("start(): 3 * 5 + 10");
+    let tokens = tokenize("def start(): 3 * 5 + 10");
     let ast = parse(tokens);
     let wasm = codegen(ast);
     let buffer = Vec::<u8>::new();

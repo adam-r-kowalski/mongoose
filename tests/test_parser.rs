@@ -12,7 +12,7 @@ use test_utilities::strings;
 
 #[test]
 fn test_parse_int() {
-    let tokens = tokenize("start(): 0");
+    let tokens = tokenize("def start(): 0");
     let ast = parse(tokens);
     assert_eq!(
         ast,
@@ -37,7 +37,7 @@ fn test_parse_int() {
 
 #[test]
 fn test_parse_add() {
-    let tokens = tokenize("start(): 5 + 10");
+    let tokens = tokenize("def start(): 5 + 10");
     let ast = parse(tokens);
     assert_eq!(
         ast,
@@ -68,7 +68,7 @@ fn test_parse_add() {
 
 #[test]
 fn test_parse_subtract() {
-    let tokens = tokenize("start(): 5 - 10");
+    let tokens = tokenize("def start(): 5 - 10");
     let ast = parse(tokens);
     assert_eq!(
         ast,
@@ -99,7 +99,7 @@ fn test_parse_subtract() {
 
 #[test]
 fn test_parse_multiply() {
-    let tokens = tokenize("start(): 5 * 10");
+    let tokens = tokenize("def start(): 5 * 10");
     let ast = parse(tokens);
     assert_eq!(
         ast,
@@ -130,7 +130,7 @@ fn test_parse_multiply() {
 
 #[test]
 fn test_parse_divide() {
-    let tokens = tokenize("start(): 10 / 5");
+    let tokens = tokenize("def start(): 10 / 5");
     let ast = parse(tokens);
     assert_eq!(
         ast,
@@ -161,7 +161,7 @@ fn test_parse_divide() {
 
 #[test]
 fn test_parse_add_then_multiply() {
-    let tokens = tokenize("start(): 3 + 5 * 10");
+    let tokens = tokenize("def start(): 3 + 5 * 10");
     let ast = parse(tokens);
     assert_eq!(
         ast,
@@ -194,7 +194,7 @@ fn test_parse_add_then_multiply() {
 
 #[test]
 fn test_parse_multiply_then_add() {
-    let tokens = tokenize("start(): 3 * 5 + 10");
+    let tokens = tokenize("def start(): 3 * 5 + 10");
     let ast = parse(tokens);
     assert_eq!(
         ast,
