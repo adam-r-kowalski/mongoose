@@ -6,6 +6,7 @@ pub enum Kind {
     Arrow,
     Colon,
     Plus,
+    Minus,
     Times,
     Int,
 }
@@ -35,14 +36,18 @@ fn tokenize_one(mut tokens: Tokens, source: &str, kind: Kind) -> Tokens {
     tokenize_impl(tokens, &source[1..])
 }
 
-fn tokenize_arrow(mut tokens: Tokens, source: &str) -> Tokens {
+fn tokenize_minus(mut tokens: Tokens, source: &str) -> Tokens {
     match source[1..].chars().next() {
         Some('>') => {
             tokens.kinds.push(Kind::Arrow);
             tokens.indices.push(0);
             tokenize_impl(tokens, &source[2..])
         }
-        c => panic!("tokenize arrow expected '>' found {:?}", c),
+        _ => {
+            tokens.kinds.push(Kind::Minus);
+            tokens.indices.push(0);
+            tokenize_impl(tokens, &source[1..])
+        }
     }
 }
 
@@ -68,7 +73,7 @@ fn tokenize_impl(tokens: Tokens, source: &str) -> Tokens {
         Some(':') => tokenize_one(tokens, source, Kind::Colon),
         Some('+') => tokenize_one(tokens, source, Kind::Plus),
         Some('*') => tokenize_one(tokens, source, Kind::Times),
-        Some('-') => tokenize_arrow(tokens, source),
+        Some('-') => tokenize_minus(tokens, source),
         Some('0'..='9') => tokenize_number(tokens, source),
         Some(c) => panic!("not implemented for char {}", c),
         None => tokens,

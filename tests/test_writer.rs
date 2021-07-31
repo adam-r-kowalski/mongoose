@@ -39,6 +39,25 @@ fn test_write_add() {
 }
 
 #[test]
+fn test_write_subtract() {
+    let tokens = tokenize("start() -> i64: 5 - 10");
+    let ast = parse(tokens);
+    let wasm = codegen(ast);
+    let buffer = Vec::<u8>::new();
+    let buffer = write(buffer, wasm).unwrap();
+    assert_eq!(
+        str::from_utf8(&buffer).unwrap(),
+        r#"(module
+  (func $start (result i32)
+    (i32.const 5)
+    (i32.const 10)
+    i32.sub)
+
+  (export "_start" (func $start)))"#
+    );
+}
+
+#[test]
 fn test_write_multiply() {
     let tokens = tokenize("start() -> i64: 5 * 10");
     let ast = parse(tokens);

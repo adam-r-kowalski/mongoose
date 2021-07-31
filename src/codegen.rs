@@ -4,6 +4,7 @@ use crate::parser::{self, Ast};
 pub enum Instruction {
     I32Const,
     I32Add,
+    I32Sub,
     I32Mul,
 }
 
@@ -41,6 +42,7 @@ fn codegen_binary_op(wasm: Wasm, ast: &Ast, entity: parser::Entity) -> Wasm {
     let mut wasm = codegen_expression(wasm, ast, ast.binary_ops.rights[index]);
     let instruction = match ast.binary_ops.ops[index] {
         parser::BinaryOp::Add => Instruction::I32Add,
+        parser::BinaryOp::Subtract => Instruction::I32Sub,
         parser::BinaryOp::Multiply => Instruction::I32Mul,
     };
     wasm.function.instructions.push(instruction);

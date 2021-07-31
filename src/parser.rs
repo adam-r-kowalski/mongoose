@@ -26,6 +26,7 @@ pub struct Functions {
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum BinaryOp {
     Add,
+    Subtract,
     Multiply,
 }
 
@@ -135,6 +136,7 @@ fn infix_parser(kind: tokenizer::Kind) -> Option<InfixParser> {
     match kind {
         tokenizer::Kind::LeftParen => Some(InfixParser::Function),
         tokenizer::Kind::Plus => Some(InfixParser::BinaryOp(ADD, BinaryOp::Add)),
+        tokenizer::Kind::Minus => Some(InfixParser::BinaryOp(ADD, BinaryOp::Subtract)),
         tokenizer::Kind::Times => Some(InfixParser::BinaryOp(MULTIPLY, BinaryOp::Multiply)),
         _ => None,
     }

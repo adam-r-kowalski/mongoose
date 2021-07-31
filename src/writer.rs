@@ -32,6 +32,7 @@ pub fn write<W: Write>(mut buffer: W, wasm: Wasm) -> Result<W> {
         .try_fold(buffer, |buffer, (i, instruction)| match instruction {
             Instruction::I32Const => write_i32_const(buffer, &wasm, i),
             Instruction::I32Add => write_str(buffer, "i32.add"),
+            Instruction::I32Sub => write_str(buffer, "i32.sub"),
             Instruction::I32Mul => write_str(buffer, "i32.mul"),
         })
         .and_then(|mut buffer| {

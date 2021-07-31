@@ -48,6 +48,30 @@ fn test_tokenize_add() {
 }
 
 #[test]
+fn test_tokenize_subtract() {
+    let tokens = tokenize("start() -> i64: 5 - 10");
+    assert_eq!(
+        tokens,
+        Tokens {
+            indices: vec![0, 0, 0, 0, 1, 0, 0, 0, 1],
+            kinds: vec![
+                Kind::Symbol,
+                Kind::LeftParen,
+                Kind::RightParen,
+                Kind::Arrow,
+                Kind::Symbol,
+                Kind::Colon,
+                Kind::Int,
+                Kind::Minus,
+                Kind::Int
+            ],
+            symbols: strings(["start", "i64"]),
+            ints: strings(["5", "10"]),
+        }
+    )
+}
+
+#[test]
 fn test_tokenize_multiply() {
     let tokens = tokenize("start() -> i64: 5 * 10");
     assert_eq!(
