@@ -2,11 +2,11 @@ use crate::parser::{self, Ast};
 
 #[derive(Debug, PartialEq)]
 pub enum Instruction {
-    I32Const,
-    I32Add,
-    I32Sub,
-    I32Mul,
-    I32DivS,
+    I64Const,
+    I64Add,
+    I64Sub,
+    I64Mul,
+    I64DivS,
 }
 
 #[derive(Debug, PartialEq)]
@@ -29,7 +29,7 @@ pub struct Wasm {
 }
 
 fn codegen_int(mut wasm: Wasm, ast: &Ast, entity: parser::Entity) -> Wasm {
-    wasm.function.instructions.push(Instruction::I32Const);
+    wasm.function.instructions.push(Instruction::I64Const);
     wasm.function
         .operand_kinds
         .push(vec![OperandKind::IntLiteral]);
@@ -42,10 +42,10 @@ fn codegen_binary_op(wasm: Wasm, ast: &Ast, entity: parser::Entity) -> Wasm {
     let wasm = codegen_expression(wasm, ast, ast.binary_ops.lefts[index]);
     let mut wasm = codegen_expression(wasm, ast, ast.binary_ops.rights[index]);
     let instruction = match ast.binary_ops.ops[index] {
-        parser::BinaryOp::Add => Instruction::I32Add,
-        parser::BinaryOp::Subtract => Instruction::I32Sub,
-        parser::BinaryOp::Multiply => Instruction::I32Mul,
-        parser::BinaryOp::Divide => Instruction::I32DivS,
+        parser::BinaryOp::Add => Instruction::I64Add,
+        parser::BinaryOp::Subtract => Instruction::I64Sub,
+        parser::BinaryOp::Multiply => Instruction::I64Mul,
+        parser::BinaryOp::Divide => Instruction::I64DivS,
     };
     wasm.function.instructions.push(instruction);
     wasm.function.operand_kinds.push(vec![]);
@@ -64,9 +64,6 @@ fn codegen_expression(wasm: Wasm, ast: &Ast, entity: parser::Entity) -> Wasm {
 pub fn codegen(ast: Ast) -> Wasm {
     let start = ast.top_level.get("start").unwrap();
     let start_index = ast.indices[start.0];
-    let return_type = ast.functions.return_types[start_index];
-    assert_eq!(ast.kinds[return_type.0], parser::Kind::Symbol);
-    assert_eq!(ast.symbols[ast.indices[return_type.0]], "i64");
     let wasm = Wasm {
         function: Function {
             instructions: vec![],

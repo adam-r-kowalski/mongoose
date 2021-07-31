@@ -12,171 +12,161 @@ use test_utilities::strings;
 
 #[test]
 fn test_parse_int() {
-    let tokens = tokenize("start() -> i64: 0");
+    let tokens = tokenize("start(): 0");
     let ast = parse(tokens);
     assert_eq!(
         ast,
         Ast {
-            kinds: vec![Kind::Symbol, Kind::Symbol, Kind::Int, Kind::Function],
-            indices: vec![0, 1, 0, 0],
+            kinds: vec![Kind::Symbol, Kind::Int, Kind::Function],
+            indices: vec![0, 0, 0],
             functions: Functions {
                 names: vec![Entity(0)],
-                return_types: vec![Entity(1)],
-                bodies: vec![Entity(2)],
+                bodies: vec![Entity(1)],
             },
             binary_ops: BinaryOps {
                 ops: vec![],
                 lefts: vec![],
                 rights: vec![],
             },
-            symbols: strings(["start", "i64"]),
+            symbols: strings(["start"]),
             ints: strings(["0"]),
-            top_level: HashMap::from_iter([(String::from("start"), Entity(3))])
+            top_level: HashMap::from_iter([(String::from("start"), Entity(2))])
         }
     )
 }
 
 #[test]
 fn test_parse_add() {
-    let tokens = tokenize("start() -> i64: 5 + 10");
+    let tokens = tokenize("start(): 5 + 10");
     let ast = parse(tokens);
     assert_eq!(
         ast,
         Ast {
             kinds: vec![
                 Kind::Symbol,
-                Kind::Symbol,
                 Kind::Int,
                 Kind::Int,
                 Kind::BinaryOp,
                 Kind::Function
             ],
-            indices: vec![0, 1, 0, 1, 0, 0],
+            indices: vec![0, 0, 1, 0, 0],
             functions: Functions {
                 names: vec![Entity(0)],
-                return_types: vec![Entity(1)],
-                bodies: vec![Entity(4)],
+                bodies: vec![Entity(3)],
             },
             binary_ops: BinaryOps {
                 ops: vec![BinaryOp::Add],
-                lefts: vec![Entity(2)],
-                rights: vec![Entity(3)],
+                lefts: vec![Entity(1)],
+                rights: vec![Entity(2)],
             },
-            symbols: strings(["start", "i64"]),
+            symbols: strings(["start"]),
             ints: strings(["5", "10"]),
-            top_level: HashMap::from_iter([(String::from("start"), Entity(5))])
+            top_level: HashMap::from_iter([(String::from("start"), Entity(4))])
         }
     )
 }
 
 #[test]
 fn test_parse_subtract() {
-    let tokens = tokenize("start() -> i64: 5 - 10");
+    let tokens = tokenize("start(): 5 - 10");
     let ast = parse(tokens);
     assert_eq!(
         ast,
         Ast {
             kinds: vec![
                 Kind::Symbol,
-                Kind::Symbol,
                 Kind::Int,
                 Kind::Int,
                 Kind::BinaryOp,
                 Kind::Function
             ],
-            indices: vec![0, 1, 0, 1, 0, 0],
+            indices: vec![0, 0, 1, 0, 0],
             functions: Functions {
                 names: vec![Entity(0)],
-                return_types: vec![Entity(1)],
-                bodies: vec![Entity(4)],
+                bodies: vec![Entity(3)],
             },
             binary_ops: BinaryOps {
                 ops: vec![BinaryOp::Subtract],
-                lefts: vec![Entity(2)],
-                rights: vec![Entity(3)],
+                lefts: vec![Entity(1)],
+                rights: vec![Entity(2)],
             },
-            symbols: strings(["start", "i64"]),
+            symbols: strings(["start"]),
             ints: strings(["5", "10"]),
-            top_level: HashMap::from_iter([(String::from("start"), Entity(5))])
+            top_level: HashMap::from_iter([(String::from("start"), Entity(4))])
         }
     )
 }
 
 #[test]
 fn test_parse_multiply() {
-    let tokens = tokenize("start() -> i64: 5 * 10");
+    let tokens = tokenize("start(): 5 * 10");
     let ast = parse(tokens);
     assert_eq!(
         ast,
         Ast {
             kinds: vec![
                 Kind::Symbol,
-                Kind::Symbol,
                 Kind::Int,
                 Kind::Int,
                 Kind::BinaryOp,
                 Kind::Function
             ],
-            indices: vec![0, 1, 0, 1, 0, 0],
+            indices: vec![0, 0, 1, 0, 0],
             functions: Functions {
                 names: vec![Entity(0)],
-                return_types: vec![Entity(1)],
-                bodies: vec![Entity(4)],
+                bodies: vec![Entity(3)],
             },
             binary_ops: BinaryOps {
                 ops: vec![BinaryOp::Multiply],
-                lefts: vec![Entity(2)],
-                rights: vec![Entity(3)],
+                lefts: vec![Entity(1)],
+                rights: vec![Entity(2)],
             },
-            symbols: strings(["start", "i64"]),
+            symbols: strings(["start"]),
             ints: strings(["5", "10"]),
-            top_level: HashMap::from_iter([(String::from("start"), Entity(5))])
+            top_level: HashMap::from_iter([(String::from("start"), Entity(4))])
         }
     )
 }
 
 #[test]
 fn test_parse_divide() {
-    let tokens = tokenize("start() -> i64: 10 / 5");
+    let tokens = tokenize("start(): 10 / 5");
     let ast = parse(tokens);
     assert_eq!(
         ast,
         Ast {
             kinds: vec![
                 Kind::Symbol,
-                Kind::Symbol,
                 Kind::Int,
                 Kind::Int,
                 Kind::BinaryOp,
                 Kind::Function
             ],
-            indices: vec![0, 1, 0, 1, 0, 0],
+            indices: vec![0, 0, 1, 0, 0],
             functions: Functions {
                 names: vec![Entity(0)],
-                return_types: vec![Entity(1)],
-                bodies: vec![Entity(4)],
+                bodies: vec![Entity(3)],
             },
             binary_ops: BinaryOps {
                 ops: vec![BinaryOp::Divide],
-                lefts: vec![Entity(2)],
-                rights: vec![Entity(3)],
+                lefts: vec![Entity(1)],
+                rights: vec![Entity(2)],
             },
-            symbols: strings(["start", "i64"]),
+            symbols: strings(["start"]),
             ints: strings(["10", "5"]),
-            top_level: HashMap::from_iter([(String::from("start"), Entity(5))])
+            top_level: HashMap::from_iter([(String::from("start"), Entity(4))])
         }
     )
 }
 
 #[test]
 fn test_parse_add_then_multiply() {
-    let tokens = tokenize("start() -> i64: 3 + 5 * 10");
+    let tokens = tokenize("start(): 3 + 5 * 10");
     let ast = parse(tokens);
     assert_eq!(
         ast,
         Ast {
             kinds: vec![
-                Kind::Symbol,
                 Kind::Symbol,
                 Kind::Int,
                 Kind::Int,
@@ -185,33 +175,31 @@ fn test_parse_add_then_multiply() {
                 Kind::BinaryOp,
                 Kind::Function
             ],
-            indices: vec![0, 1, 0, 1, 2, 0, 1, 0],
+            indices: vec![0, 0, 1, 2, 0, 1, 0],
             functions: Functions {
                 names: vec![Entity(0)],
-                return_types: vec![Entity(1)],
-                bodies: vec![Entity(6)],
+                bodies: vec![Entity(5)],
             },
             binary_ops: BinaryOps {
                 ops: vec![BinaryOp::Multiply, BinaryOp::Add],
-                lefts: vec![Entity(3), Entity(2)],
-                rights: vec![Entity(4), Entity(5)],
+                lefts: vec![Entity(2), Entity(1)],
+                rights: vec![Entity(3), Entity(4)],
             },
-            symbols: strings(["start", "i64"]),
+            symbols: strings(["start"]),
             ints: strings(["3", "5", "10"]),
-            top_level: HashMap::from_iter([(String::from("start"), Entity(7))])
+            top_level: HashMap::from_iter([(String::from("start"), Entity(6))])
         }
     )
 }
 
 #[test]
 fn test_parse_multiply_then_add() {
-    let tokens = tokenize("start() -> i64: 3 * 5 + 10");
+    let tokens = tokenize("start(): 3 * 5 + 10");
     let ast = parse(tokens);
     assert_eq!(
         ast,
         Ast {
             kinds: vec![
-                Kind::Symbol,
                 Kind::Symbol,
                 Kind::Int,
                 Kind::Int,
@@ -220,20 +208,19 @@ fn test_parse_multiply_then_add() {
                 Kind::BinaryOp,
                 Kind::Function
             ],
-            indices: vec![0, 1, 0, 1, 0, 2, 1, 0],
+            indices: vec![0, 0, 1, 0, 2, 1, 0],
             functions: Functions {
                 names: vec![Entity(0)],
-                return_types: vec![Entity(1)],
-                bodies: vec![Entity(6)],
+                bodies: vec![Entity(5)],
             },
             binary_ops: BinaryOps {
                 ops: vec![BinaryOp::Multiply, BinaryOp::Add],
-                lefts: vec![Entity(2), Entity(4)],
-                rights: vec![Entity(3), Entity(5)],
+                lefts: vec![Entity(1), Entity(3)],
+                rights: vec![Entity(2), Entity(4)],
             },
-            symbols: strings(["start", "i64"]),
+            symbols: strings(["start"]),
             ints: strings(["3", "5", "10"]),
-            top_level: HashMap::from_iter([(String::from("start"), Entity(7))])
+            top_level: HashMap::from_iter([(String::from("start"), Entity(6))])
         }
     )
 }

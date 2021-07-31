@@ -2,7 +2,7 @@ use std::io::{Result, Write};
 
 use crate::codegen::{Instruction, OperandKind, Wasm};
 
-pub fn write_i32_const<W: Write>(mut buffer: W, wasm: &Wasm, i: usize) -> Result<W> {
+pub fn write_i64_const<W: Write>(mut buffer: W, wasm: &Wasm, i: usize) -> Result<W> {
     assert_eq!(
         wasm.function.operand_kinds[i],
         vec![OperandKind::IntLiteral]
@@ -10,7 +10,7 @@ pub fn write_i32_const<W: Write>(mut buffer: W, wasm: &Wasm, i: usize) -> Result
     let operands = &wasm.function.operands[i];
     assert_eq!(operands.len(), 1);
     let literal = &wasm.ints[operands[0]];
-    write!(buffer, "\n    (i32.const {})", literal)?;
+    write!(buffer, "\n    (i64.const {})", literal)?;
     Ok(buffer)
 }
 
@@ -23,18 +23,18 @@ pub fn write<W: Write>(mut buffer: W, wasm: Wasm) -> Result<W> {
     write!(
         buffer,
         r#"(module
-  (func $start (result i32)"#
+  (func $start (result i64)"#
     )?;
     wasm.function
         .instructions
         .iter()
         .enumerate()
         .try_fold(buffer, |buffer, (i, instruction)| match instruction {
-            Instruction::I32Const => write_i32_const(buffer, &wasm, i),
-            Instruction::I32Add => write_str(buffer, "i32.add"),
-            Instruction::I32Sub => write_str(buffer, "i32.sub"),
-            Instruction::I32Mul => write_str(buffer, "i32.mul"),
-            Instruction::I32DivS => write_str(buffer, "i32.div_s"),
+            Instruction::I64Const => write_i64_const(buffer, &wasm, i),
+            Instruction::I64Add => write_str(buffer, "i64.add"),
+            Instruction::I64Sub => write_str(buffer, "i64.sub"),
+            Instruction::I64Mul => write_str(buffer, "i64.mul"),
+            Instruction::I64DivS => write_str(buffer, "i64.div_s"),
         })
         .and_then(|mut buffer| {
             write!(

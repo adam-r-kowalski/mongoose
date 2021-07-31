@@ -3,7 +3,6 @@ pub enum Kind {
     Symbol,
     LeftParen,
     RightParen,
-    Arrow,
     Colon,
     Plus,
     Minus,
@@ -37,21 +36,6 @@ fn tokenize_one(mut tokens: Tokens, source: &str, kind: Kind) -> Tokens {
     tokenize_impl(tokens, &source[1..])
 }
 
-fn tokenize_minus(mut tokens: Tokens, source: &str) -> Tokens {
-    match source[1..].chars().next() {
-        Some('>') => {
-            tokens.kinds.push(Kind::Arrow);
-            tokens.indices.push(0);
-            tokenize_impl(tokens, &source[2..])
-        }
-        _ => {
-            tokens.kinds.push(Kind::Minus);
-            tokens.indices.push(0);
-            tokenize_impl(tokens, &source[1..])
-        }
-    }
-}
-
 fn tokenize_number(mut tokens: Tokens, source: &str) -> Tokens {
     let length = 1 + source[1..].chars().take_while(|c| c.is_numeric()).count();
     tokens.kinds.push(Kind::Int);
@@ -73,7 +57,7 @@ fn tokenize_impl(tokens: Tokens, source: &str) -> Tokens {
         Some(')') => tokenize_one(tokens, source, Kind::RightParen),
         Some(':') => tokenize_one(tokens, source, Kind::Colon),
         Some('+') => tokenize_one(tokens, source, Kind::Plus),
-        Some('-') => tokenize_minus(tokens, source),
+        Some('-') => tokenize_one(tokens, source, Kind::Minus),
         Some('*') => tokenize_one(tokens, source, Kind::Times),
         Some('/') => tokenize_one(tokens, source, Kind::Slash),
         Some('0'..='9') => tokenize_number(tokens, source),

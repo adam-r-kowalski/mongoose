@@ -19,7 +19,6 @@ pub enum Kind {
 #[derive(Debug, PartialEq)]
 pub struct Functions {
     pub names: Vec<Entity>,
-    pub return_types: Vec<Entity>,
     pub bodies: Vec<Entity>,
 }
 
@@ -103,16 +102,12 @@ fn consume(tokens: &Tokens, token: Token, kind: tokenizer::Kind) -> Token {
 fn parse_function(ast: Ast, tokens: &Tokens, token: Token, name: Entity) -> ParseResult {
     assert_eq!(ast.kinds[name.0], Kind::Symbol);
     let token = consume(tokens, token, tokenizer::Kind::RightParen);
-    let token = consume(tokens, token, tokenizer::Kind::Arrow);
-    let ParseResult(ast, token, return_type) = parse_expression(ast, tokens, token, 100);
-    assert_eq!(ast.kinds[return_type.0], Kind::Symbol);
     let token = consume(tokens, token, tokenizer::Kind::Colon);
     let ParseResult(mut ast, token, body) = parse_expression(ast, tokens, token, 0);
     let entity = fresh_entity(&ast);
     ast.kinds.push(Kind::Function);
     ast.indices.push(ast.functions.names.len());
     ast.functions.names.push(name);
-    ast.functions.return_types.push(return_type);
     ast.functions.bodies.push(body);
     ParseResult(ast, token, entity)
 }
@@ -200,7 +195,6 @@ pub fn parse(tokens: Tokens) -> Ast {
         indices: vec![],
         functions: Functions {
             names: vec![],
-            return_types: vec![],
             bodies: vec![],
         },
         binary_ops: BinaryOps {
