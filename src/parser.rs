@@ -28,6 +28,7 @@ pub enum BinaryOp {
     Add,
     Subtract,
     Multiply,
+    Divide,
 }
 
 #[derive(Debug, PartialEq)]
@@ -62,6 +63,7 @@ const FUNCTION: Precedence = 100;
 const ADD: Precedence = 10;
 const SUBTRACT: Precedence = ADD;
 const MULTIPLY: Precedence = 20;
+const DIVIDE: Precedence = MULTIPLY;
 
 fn precedence_of(parser: &InfixParser) -> Precedence {
     match parser {
@@ -139,6 +141,7 @@ fn infix_parser(kind: tokenizer::Kind) -> Option<InfixParser> {
         tokenizer::Kind::Plus => Some(InfixParser::BinaryOp(ADD, BinaryOp::Add)),
         tokenizer::Kind::Minus => Some(InfixParser::BinaryOp(SUBTRACT, BinaryOp::Subtract)),
         tokenizer::Kind::Times => Some(InfixParser::BinaryOp(MULTIPLY, BinaryOp::Multiply)),
+        tokenizer::Kind::Slash => Some(InfixParser::BinaryOp(DIVIDE, BinaryOp::Divide)),
         _ => None,
     }
 }

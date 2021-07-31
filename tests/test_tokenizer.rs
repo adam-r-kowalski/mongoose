@@ -94,3 +94,27 @@ fn test_tokenize_multiply() {
         }
     )
 }
+
+#[test]
+fn test_tokenize_divide() {
+    let tokens = tokenize("start() -> i64: 10 / 5");
+    assert_eq!(
+        tokens,
+        Tokens {
+            indices: vec![0, 0, 0, 0, 1, 0, 0, 0, 1],
+            kinds: vec![
+                Kind::Symbol,
+                Kind::LeftParen,
+                Kind::RightParen,
+                Kind::Arrow,
+                Kind::Symbol,
+                Kind::Colon,
+                Kind::Int,
+                Kind::Slash,
+                Kind::Int
+            ],
+            symbols: strings(["start", "i64"]),
+            ints: strings(["10", "5"]),
+        }
+    )
+}

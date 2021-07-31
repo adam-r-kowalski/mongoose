@@ -8,6 +8,7 @@ pub enum Kind {
     Plus,
     Minus,
     Times,
+    Slash,
     Int,
 }
 
@@ -72,8 +73,9 @@ fn tokenize_impl(tokens: Tokens, source: &str) -> Tokens {
         Some(')') => tokenize_one(tokens, source, Kind::RightParen),
         Some(':') => tokenize_one(tokens, source, Kind::Colon),
         Some('+') => tokenize_one(tokens, source, Kind::Plus),
-        Some('*') => tokenize_one(tokens, source, Kind::Times),
         Some('-') => tokenize_minus(tokens, source),
+        Some('*') => tokenize_one(tokens, source, Kind::Times),
+        Some('/') => tokenize_one(tokens, source, Kind::Slash),
         Some('0'..='9') => tokenize_number(tokens, source),
         Some(c) => panic!("not implemented for char {}", c),
         None => tokens,

@@ -108,6 +108,33 @@ fn test_codegen_multiply() {
 }
 
 #[test]
+fn test_codegen_divide() {
+    let tokens = tokenize("start() -> i64: 10 / 5");
+    let ast = parse(tokens);
+    let wasm = codegen(ast);
+    assert_eq!(
+        wasm,
+        Wasm {
+            function: Function {
+                instructions: vec![
+                    Instruction::I32Const,
+                    Instruction::I32Const,
+                    Instruction::I32DivS
+                ],
+                operand_kinds: vec![
+                    vec![OperandKind::IntLiteral],
+                    vec![OperandKind::IntLiteral],
+                    vec![]
+                ],
+                operands: vec![vec![0], vec![1], vec![]],
+            },
+            symbols: strings(["start", "i64"]),
+            ints: strings(["10", "5"]),
+        }
+    );
+}
+
+#[test]
 fn test_codegen_add_then_multiply() {
     let tokens = tokenize("start() -> i64: 3 + 5 * 10");
     let ast = parse(tokens);

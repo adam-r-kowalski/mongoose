@@ -6,6 +6,7 @@ pub enum Instruction {
     I32Add,
     I32Sub,
     I32Mul,
+    I32DivS,
 }
 
 #[derive(Debug, PartialEq)]
@@ -44,6 +45,7 @@ fn codegen_binary_op(wasm: Wasm, ast: &Ast, entity: parser::Entity) -> Wasm {
         parser::BinaryOp::Add => Instruction::I32Add,
         parser::BinaryOp::Subtract => Instruction::I32Sub,
         parser::BinaryOp::Multiply => Instruction::I32Mul,
+        parser::BinaryOp::Divide => Instruction::I32DivS,
     };
     wasm.function.instructions.push(instruction);
     wasm.function.operand_kinds.push(vec![]);

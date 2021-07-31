@@ -34,6 +34,7 @@ pub fn write<W: Write>(mut buffer: W, wasm: Wasm) -> Result<W> {
             Instruction::I32Add => write_str(buffer, "i32.add"),
             Instruction::I32Sub => write_str(buffer, "i32.sub"),
             Instruction::I32Mul => write_str(buffer, "i32.mul"),
+            Instruction::I32DivS => write_str(buffer, "i32.div_s"),
         })
         .and_then(|mut buffer| {
             write!(
