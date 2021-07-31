@@ -60,6 +60,7 @@ struct ParseResult(Ast, Token, Entity);
 
 const FUNCTION: Precedence = 100;
 const ADD: Precedence = 10;
+const SUBTRACT: Precedence = ADD;
 const MULTIPLY: Precedence = 20;
 
 fn precedence_of(parser: &InfixParser) -> Precedence {
@@ -136,7 +137,7 @@ fn infix_parser(kind: tokenizer::Kind) -> Option<InfixParser> {
     match kind {
         tokenizer::Kind::LeftParen => Some(InfixParser::Function),
         tokenizer::Kind::Plus => Some(InfixParser::BinaryOp(ADD, BinaryOp::Add)),
-        tokenizer::Kind::Minus => Some(InfixParser::BinaryOp(ADD, BinaryOp::Subtract)),
+        tokenizer::Kind::Minus => Some(InfixParser::BinaryOp(SUBTRACT, BinaryOp::Subtract)),
         tokenizer::Kind::Times => Some(InfixParser::BinaryOp(MULTIPLY, BinaryOp::Multiply)),
         _ => None,
     }
