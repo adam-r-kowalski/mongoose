@@ -10,15 +10,7 @@ pub enum Kind {
     Symbol,
     Int,
     BinaryOp,
-}
-
-#[derive(Debug, PartialEq)]
-pub struct Function {
-    pub name: usize,
-    pub kinds: Vec<Kind>,
-    pub indices: Vec<usize>,
-    pub binary_ops: BinaryOps,
-    pub expressions: Vec<usize>,
+    Definition,
 }
 
 #[derive(Debug, PartialEq, Copy, Clone)]
@@ -37,6 +29,21 @@ pub struct BinaryOps {
 }
 
 #[derive(Debug, PartialEq)]
+pub struct Definitions {
+    pub names: Vec<usize>,
+    pub values: Vec<usize>,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct Function {
+    pub name: usize,
+    pub kinds: Vec<Kind>,
+    pub indices: Vec<usize>,
+    pub binary_ops: BinaryOps,
+    pub definitions: Definitions,
+    pub expressions: Vec<usize>,
+}
+#[derive(Debug, PartialEq)]
 pub struct Ast {
     pub functions: Vec<Function>,
     pub symbols: Vec<String>,
@@ -49,6 +56,7 @@ type Precedence = u8;
 #[derive(Debug)]
 enum InfixParser {
     BinaryOp(Precedence, BinaryOp),
+    Definition,
 }
 
 struct ParseResult(Function, Token, usize);
@@ -62,6 +70,7 @@ const DIVIDE: Precedence = MULTIPLY;
 fn precedence_of(parser: &InfixParser) -> Precedence {
     match parser {
         InfixParser::BinaryOp(precedence, _) => *precedence,
+        InfixParser::Definition => LOWEST,
     }
 }
 
@@ -116,12 +125,23 @@ fn parse_binary_op(
     ParseResult(func, token, entity)
 }
 
+fn parse_definition(func: Function, tokens: &Tokens, token: Token, name: usize) -> ParseResult {
+    let ParseResult(mut func, token, value) = parse_expression(func, tokens, token, 0);
+    let entity = fresh_entity(&func);
+    func.kinds.push(Kind::Definition);
+    func.indices.push(func.definitions.names.len());
+    func.definitions.names.push(name);
+    func.definitions.values.push(value);
+    ParseResult(func, token, entity)
+}
+
 fn infix_parser(kind: tokenizer::Kind) -> Option<InfixParser> {
     match kind {
         tokenizer::Kind::Plus => Some(InfixParser::BinaryOp(ADD, BinaryOp::Add)),
         tokenizer::Kind::Minus => Some(InfixParser::BinaryOp(SUBTRACT, BinaryOp::Subtract)),
         tokenizer::Kind::Times => Some(InfixParser::BinaryOp(MULTIPLY, BinaryOp::Multiply)),
         tokenizer::Kind::Slash => Some(InfixParser::BinaryOp(DIVIDE, BinaryOp::Divide)),
+        tokenizer::Kind::Equal => Some(InfixParser::Definition),
         _ => None,
     }
 }
@@ -137,6 +157,7 @@ fn run_infix_parser(
         InfixParser::BinaryOp(precedence, binary_op) => {
             parse_binary_op(precedence, binary_op, func, tokens, token, left)
         }
+        InfixParser::Definition => parse_definition(func, tokens, token, left),
     }
 }
 
@@ -153,7 +174,7 @@ fn parse_right(
         .map(|&kind| infix_parser(kind))
         .flatten();
     match parser {
-        Some(parser) if precedence < precedence_of(&parser) => {
+        Some(parser) if precedence <= precedence_of(&parser) => {
             let ParseResult(func, token, left) =
                 run_infix_parser(parser, func, tokens, inc_token(token), left);
             parse_right(func, tokens, token, left, precedence)
@@ -173,6 +194,19 @@ fn parse_expression(
     parse_right(func, tokens, inc_token(token), left, precedence)
 }
 
+fn parse_function_body(func: Function, tokens: &Tokens, mut token: Token) -> Function {
+    if token.0 >= tokens.kinds.len() {
+        func
+    } else {
+        if tokens.kinds[token.0] == tokenizer::Kind::Indent {
+            token = inc_token(token);
+        }
+        let ParseResult(mut func, token, body) = parse_expression(func, tokens, token, LOWEST);
+        func.expressions.push(body);
+        parse_function_body(func, tokens, token)
+    }
+}
+
 fn parse_function(tokens: &Tokens, token: Token) -> Function {
     let token = consume(tokens, token, tokenizer::Kind::Def);
     assert_eq!(tokens.kinds[token.0], tokenizer::Kind::Symbol);
@@ -185,14 +219,16 @@ fn parse_function(tokens: &Tokens, token: Token) -> Function {
             lefts: vec![],
             rights: vec![],
         },
+        definitions: Definitions {
+            names: vec![],
+            values: vec![],
+        },
         expressions: vec![],
     };
     let token = consume(tokens, inc_token(token), tokenizer::Kind::LeftParen);
     let token = consume(tokens, token, tokenizer::Kind::RightParen);
     let token = consume(tokens, token, tokenizer::Kind::Colon);
-    let ParseResult(mut func, _, body) = parse_expression(func, tokens, token, LOWEST);
-    func.expressions.push(body);
-    func
+    parse_function_body(func, tokens, token)
 }
 
 pub fn parse(tokens: Tokens) -> Ast {
