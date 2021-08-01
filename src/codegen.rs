@@ -1,4 +1,4 @@
-use crate::parser::{self, Ast};
+use crate::parser::{self};
 
 #[derive(Debug, PartialEq)]
 pub enum Instruction {
@@ -28,20 +28,20 @@ pub struct Wasm {
     pub ints: Vec<String>,
 }
 
-fn codegen_int(mut wasm: Wasm, ast: &Ast, entity: parser::Entity) -> Wasm {
+fn codegen_int(mut wasm: Wasm, func: &parser::Function, entity: usize) -> Wasm {
     wasm.function.instructions.push(Instruction::I64Const);
     wasm.function
         .operand_kinds
         .push(vec![OperandKind::IntLiteral]);
-    wasm.function.operands.push(vec![ast.indices[entity.0]]);
+    wasm.function.operands.push(vec![func.indices[entity]]);
     wasm
 }
 
-fn codegen_binary_op(wasm: Wasm, ast: &Ast, entity: parser::Entity) -> Wasm {
-    let index = ast.indices[entity.0];
-    let wasm = codegen_expression(wasm, ast, ast.binary_ops.lefts[index]);
-    let mut wasm = codegen_expression(wasm, ast, ast.binary_ops.rights[index]);
-    let instruction = match ast.binary_ops.ops[index] {
+fn codegen_binary_op(wasm: Wasm, func: &parser::Function, entity: usize) -> Wasm {
+    let index = func.indices[entity];
+    let wasm = codegen_expression(wasm, func, func.binary_ops.lefts[index]);
+    let mut wasm = codegen_expression(wasm, func, func.binary_ops.rights[index]);
+    let instruction = match func.binary_ops.ops[index] {
         parser::BinaryOp::Add => Instruction::I64Add,
         parser::BinaryOp::Subtract => Instruction::I64Sub,
         parser::BinaryOp::Multiply => Instruction::I64Mul,
@@ -53,17 +53,15 @@ fn codegen_binary_op(wasm: Wasm, ast: &Ast, entity: parser::Entity) -> Wasm {
     wasm
 }
 
-fn codegen_expression(wasm: Wasm, ast: &Ast, entity: parser::Entity) -> Wasm {
-    match ast.kinds[entity.0] {
-        parser::Kind::Int => codegen_int(wasm, ast, entity),
-        parser::Kind::BinaryOp => codegen_binary_op(wasm, ast, entity),
+fn codegen_expression(wasm: Wasm, func: &parser::Function, entity: usize) -> Wasm {
+    match func.kinds[entity] {
+        parser::Kind::Int => codegen_int(wasm, func, entity),
+        parser::Kind::BinaryOp => codegen_binary_op(wasm, func, entity),
         kind => panic!("codegen expression for kind {:?} not implemented", kind),
     }
 }
 
-pub fn codegen(ast: Ast) -> Wasm {
-    let start = ast.top_level.get("start").unwrap();
-    let start_index = ast.indices[start.0];
+pub fn codegen(ast: parser::Ast) -> Wasm {
     let wasm = Wasm {
         function: Function {
             instructions: vec![],
@@ -73,8 +71,9 @@ pub fn codegen(ast: Ast) -> Wasm {
         symbols: vec![],
         ints: vec![],
     };
-    let body = ast.functions.bodies[start_index];
-    let mut wasm = codegen_expression(wasm, &ast, body);
+    let start = *ast.top_level.get("start").unwrap();
+    let func = &ast.functions[start];
+    let mut wasm = codegen_expression(wasm, func, func.expressions[0]);
     wasm.symbols = ast.symbols;
     wasm.ints = ast.ints;
     wasm

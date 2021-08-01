@@ -9,6 +9,8 @@ pub enum Kind {
     Minus,
     Times,
     Slash,
+    Equal,
+    Indent,
     Int,
 }
 
@@ -18,6 +20,7 @@ pub struct Tokens {
     pub kinds: Vec<Kind>,
     pub symbols: Vec<String>,
     pub ints: Vec<String>,
+    pub indents: Vec<usize>,
 }
 
 fn tokenize_symbol(mut tokens: Tokens, source: &str) -> Tokens {
@@ -50,8 +53,28 @@ fn tokenize_number(mut tokens: Tokens, source: &str) -> Tokens {
     tokenize_impl(tokens, &source[length..])
 }
 
+fn tokenize_indent(mut tokens: Tokens, source: &str) -> Tokens {
+    let length = source[1..]
+        .chars()
+        .take_while(|&c| is_whitespace(c))
+        .count();
+    if length > 1 {
+        tokens.kinds.push(Kind::Indent);
+        tokens.indices.push(tokens.indents.len());
+        tokens.indents.push(length);
+    }
+    tokenize_impl(tokens, &source[length + 1..])
+}
+
+fn is_whitespace(c: char) -> bool {
+    match c {
+        '\t' | '\x0C' | '\r' | ' ' => true,
+        _ => false,
+    }
+}
+
 fn trim_whitespace(source: &str) -> &str {
-    let length = source.chars().take_while(|c| c.is_whitespace()).count();
+    let length = source.chars().take_while(|&c| is_whitespace(c)).count();
     &source[length..]
 }
 
@@ -66,7 +89,9 @@ fn tokenize_impl(tokens: Tokens, source: &str) -> Tokens {
         Some('-') => tokenize_one(tokens, source, Kind::Minus),
         Some('*') => tokenize_one(tokens, source, Kind::Times),
         Some('/') => tokenize_one(tokens, source, Kind::Slash),
+        Some('=') => tokenize_one(tokens, source, Kind::Equal),
         Some('0'..='9') => tokenize_number(tokens, source),
+        Some('\n') => tokenize_indent(tokens, source),
         Some(c) => panic!("not implemented for char {}", c),
         None => tokens,
     }
@@ -78,6 +103,7 @@ pub fn tokenize(source: &str) -> Tokens {
         kinds: vec![],
         symbols: vec![],
         ints: vec![],
+        indents: vec![],
     };
     tokenize_impl(tokens, source)
 }
