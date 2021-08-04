@@ -12,13 +12,20 @@ fn main() {
     let tokens = tokenize(&contents);
     let ast = parse(tokens);
     let wasm = codegen(ast);
-    // let file = File::create("start.wasm").unwrap();
-    let buffer = write(Vec::<u8>::new(), wasm).unwrap();
-    let store = Store::default();
-    let module = Module::new(&store, &buffer).unwrap();
-    let import_object = imports! {};
-    let instance = Instance::new(&module, &import_object).unwrap();
-    let start = instance.exports.get_function("_start").unwrap();
-    let result = start.call(&[]).unwrap();
-    println!("{:?}", result[0]);
+    match args.get(2) {
+        Some(s) if s == "--emit-wasm" => {
+            let file = File::create(&args[3]).unwrap();
+            write(file, wasm).unwrap();
+        }
+        _ => {
+            let buffer = write(Vec::<u8>::new(), wasm).unwrap();
+            let store = Store::default();
+            let module = Module::new(&store, &buffer).unwrap();
+            let import_object = imports! {};
+            let instance = Instance::new(&module, &import_object).unwrap();
+            let start = instance.exports.get_function("_start").unwrap();
+            let result = start.call(&[]).unwrap();
+            println!("{:?}", result[0]);
+        }
+    }
 }
