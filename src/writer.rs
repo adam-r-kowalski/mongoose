@@ -14,6 +14,24 @@ pub fn write_i64_const<W: Write>(mut buffer: W, wasm: &Wasm, i: usize) -> Result
     Ok(buffer)
 }
 
+pub fn write_set_local<W: Write>(mut buffer: W, wasm: &Wasm, i: usize) -> Result<W> {
+    assert_eq!(wasm.function.operand_kinds[i], vec![OperandKind::Local]);
+    let operands = &wasm.function.operands[i];
+    assert_eq!(operands.len(), 1);
+    let local = &wasm.ints[operands[0]];
+    write!(buffer, "\n    (set_local {})", local)?;
+    Ok(buffer)
+}
+
+pub fn write_get_local<W: Write>(mut buffer: W, wasm: &Wasm, i: usize) -> Result<W> {
+    assert_eq!(wasm.function.operand_kinds[i], vec![OperandKind::Local]);
+    let operands = &wasm.function.operands[i];
+    assert_eq!(operands.len(), 1);
+    let local = &wasm.ints[operands[0]];
+    write!(buffer, "\n    (get_local {})", local)?;
+    Ok(buffer)
+}
+
 pub fn write_str<W: Write>(mut buffer: W, text: &str) -> Result<W> {
     write!(buffer, "\n    {}", text)?;
     Ok(buffer)
@@ -35,6 +53,8 @@ pub fn write<W: Write>(mut buffer: W, wasm: Wasm) -> Result<W> {
             Instruction::I64Sub => write_str(buffer, "i64.sub"),
             Instruction::I64Mul => write_str(buffer, "i64.mul"),
             Instruction::I64DivS => write_str(buffer, "i64.div_s"),
+            Instruction::LocalSet => write_set_local(buffer, &wasm, i),
+            Instruction::LocalGet => write_get_local(buffer, &wasm, i),
         })
         .and_then(|mut buffer| {
             write!(

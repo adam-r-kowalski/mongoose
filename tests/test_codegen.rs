@@ -195,3 +195,39 @@ fn test_codegen_multiply_then_add() {
         }
     );
 }
+
+#[test]
+fn test_parse_local_variables() {
+    let source = r#"
+def start():
+    x = 5
+    y = 20
+    x + y"#;
+    let tokens = tokenize(source);
+    let ast = parse(tokens);
+    let wasm = codegen(ast);
+    assert_eq!(
+        wasm,
+        Wasm {
+            function: Function {
+                instructions: vec![
+                    Instruction::I64Const,
+                    Instruction::I64Const,
+                    Instruction::I64Mul,
+                    Instruction::I64Const,
+                    Instruction::I64Add
+                ],
+                operand_kinds: vec![
+                    vec![OperandKind::IntLiteral],
+                    vec![OperandKind::IntLiteral],
+                    vec![],
+                    vec![OperandKind::IntLiteral],
+                    vec![]
+                ],
+                operands: vec![vec![0], vec![1], vec![], vec![2], vec![]],
+            },
+            symbols: strings(["start"]),
+            ints: strings(["3", "5", "10"]),
+        }
+    );
+}

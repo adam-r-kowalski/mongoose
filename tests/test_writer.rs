@@ -138,3 +138,50 @@ fn test_write_multiply_then_add() {
   (export "_start" (func $start)))"#
     );
 }
+
+#[test]
+fn test_write_local_variables() {
+    let source = r#"
+def start():
+    x = 5
+    y = 20
+    x + y"#;
+    let tokens = tokenize(source);
+    let ast = parse(tokens);
+    let wasm = codegen(ast);
+    let buffer = Vec::<u8>::new();
+    let buffer = write(buffer, wasm).unwrap();
+    assert_eq!(
+        str::from_utf8(&buffer).unwrap(),
+        r#"(module
+  (func $start (result i64)
+    (i64.const 5)
+    (set_local 5)
+    (i64.const 20)
+    (set_local 5)
+    (get_local 5)
+    (get_local 5)
+    i64.add)
+
+  (export "_start" (func $start)))"#
+    );
+}
+
+/*
+(module
+  (func $start (result i32)
+    (local $a i32)
+    (local $b i32)
+    (local $c i32)
+    (i32.const 5)
+    (set_local $a)
+    (i32.const 10)
+    (set_local $b)
+    (get_local $a)
+    (get_local $b)
+    i32.add
+    (set_local $c)
+    (get_local $c))
+
+  (export "_start" (func $start)))
+*/

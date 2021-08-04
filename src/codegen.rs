@@ -1,4 +1,4 @@
-use crate::parser::{self};
+use crate::parser;
 
 #[derive(Debug, PartialEq)]
 pub enum Instruction {
@@ -7,11 +7,14 @@ pub enum Instruction {
     I64Sub,
     I64Mul,
     I64DivS,
+    LocalSet,
+    LocalGet,
 }
 
 #[derive(Debug, PartialEq)]
 pub enum OperandKind {
     IntLiteral,
+    Local,
 }
 
 #[derive(Debug, PartialEq)]
@@ -53,11 +56,29 @@ fn codegen_binary_op(wasm: Wasm, func: &parser::Function, entity: usize) -> Wasm
     wasm
 }
 
+fn codegen_definition(wasm: Wasm, func: &parser::Function, entity: usize) -> Wasm {
+    let index = func.indices[entity];
+    let mut wasm = codegen_expression(wasm, func, func.definitions.values[index]);
+    wasm.function.instructions.push(Instruction::LocalSet);
+    wasm.function.operand_kinds.push(vec![OperandKind::Local]);
+    wasm.function.operands.push(vec![0]);
+    wasm
+}
+
+fn codegen_symbol(mut wasm: Wasm, _func: &parser::Function, entity: usize) -> Wasm {
+    wasm.function.instructions.push(Instruction::LocalGet);
+    wasm.function.operand_kinds.push(vec![OperandKind::Local]);
+    wasm.function.operands.push(vec![0]);
+    wasm
+}
+
 fn codegen_expression(wasm: Wasm, func: &parser::Function, entity: usize) -> Wasm {
     match func.kinds[entity] {
         parser::Kind::Int => codegen_int(wasm, func, entity),
         parser::Kind::BinaryOp => codegen_binary_op(wasm, func, entity),
-        kind => panic!("codegen expression for kind {:?} not implemented", kind),
+        parser::Kind::Definition => codegen_definition(wasm, func, entity),
+        parser::Kind::Symbol => codegen_symbol(wasm, func, entity),
+        // kind => panic!("codegen expression for kind {:?} not implemented", kind),
     }
 }
 
@@ -73,7 +94,9 @@ pub fn codegen(ast: parser::Ast) -> Wasm {
     };
     let start = *ast.top_level.get("start").unwrap();
     let func = &ast.functions[start];
-    let mut wasm = codegen_expression(wasm, func, func.expressions[0]);
+    let mut wasm = func.expressions.iter().fold(wasm, |wasm, &expression| {
+        codegen_expression(wasm, func, expression)
+    });
     wasm.symbols = ast.symbols;
     wasm.ints = ast.ints;
     wasm
