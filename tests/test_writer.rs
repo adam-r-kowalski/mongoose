@@ -155,33 +155,16 @@ def start():
         str::from_utf8(&buffer).unwrap(),
         r#"(module
   (func $start (result i64)
+    (local $x i64)
+    (local $y i64)
     (i64.const 5)
-    (set_local 5)
+    (set_local $x)
     (i64.const 20)
-    (set_local 5)
-    (get_local 5)
-    (get_local 5)
+    (set_local $y)
+    (get_local $x)
+    (get_local $y)
     i64.add)
 
   (export "_start" (func $start)))"#
     );
 }
-
-/*
-(module
-  (func $start (result i32)
-    (local $a i32)
-    (local $b i32)
-    (local $c i32)
-    (i32.const 5)
-    (set_local $a)
-    (i32.const 10)
-    (set_local $b)
-    (get_local $a)
-    (get_local $b)
-    i32.add
-    (set_local $c)
-    (get_local $c))
-
-  (export "_start" (func $start)))
-*/

@@ -43,6 +43,7 @@ pub struct Function {
     pub definitions: Definitions,
     pub expressions: Vec<usize>,
 }
+
 #[derive(Debug, PartialEq)]
 pub struct Ast {
     pub functions: Vec<Function>,

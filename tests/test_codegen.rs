@@ -1,3 +1,5 @@
+use std::{collections::HashMap, iter::FromIterator};
+
 use pretty_assertions::assert_eq;
 
 use ra::{
@@ -19,6 +21,8 @@ fn test_codegen_int() {
                 instructions: vec![Instruction::I64Const],
                 operand_kinds: vec![vec![OperandKind::IntLiteral]],
                 operands: vec![vec![0]],
+                locals: vec![],
+                name_to_local: HashMap::new()
             },
             symbols: strings(["start"]),
             ints: strings(["0"]),
@@ -46,6 +50,8 @@ fn test_codegen_add() {
                     vec![]
                 ],
                 operands: vec![vec![0], vec![1], vec![]],
+                locals: vec![],
+                name_to_local: HashMap::new()
             },
             symbols: strings(["start"]),
             ints: strings(["5", "10"]),
@@ -73,6 +79,8 @@ fn test_codegen_subtract() {
                     vec![]
                 ],
                 operands: vec![vec![0], vec![1], vec![]],
+                locals: vec![],
+                name_to_local: HashMap::new()
             },
             symbols: strings(["start"]),
             ints: strings(["5", "10"]),
@@ -100,6 +108,8 @@ fn test_codegen_multiply() {
                     vec![]
                 ],
                 operands: vec![vec![0], vec![1], vec![]],
+                locals: vec![],
+                name_to_local: HashMap::new()
             },
             symbols: strings(["start"]),
             ints: strings(["5", "10"]),
@@ -127,6 +137,8 @@ fn test_codegen_divide() {
                     vec![]
                 ],
                 operands: vec![vec![0], vec![1], vec![]],
+                locals: vec![],
+                name_to_local: HashMap::new()
             },
             symbols: strings(["start"]),
             ints: strings(["10", "5"]),
@@ -158,6 +170,8 @@ fn test_codegen_add_then_multiply() {
                     vec![]
                 ],
                 operands: vec![vec![0], vec![1], vec![2], vec![], vec![]],
+                locals: vec![],
+                name_to_local: HashMap::new()
             },
             symbols: strings(["start"]),
             ints: strings(["3", "5", "10"]),
@@ -189,6 +203,8 @@ fn test_codegen_multiply_then_add() {
                     vec![]
                 ],
                 operands: vec![vec![0], vec![1], vec![], vec![2], vec![]],
+                locals: vec![],
+                name_to_local: HashMap::new()
             },
             symbols: strings(["start"]),
             ints: strings(["3", "5", "10"]),
@@ -212,22 +228,28 @@ def start():
             function: Function {
                 instructions: vec![
                     Instruction::I64Const,
+                    Instruction::SetLocal,
                     Instruction::I64Const,
-                    Instruction::I64Mul,
-                    Instruction::I64Const,
+                    Instruction::SetLocal,
+                    Instruction::GetLocal,
+                    Instruction::GetLocal,
                     Instruction::I64Add
                 ],
                 operand_kinds: vec![
                     vec![OperandKind::IntLiteral],
+                    vec![OperandKind::Local],
                     vec![OperandKind::IntLiteral],
-                    vec![],
-                    vec![OperandKind::IntLiteral],
+                    vec![OperandKind::Local],
+                    vec![OperandKind::Local],
+                    vec![OperandKind::Local],
                     vec![]
                 ],
-                operands: vec![vec![0], vec![1], vec![], vec![2], vec![]],
+                operands: vec![vec![0], vec![0], vec![1], vec![1], vec![0], vec![1], vec![]],
+                locals: strings(["$x", "$y"]),
+                name_to_local: HashMap::from_iter([(String::from("x"), 0), (String::from("y"), 1)])
             },
-            symbols: strings(["start"]),
-            ints: strings(["3", "5", "10"]),
+            symbols: strings(["start", "x", "y", "x", "y"]),
+            ints: strings(["5", "20"]),
         }
     );
 }
