@@ -1,24 +1,34 @@
-use pretty_assertions::assert_eq;
-
 use std::str;
 
+use pretty_assertions::assert_eq;
+use wasmer::{imports, Instance, Module, Store, Value};
+
 use ra::{codegen::codegen, parser::parse, tokenizer::tokenize, writer::write};
+
+fn run(code: &[u8]) -> Value {
+    let store = Store::default();
+    let module = Module::new(&store, code).unwrap();
+    let import_object = imports! {};
+    let instance = Instance::new(&module, &import_object).unwrap();
+    let start = instance.exports.get_function("_start").unwrap();
+    start.call(&[]).unwrap()[0].clone()
+}
 
 #[test]
 fn test_write_int() {
     let tokens = tokenize("def start(): 0");
     let ast = parse(tokens);
     let wasm = codegen(ast);
-    let buffer = Vec::<u8>::new();
-    let buffer = write(buffer, wasm).unwrap();
+    let code = write(Vec::<u8>::new(), wasm).unwrap();
     assert_eq!(
-        str::from_utf8(&buffer).unwrap(),
+        str::from_utf8(&code).unwrap(),
         r#"(module
   (func $start (result i64)
     (i64.const 0))
 
   (export "_start" (func $start)))"#
     );
+    assert_eq!(run(&code), Value::I64(0));
 }
 
 #[test]
@@ -26,10 +36,9 @@ fn test_write_add() {
     let tokens = tokenize("def start(): 5 + 10");
     let ast = parse(tokens);
     let wasm = codegen(ast);
-    let buffer = Vec::<u8>::new();
-    let buffer = write(buffer, wasm).unwrap();
+    let code = write(Vec::<u8>::new(), wasm).unwrap();
     assert_eq!(
-        str::from_utf8(&buffer).unwrap(),
+        str::from_utf8(&code).unwrap(),
         r#"(module
   (func $start (result i64)
     (i64.const 5)
@@ -38,6 +47,7 @@ fn test_write_add() {
 
   (export "_start" (func $start)))"#
     );
+    assert_eq!(run(&code), Value::I64(15));
 }
 
 #[test]
@@ -45,10 +55,9 @@ fn test_write_subtract() {
     let tokens = tokenize("def start(): 5 - 10");
     let ast = parse(tokens);
     let wasm = codegen(ast);
-    let buffer = Vec::<u8>::new();
-    let buffer = write(buffer, wasm).unwrap();
+    let code = write(Vec::<u8>::new(), wasm).unwrap();
     assert_eq!(
-        str::from_utf8(&buffer).unwrap(),
+        str::from_utf8(&code).unwrap(),
         r#"(module
   (func $start (result i64)
     (i64.const 5)
@@ -57,6 +66,7 @@ fn test_write_subtract() {
 
   (export "_start" (func $start)))"#
     );
+    assert_eq!(run(&code), Value::I64(-5));
 }
 
 #[test]
@@ -64,10 +74,9 @@ fn test_write_multiply() {
     let tokens = tokenize("def start(): 5 * 10");
     let ast = parse(tokens);
     let wasm = codegen(ast);
-    let buffer = Vec::<u8>::new();
-    let buffer = write(buffer, wasm).unwrap();
+    let code = write(Vec::<u8>::new(), wasm).unwrap();
     assert_eq!(
-        str::from_utf8(&buffer).unwrap(),
+        str::from_utf8(&code).unwrap(),
         r#"(module
   (func $start (result i64)
     (i64.const 5)
@@ -76,6 +85,7 @@ fn test_write_multiply() {
 
   (export "_start" (func $start)))"#
     );
+    assert_eq!(run(&code), Value::I64(50));
 }
 
 #[test]
@@ -83,10 +93,9 @@ fn test_write_divide() {
     let tokens = tokenize("def start(): 10 / 5");
     let ast = parse(tokens);
     let wasm = codegen(ast);
-    let buffer = Vec::<u8>::new();
-    let buffer = write(buffer, wasm).unwrap();
+    let code = write(Vec::<u8>::new(), wasm).unwrap();
     assert_eq!(
-        str::from_utf8(&buffer).unwrap(),
+        str::from_utf8(&code).unwrap(),
         r#"(module
   (func $start (result i64)
     (i64.const 10)
@@ -95,6 +104,7 @@ fn test_write_divide() {
 
   (export "_start" (func $start)))"#
     );
+    assert_eq!(run(&code), Value::I64(2));
 }
 
 #[test]
@@ -102,10 +112,9 @@ fn test_write_add_then_multiply() {
     let tokens = tokenize("def start(): 3 + 5 * 10");
     let ast = parse(tokens);
     let wasm = codegen(ast);
-    let buffer = Vec::<u8>::new();
-    let buffer = write(buffer, wasm).unwrap();
+    let code = write(Vec::<u8>::new(), wasm).unwrap();
     assert_eq!(
-        str::from_utf8(&buffer).unwrap(),
+        str::from_utf8(&code).unwrap(),
         r#"(module
   (func $start (result i64)
     (i64.const 3)
@@ -116,6 +125,7 @@ fn test_write_add_then_multiply() {
 
   (export "_start" (func $start)))"#
     );
+    assert_eq!(run(&code), Value::I64(53));
 }
 
 #[test]
@@ -123,10 +133,9 @@ fn test_write_multiply_then_add() {
     let tokens = tokenize("def start(): 3 * 5 + 10");
     let ast = parse(tokens);
     let wasm = codegen(ast);
-    let buffer = Vec::<u8>::new();
-    let buffer = write(buffer, wasm).unwrap();
+    let code = write(Vec::<u8>::new(), wasm).unwrap();
     assert_eq!(
-        str::from_utf8(&buffer).unwrap(),
+        str::from_utf8(&code).unwrap(),
         r#"(module
   (func $start (result i64)
     (i64.const 3)
@@ -137,6 +146,7 @@ fn test_write_multiply_then_add() {
 
   (export "_start" (func $start)))"#
     );
+    assert_eq!(run(&code), Value::I64(25));
 }
 
 #[test]
@@ -149,10 +159,9 @@ def start():
     let tokens = tokenize(source);
     let ast = parse(tokens);
     let wasm = codegen(ast);
-    let buffer = Vec::<u8>::new();
-    let buffer = write(buffer, wasm).unwrap();
+    let code = write(Vec::<u8>::new(), wasm).unwrap();
     assert_eq!(
-        str::from_utf8(&buffer).unwrap(),
+        str::from_utf8(&code).unwrap(),
         r#"(module
   (func $start (result i64)
     (local $x i64)
@@ -167,4 +176,5 @@ def start():
 
   (export "_start" (func $start)))"#
     );
+    assert_eq!(run(&code), Value::I64(25));
 }

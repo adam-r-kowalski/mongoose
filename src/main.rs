@@ -18,9 +18,9 @@ fn main() {
             write(file, wasm).unwrap();
         }
         _ => {
-            let buffer = write(Vec::<u8>::new(), wasm).unwrap();
+            let code = write(Vec::<u8>::new(), wasm).unwrap();
             let store = Store::default();
-            let module = Module::new(&store, &buffer).unwrap();
+            let module = Module::new(&store, &code).unwrap();
             let import_object = imports! {};
             let instance = Instance::new(&module, &import_object).unwrap();
             let start = instance.exports.get_function("_start").unwrap();
