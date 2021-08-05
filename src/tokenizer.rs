@@ -10,12 +10,13 @@ pub enum Kind {
     Times,
     Slash,
     Equal,
+    Comma,
     Indent,
     Int,
 }
 
 #[derive(Debug, PartialEq)]
-pub struct Tokens {
+pub struct TopLevel {
     pub indices: Vec<usize>,
     pub kinds: Vec<Kind>,
     pub symbols: Vec<String>,
@@ -23,47 +24,54 @@ pub struct Tokens {
     pub indents: Vec<usize>,
 }
 
-fn tokenize_symbol(mut tokens: Tokens, source: &str) -> Tokens {
+#[derive(Debug, PartialEq)]
+pub struct Tokens {
+    pub top_level: Vec<TopLevel>,
+}
+
+fn tokenize_symbol(mut top_level: TopLevel, source: &str) -> (TopLevel, &str) {
     let length = 1 + source[1..]
         .chars()
-        .take_while(|c| c.is_alphanumeric())
+        .take_while(|&c| c.is_alphanumeric() || c == '_')
         .count();
     if &source[..length] == "def" {
-        tokens.kinds.push(Kind::Def);
-        tokens.indices.push(0);
+        top_level.kinds.push(Kind::Def);
+        top_level.indices.push(0);
     } else {
-        tokens.kinds.push(Kind::Symbol);
-        tokens.indices.push(tokens.symbols.len());
-        tokens.symbols.push(source[..length].to_string());
+        top_level.kinds.push(Kind::Symbol);
+        top_level.indices.push(top_level.symbols.len());
+        top_level.symbols.push(source[..length].to_string());
     }
-    tokenize_impl(tokens, &source[length..])
+    tokenize_top_level(top_level, &source[length..])
 }
 
-fn tokenize_one(mut tokens: Tokens, source: &str, kind: Kind) -> Tokens {
-    tokens.kinds.push(kind);
-    tokens.indices.push(0);
-    tokenize_impl(tokens, &source[1..])
+fn tokenize_one(mut top_level: TopLevel, source: &str, kind: Kind) -> (TopLevel, &str) {
+    top_level.kinds.push(kind);
+    top_level.indices.push(0);
+    tokenize_top_level(top_level, &source[1..])
 }
 
-fn tokenize_number(mut tokens: Tokens, source: &str) -> Tokens {
+fn tokenize_number(mut top_level: TopLevel, source: &str) -> (TopLevel, &str) {
     let length = 1 + source[1..].chars().take_while(|c| c.is_numeric()).count();
-    tokens.kinds.push(Kind::Int);
-    tokens.indices.push(tokens.ints.len());
-    tokens.ints.push(source[..length].to_string());
-    tokenize_impl(tokens, &source[length..])
+    top_level.kinds.push(Kind::Int);
+    top_level.indices.push(top_level.ints.len());
+    top_level.ints.push(source[..length].to_string());
+    tokenize_top_level(top_level, &source[length..])
 }
 
-fn tokenize_indent(mut tokens: Tokens, source: &str) -> Tokens {
+fn tokenize_indent(mut top_level: TopLevel, source: &str) -> (TopLevel, &str) {
     let length = source[1..]
         .chars()
         .take_while(|&c| is_whitespace(c))
         .count();
-    if length > 1 {
-        tokens.kinds.push(Kind::Indent);
-        tokens.indices.push(tokens.indents.len());
-        tokens.indents.push(length);
+    if length > 0 {
+        top_level.kinds.push(Kind::Indent);
+        top_level.indices.push(top_level.indents.len());
+        top_level.indents.push(length);
+        tokenize_top_level(top_level, &source[length + 1..])
+    } else {
+        (top_level, source)
     }
-    tokenize_impl(tokens, &source[length + 1..])
 }
 
 fn is_whitespace(c: char) -> bool {
@@ -73,37 +81,50 @@ fn is_whitespace(c: char) -> bool {
     }
 }
 
-fn trim_whitespace(source: &str) -> &str {
-    let length = source.chars().take_while(|&c| is_whitespace(c)).count();
+fn trim(source: &str, predicate: fn(char) -> bool) -> &str {
+    let length = source.chars().take_while(|&c| predicate(c)).count();
     &source[length..]
 }
 
-fn tokenize_impl(tokens: Tokens, source: &str) -> Tokens {
-    let source = trim_whitespace(source);
+fn tokenize_top_level(top_level: TopLevel, source: &str) -> (TopLevel, &str) {
+    let source = trim(source, is_whitespace);
     match source.chars().next() {
-        Some(c) if c.is_alphabetic() => tokenize_symbol(tokens, source),
-        Some('(') => tokenize_one(tokens, source, Kind::LeftParen),
-        Some(')') => tokenize_one(tokens, source, Kind::RightParen),
-        Some(':') => tokenize_one(tokens, source, Kind::Colon),
-        Some('+') => tokenize_one(tokens, source, Kind::Plus),
-        Some('-') => tokenize_one(tokens, source, Kind::Minus),
-        Some('*') => tokenize_one(tokens, source, Kind::Times),
-        Some('/') => tokenize_one(tokens, source, Kind::Slash),
-        Some('=') => tokenize_one(tokens, source, Kind::Equal),
-        Some('0'..='9') => tokenize_number(tokens, source),
-        Some('\n') => tokenize_indent(tokens, source),
-        Some(c) => panic!("not implemented for char {}", c),
-        None => tokens,
+        Some(c) if c.is_alphabetic() || c == '_' => tokenize_symbol(top_level, source),
+        Some('(') => tokenize_one(top_level, source, Kind::LeftParen),
+        Some(')') => tokenize_one(top_level, source, Kind::RightParen),
+        Some(':') => tokenize_one(top_level, source, Kind::Colon),
+        Some('+') => tokenize_one(top_level, source, Kind::Plus),
+        Some('-') => tokenize_one(top_level, source, Kind::Minus),
+        Some('*') => tokenize_one(top_level, source, Kind::Times),
+        Some('/') => tokenize_one(top_level, source, Kind::Slash),
+        Some('=') => tokenize_one(top_level, source, Kind::Equal),
+        Some(',') => tokenize_one(top_level, source, Kind::Comma),
+        Some('0'..='9') => tokenize_number(top_level, source),
+        Some('\n') => tokenize_indent(top_level, source),
+        Some(c) => panic!("not implemented for char \"{}\"", c),
+        None => (top_level, source),
+    }
+}
+
+fn tokenize_impl(mut tokens: Tokens, source: &str) -> Tokens {
+    let source = trim(source, |c| c.is_whitespace());
+    if source.len() == 0 {
+        tokens
+    } else {
+        let top_level = TopLevel {
+            indices: vec![],
+            kinds: vec![],
+            symbols: vec![],
+            ints: vec![],
+            indents: vec![],
+        };
+        let (top_level, source) = tokenize_top_level(top_level, source);
+        tokens.top_level.push(top_level);
+        tokenize_impl(tokens, source)
     }
 }
 
 pub fn tokenize(source: &str) -> Tokens {
-    let tokens = Tokens {
-        indices: vec![],
-        kinds: vec![],
-        symbols: vec![],
-        ints: vec![],
-        indents: vec![],
-    };
+    let tokens = Tokens { top_level: vec![] };
     tokenize_impl(tokens, source)
 }
