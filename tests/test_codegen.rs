@@ -18,6 +18,7 @@ fn test_codegen_int() {
         wasm,
         Wasm {
             functions: vec![Function {
+                name: 0,
                 instructions: vec![Instruction::I64Const],
                 operand_kinds: vec![vec![OperandKind::IntLiteral]],
                 operands: vec![vec![0]],
@@ -39,6 +40,7 @@ fn test_codegen_add() {
         wasm,
         Wasm {
             functions: vec![Function {
+                name: 0,
                 instructions: vec![
                     Instruction::I64Const,
                     Instruction::I64Const,
@@ -68,6 +70,7 @@ fn test_codegen_subtract() {
         wasm,
         Wasm {
             functions: vec![Function {
+                name: 0,
                 instructions: vec![
                     Instruction::I64Const,
                     Instruction::I64Const,
@@ -97,6 +100,7 @@ fn test_codegen_multiply() {
         wasm,
         Wasm {
             functions: vec![Function {
+                name: 0,
                 instructions: vec![
                     Instruction::I64Const,
                     Instruction::I64Const,
@@ -126,6 +130,7 @@ fn test_codegen_divide() {
         wasm,
         Wasm {
             functions: vec![Function {
+                name: 0,
                 instructions: vec![
                     Instruction::I64Const,
                     Instruction::I64Const,
@@ -155,6 +160,7 @@ fn test_codegen_add_then_multiply() {
         wasm,
         Wasm {
             functions: vec![Function {
+                name: 0,
                 instructions: vec![
                     Instruction::I64Const,
                     Instruction::I64Const,
@@ -188,6 +194,7 @@ fn test_codegen_multiply_then_add() {
         wasm,
         Wasm {
             functions: vec![Function {
+                name: 0,
                 instructions: vec![
                     Instruction::I64Const,
                     Instruction::I64Const,
@@ -226,6 +233,7 @@ def start():
         wasm,
         Wasm {
             functions: vec![Function {
+                name: 0,
                 instructions: vec![
                     Instruction::I64Const,
                     Instruction::SetLocal,

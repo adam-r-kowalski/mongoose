@@ -21,6 +21,7 @@ pub enum OperandKind {
 
 #[derive(Debug, PartialEq)]
 pub struct Function {
+    pub name: usize,
     pub instructions: Vec<Instruction>,
     pub operand_kinds: Vec<Vec<OperandKind>>,
     pub operands: Vec<Vec<usize>>,
@@ -97,6 +98,7 @@ fn codegen_expression(wasm_func: Function, ast_func: &parser::Function, entity: 
 
 fn codegen_function(ast_func: &parser::Function) -> Function {
     let wasm_func = Function {
+        name: ast_func.name,
         instructions: vec![],
         operand_kinds: vec![],
         operands: vec![],
