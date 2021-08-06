@@ -26,95 +26,100 @@ pub struct Function {
     pub operands: Vec<Vec<usize>>,
     pub locals: Vec<String>,
     pub name_to_local: HashMap<String, usize>,
-}
-
-#[derive(Debug, PartialEq)]
-pub struct Wasm {
-    pub function: Function,
     pub symbols: Vec<String>,
     pub ints: Vec<String>,
 }
 
-fn codegen_int(mut wasm: Wasm, func: &parser::Function, entity: usize) -> Wasm {
-    wasm.function.instructions.push(Instruction::I64Const);
-    wasm.function
-        .operand_kinds
-        .push(vec![OperandKind::IntLiteral]);
-    wasm.function.operands.push(vec![func.indices[entity]]);
-    wasm
+#[derive(Debug, PartialEq)]
+pub struct Wasm {
+    pub functions: Vec<Function>,
 }
 
-fn codegen_binary_op(wasm: Wasm, ast: &Ast, func: &parser::Function, entity: usize) -> Wasm {
-    let index = func.indices[entity];
-    let wasm = codegen_expression(wasm, ast, func, func.binary_ops.lefts[index]);
-    let mut wasm = codegen_expression(wasm, ast, func, func.binary_ops.rights[index]);
-    let instruction = match func.binary_ops.ops[index] {
+fn codegen_int(mut wasm_func: Function, ast_func: &parser::Function, entity: usize) -> Function {
+    wasm_func.instructions.push(Instruction::I64Const);
+    wasm_func.operand_kinds.push(vec![OperandKind::IntLiteral]);
+    wasm_func.operands.push(vec![ast_func.indices[entity]]);
+    wasm_func
+}
+
+fn codegen_binary_op(wasm_func: Function, ast_func: &parser::Function, entity: usize) -> Function {
+    let index = ast_func.indices[entity];
+    let wasm_func = codegen_expression(wasm_func, ast_func, ast_func.binary_ops.lefts[index]);
+    let mut wasm_func = codegen_expression(wasm_func, ast_func, ast_func.binary_ops.rights[index]);
+    let instruction = match ast_func.binary_ops.ops[index] {
         parser::BinaryOp::Add => Instruction::I64Add,
         parser::BinaryOp::Subtract => Instruction::I64Sub,
         parser::BinaryOp::Multiply => Instruction::I64Mul,
         parser::BinaryOp::Divide => Instruction::I64DivS,
     };
-    wasm.function.instructions.push(instruction);
-    wasm.function.operand_kinds.push(vec![]);
-    wasm.function.operands.push(vec![]);
-    wasm
+    wasm_func.instructions.push(instruction);
+    wasm_func.operand_kinds.push(vec![]);
+    wasm_func.operands.push(vec![]);
+    wasm_func
 }
 
-fn codegen_definition(wasm: Wasm, ast: &Ast, func: &parser::Function, entity: usize) -> Wasm {
-    let index = func.indices[entity];
-    let name_index = func.definitions.names[index];
-    assert_eq!(func.kinds[name_index], parser::Kind::Symbol);
-    let mut wasm = codegen_expression(wasm, ast, func, func.definitions.values[index]);
-    let name = ast.symbols[func.indices[name_index]].clone();
-    let local = wasm.function.locals.len();
-    wasm.function.locals.push(format!("${}", name));
-    wasm.function.name_to_local.try_insert(name, local).unwrap();
-    wasm.function.instructions.push(Instruction::SetLocal);
-    wasm.function.operand_kinds.push(vec![OperandKind::Local]);
-    wasm.function.operands.push(vec![local]);
-    wasm
+fn codegen_definition(wasm_func: Function, ast_func: &parser::Function, entity: usize) -> Function {
+    let index = ast_func.indices[entity];
+    let name_index = ast_func.definitions.names[index];
+    assert_eq!(ast_func.kinds[name_index], parser::Kind::Symbol);
+    let mut wasm_func = codegen_expression(wasm_func, ast_func, ast_func.definitions.values[index]);
+    let name = ast_func.symbols[ast_func.indices[name_index]].clone();
+    let local = wasm_func.locals.len();
+    wasm_func.locals.push(format!("${}", name));
+    wasm_func.name_to_local.try_insert(name, local).unwrap();
+    wasm_func.instructions.push(Instruction::SetLocal);
+    wasm_func.operand_kinds.push(vec![OperandKind::Local]);
+    wasm_func.operands.push(vec![local]);
+    wasm_func
 }
 
-fn codegen_symbol(mut wasm: Wasm, ast: &Ast, func: &parser::Function, entity: usize) -> Wasm {
-    let index = func.indices[entity];
-    let local = wasm
-        .function
+fn codegen_symbol(mut wasm_func: Function, ast_func: &parser::Function, entity: usize) -> Function {
+    let index = ast_func.indices[entity];
+    let local = wasm_func
         .name_to_local
-        .get(&ast.symbols[index])
+        .get(&ast_func.symbols[index])
         .unwrap();
-    wasm.function.instructions.push(Instruction::GetLocal);
-    wasm.function.operand_kinds.push(vec![OperandKind::Local]);
-    wasm.function.operands.push(vec![*local]);
-    wasm
+    wasm_func.instructions.push(Instruction::GetLocal);
+    wasm_func.operand_kinds.push(vec![OperandKind::Local]);
+    wasm_func.operands.push(vec![*local]);
+    wasm_func
 }
 
-fn codegen_expression(wasm: Wasm, ast: &Ast, func: &parser::Function, entity: usize) -> Wasm {
-    match func.kinds[entity] {
-        parser::Kind::Int => codegen_int(wasm, func, entity),
-        parser::Kind::BinaryOp => codegen_binary_op(wasm, ast, func, entity),
-        parser::Kind::Definition => codegen_definition(wasm, ast, func, entity),
-        parser::Kind::Symbol => codegen_symbol(wasm, ast, func, entity),
+fn codegen_expression(wasm_func: Function, ast_func: &parser::Function, entity: usize) -> Function {
+    match ast_func.kinds[entity] {
+        parser::Kind::Int => codegen_int(wasm_func, ast_func, entity),
+        parser::Kind::BinaryOp => codegen_binary_op(wasm_func, ast_func, entity),
+        parser::Kind::Definition => codegen_definition(wasm_func, ast_func, entity),
+        parser::Kind::Symbol => codegen_symbol(wasm_func, ast_func, entity),
+        parser::Kind::FunctionCall => panic!("codegen ast_function call"),
     }
 }
 
-pub fn codegen(ast: Ast) -> Wasm {
-    let wasm = Wasm {
-        function: Function {
-            instructions: vec![],
-            operand_kinds: vec![],
-            operands: vec![],
-            locals: vec![],
-            name_to_local: HashMap::new(),
-        },
+fn codegen_function(ast_func: &parser::Function) -> Function {
+    let wasm_func = Function {
+        instructions: vec![],
+        operand_kinds: vec![],
+        operands: vec![],
+        locals: vec![],
+        name_to_local: HashMap::new(),
         symbols: vec![],
         ints: vec![],
     };
+    let mut wasm_func = ast_func
+        .expressions
+        .iter()
+        .fold(wasm_func, |wasm_func, &expression| {
+            codegen_expression(wasm_func, ast_func, expression)
+        });
+    wasm_func.symbols = ast_func.symbols.clone();
+    wasm_func.ints = ast_func.ints.clone();
+    wasm_func
+}
+
+pub fn codegen(ast: Ast) -> Wasm {
     let start = *ast.top_level.get("start").unwrap();
-    let func = &ast.functions[start];
-    let mut wasm = func.expressions.iter().fold(wasm, |wasm, &expression| {
-        codegen_expression(wasm, &ast, func, expression)
-    });
-    wasm.symbols = ast.symbols;
-    wasm.ints = ast.ints;
-    wasm
+    let wasm_func = codegen_function(&ast.functions[start]);
+    Wasm {
+        functions: vec![wasm_func],
+    }
 }
