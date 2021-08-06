@@ -12,6 +12,7 @@ pub enum Kind {
     Int,
     BinaryOp,
     Definition,
+    FunctionCall,
 }
 
 #[derive(Debug, PartialEq, Copy, Clone)]
@@ -36,12 +37,20 @@ pub struct Definitions {
 }
 
 #[derive(Debug, PartialEq)]
+pub struct FunctionCalls {
+    pub names: Vec<usize>,
+    pub parameters: Vec<Vec<usize>>,
+}
+
+#[derive(Debug, PartialEq)]
 pub struct Function {
     pub name: usize,
+    pub arguments: Vec<usize>,
     pub kinds: Vec<Kind>,
     pub indices: Vec<usize>,
     pub binary_ops: BinaryOps,
     pub definitions: Definitions,
+    pub function_calls: FunctionCalls,
     pub expressions: Vec<usize>,
     pub symbols: Vec<String>,
     pub ints: Vec<String>,
@@ -59,6 +68,7 @@ type Precedence = u8;
 enum InfixParser {
     BinaryOp(Precedence, BinaryOp),
     Definition,
+    FunctionCall,
 }
 
 struct ParseResult(Function, Token, usize);
@@ -73,6 +83,7 @@ fn precedence_of(parser: &InfixParser) -> Precedence {
     match parser {
         InfixParser::BinaryOp(precedence, _) => *precedence,
         InfixParser::Definition => LOWEST,
+        InfixParser::FunctionCall => LOWEST,
     }
 }
 
@@ -147,6 +158,47 @@ fn parse_definition(
     ParseResult(func, token, entity)
 }
 
+fn parse_function_parameters(
+    func: Function,
+    top_level: &tokenizer::TopLevel,
+    token: Token,
+    mut parameters: Vec<usize>,
+) -> (Function, Token, Vec<usize>) {
+    let ParseResult(func, token, parameter) = parse_expression(func, top_level, token, 0);
+    parameters.push(parameter);
+    match top_level.kinds[token.0] {
+        tokenizer::Kind::Comma => {
+            parse_function_parameters(func, top_level, inc_token(token), parameters)
+        }
+        tokenizer::Kind::RightParen => (func, token, parameters),
+        kind => panic!(
+            "Parsing function parameters, expected comma or right paren, found {:?}",
+            kind
+        ),
+    }
+}
+
+fn parse_function_call(
+    func: Function,
+    top_level: &tokenizer::TopLevel,
+    token: Token,
+    name: usize,
+) -> ParseResult {
+    assert_eq!(func.kinds[name], Kind::Symbol);
+    let (mut func, token, parameters) = if top_level.kinds[token.0] != tokenizer::Kind::RightParen {
+        parse_function_parameters(func, top_level, token, vec![])
+    } else {
+        (func, token, vec![])
+    };
+    let token = consume(top_level, token, tokenizer::Kind::RightParen);
+    let entity = fresh_entity(&func);
+    func.kinds.push(Kind::FunctionCall);
+    func.indices.push(func.function_calls.names.len());
+    func.function_calls.names.push(name);
+    func.function_calls.parameters.push(parameters);
+    ParseResult(func, token, entity)
+}
+
 fn infix_parser(kind: tokenizer::Kind) -> Option<InfixParser> {
     match kind {
         tokenizer::Kind::Plus => Some(InfixParser::BinaryOp(ADD, BinaryOp::Add)),
@@ -154,6 +206,7 @@ fn infix_parser(kind: tokenizer::Kind) -> Option<InfixParser> {
         tokenizer::Kind::Times => Some(InfixParser::BinaryOp(MULTIPLY, BinaryOp::Multiply)),
         tokenizer::Kind::Slash => Some(InfixParser::BinaryOp(DIVIDE, BinaryOp::Divide)),
         tokenizer::Kind::Equal => Some(InfixParser::Definition),
+        tokenizer::Kind::LeftParen => Some(InfixParser::FunctionCall),
         _ => None,
     }
 }
@@ -170,6 +223,7 @@ fn run_infix_parser(
             parse_binary_op(precedence, binary_op, func, top_level, token, left)
         }
         InfixParser::Definition => parse_definition(func, top_level, token, left),
+        InfixParser::FunctionCall => parse_function_call(func, top_level, token, left),
     }
 }
 
@@ -223,11 +277,30 @@ fn parse_function_body(
     }
 }
 
+fn parse_function_arguments(
+    mut func: Function,
+    top_level: &tokenizer::TopLevel,
+    token: Token,
+) -> (Function, Token) {
+    assert_eq!(top_level.kinds[token.0], tokenizer::Kind::Symbol);
+    func.arguments.push(top_level.indices[token.0]);
+    let token = inc_token(token);
+    match top_level.kinds[token.0] {
+        tokenizer::Kind::Comma => parse_function_arguments(func, top_level, inc_token(token)),
+        tokenizer::Kind::RightParen => (func, token),
+        kind => panic!(
+            "Parsing function arguments, expected comma or right paren, found {:?}",
+            kind
+        ),
+    }
+}
+
 fn parse_function(top_level: &tokenizer::TopLevel, token: Token) -> Function {
     let token = consume(top_level, token, tokenizer::Kind::Def);
     assert_eq!(top_level.kinds[token.0], tokenizer::Kind::Symbol);
     let func = Function {
         name: top_level.indices[token.0],
+        arguments: vec![],
         kinds: vec![],
         indices: vec![],
         binary_ops: BinaryOps {
@@ -239,11 +312,20 @@ fn parse_function(top_level: &tokenizer::TopLevel, token: Token) -> Function {
             names: vec![],
             values: vec![],
         },
+        function_calls: FunctionCalls {
+            names: vec![],
+            parameters: vec![],
+        },
         expressions: vec![],
         symbols: vec![],
         ints: vec![],
     };
     let token = consume(top_level, inc_token(token), tokenizer::Kind::LeftParen);
+    let (func, token) = if top_level.kinds[token.0] != tokenizer::Kind::RightParen {
+        parse_function_arguments(func, top_level, token)
+    } else {
+        (func, token)
+    };
     let token = consume(top_level, token, tokenizer::Kind::RightParen);
     let token = consume(top_level, token, tokenizer::Kind::Colon);
     parse_function_body(func, top_level, token)
