@@ -1,4 +1,5 @@
-use std::{collections::HashMap, iter::FromIterator};
+use rayon::prelude::*;
+use std::collections::HashMap;
 
 use crate::tokenizer::{self, Tokens};
 
@@ -42,13 +43,13 @@ pub struct Function {
     pub binary_ops: BinaryOps,
     pub definitions: Definitions,
     pub expressions: Vec<usize>,
+    pub symbols: Vec<String>,
+    pub ints: Vec<String>,
 }
 
 #[derive(Debug, PartialEq)]
 pub struct Ast {
     pub functions: Vec<Function>,
-    pub symbols: Vec<String>,
-    pub ints: Vec<String>,
     pub top_level: HashMap<String, usize>,
 }
 
@@ -83,28 +84,33 @@ fn fresh_entity(func: &Function) -> usize {
     func.kinds.len()
 }
 
-fn parse_primitive(mut func: Function, tokens: &Tokens, token: Token, kind: Kind) -> ParseResult {
+fn parse_primitive(
+    mut func: Function,
+    top_level: &tokenizer::TopLevel,
+    token: Token,
+    kind: Kind,
+) -> ParseResult {
     let entity = fresh_entity(&func);
     func.kinds.push(kind);
-    func.indices.push(tokens.indices[token.0]);
+    func.indices.push(top_level.indices[token.0]);
     ParseResult(func, token, entity)
 }
 
 fn prefix_parser(
     func: Function,
-    tokens: &Tokens,
+    top_level: &tokenizer::TopLevel,
     token: Token,
     kind: tokenizer::Kind,
 ) -> ParseResult {
     match kind {
-        tokenizer::Kind::Symbol => parse_primitive(func, tokens, token, Kind::Symbol),
-        tokenizer::Kind::Int => parse_primitive(func, tokens, token, Kind::Int),
+        tokenizer::Kind::Symbol => parse_primitive(func, top_level, token, Kind::Symbol),
+        tokenizer::Kind::Int => parse_primitive(func, top_level, token, Kind::Int),
         token => panic!("no prefix parser for {:?}", token),
     }
 }
 
-fn consume(tokens: &Tokens, token: Token, kind: tokenizer::Kind) -> Token {
-    assert_eq!(tokens.kinds[token.0], kind);
+fn consume(top_level: &tokenizer::TopLevel, token: Token, kind: tokenizer::Kind) -> Token {
+    assert_eq!(top_level.kinds[token.0], kind);
     inc_token(token)
 }
 
@@ -112,11 +118,11 @@ fn parse_binary_op(
     precedence: Precedence,
     binary_op: BinaryOp,
     func: Function,
-    tokens: &Tokens,
+    top_level: &tokenizer::TopLevel,
     token: Token,
     left: usize,
 ) -> ParseResult {
-    let ParseResult(mut func, token, right) = parse_expression(func, tokens, token, precedence);
+    let ParseResult(mut func, token, right) = parse_expression(func, top_level, token, precedence);
     let entity = fresh_entity(&func);
     func.kinds.push(Kind::BinaryOp);
     func.indices.push(func.binary_ops.lefts.len());
@@ -126,8 +132,13 @@ fn parse_binary_op(
     ParseResult(func, token, entity)
 }
 
-fn parse_definition(func: Function, tokens: &Tokens, token: Token, name: usize) -> ParseResult {
-    let ParseResult(mut func, token, value) = parse_expression(func, tokens, token, 0);
+fn parse_definition(
+    func: Function,
+    top_level: &tokenizer::TopLevel,
+    token: Token,
+    name: usize,
+) -> ParseResult {
+    let ParseResult(mut func, token, value) = parse_expression(func, top_level, token, 0);
     let entity = fresh_entity(&func);
     func.kinds.push(Kind::Definition);
     func.indices.push(func.definitions.names.len());
@@ -150,26 +161,26 @@ fn infix_parser(kind: tokenizer::Kind) -> Option<InfixParser> {
 fn run_infix_parser(
     parser: InfixParser,
     func: Function,
-    tokens: &Tokens,
+    top_level: &tokenizer::TopLevel,
     token: Token,
     left: usize,
 ) -> ParseResult {
     match parser {
         InfixParser::BinaryOp(precedence, binary_op) => {
-            parse_binary_op(precedence, binary_op, func, tokens, token, left)
+            parse_binary_op(precedence, binary_op, func, top_level, token, left)
         }
-        InfixParser::Definition => parse_definition(func, tokens, token, left),
+        InfixParser::Definition => parse_definition(func, top_level, token, left),
     }
 }
 
 fn parse_right(
     func: Function,
-    tokens: &Tokens,
+    top_level: &tokenizer::TopLevel,
     token: Token,
     left: usize,
     precedence: Precedence,
 ) -> ParseResult {
-    let parser = tokens
+    let parser = top_level
         .kinds
         .get(token.0)
         .map(|&kind| infix_parser(kind))
@@ -177,8 +188,8 @@ fn parse_right(
     match parser {
         Some(parser) if precedence <= precedence_of(&parser) => {
             let ParseResult(func, token, left) =
-                run_infix_parser(parser, func, tokens, inc_token(token), left);
-            parse_right(func, tokens, token, left, precedence)
+                run_infix_parser(parser, func, top_level, inc_token(token), left);
+            parse_right(func, top_level, token, left, precedence)
         }
         _ => ParseResult(func, token, left),
     }
@@ -186,33 +197,37 @@ fn parse_right(
 
 fn parse_expression(
     func: Function,
-    tokens: &Tokens,
+    top_level: &tokenizer::TopLevel,
     token: Token,
     precedence: Precedence,
 ) -> ParseResult {
-    let kind = tokens.kinds[token.0];
-    let ParseResult(func, token, left) = prefix_parser(func, tokens, token, kind);
-    parse_right(func, tokens, inc_token(token), left, precedence)
+    let kind = top_level.kinds[token.0];
+    let ParseResult(func, token, left) = prefix_parser(func, top_level, token, kind);
+    parse_right(func, top_level, inc_token(token), left, precedence)
 }
 
-fn parse_function_body(func: Function, tokens: &Tokens, mut token: Token) -> Function {
-    if token.0 >= tokens.kinds.len() {
+fn parse_function_body(
+    func: Function,
+    top_level: &tokenizer::TopLevel,
+    mut token: Token,
+) -> Function {
+    if token.0 >= top_level.kinds.len() {
         func
     } else {
-        if tokens.kinds[token.0] == tokenizer::Kind::Indent {
+        if top_level.kinds[token.0] == tokenizer::Kind::Indent {
             token = inc_token(token);
         }
-        let ParseResult(mut func, token, body) = parse_expression(func, tokens, token, LOWEST);
+        let ParseResult(mut func, token, body) = parse_expression(func, top_level, token, LOWEST);
         func.expressions.push(body);
-        parse_function_body(func, tokens, token)
+        parse_function_body(func, top_level, token)
     }
 }
 
-fn parse_function(tokens: &Tokens, token: Token) -> Function {
-    let token = consume(tokens, token, tokenizer::Kind::Def);
-    assert_eq!(tokens.kinds[token.0], tokenizer::Kind::Symbol);
+fn parse_function(top_level: &tokenizer::TopLevel, token: Token) -> Function {
+    let token = consume(top_level, token, tokenizer::Kind::Def);
+    assert_eq!(top_level.kinds[token.0], tokenizer::Kind::Symbol);
     let func = Function {
-        name: tokens.indices[token.0],
+        name: top_level.indices[token.0],
         kinds: vec![],
         indices: vec![],
         binary_ops: BinaryOps {
@@ -225,20 +240,38 @@ fn parse_function(tokens: &Tokens, token: Token) -> Function {
             values: vec![],
         },
         expressions: vec![],
+        symbols: vec![],
+        ints: vec![],
     };
-    let token = consume(tokens, inc_token(token), tokenizer::Kind::LeftParen);
-    let token = consume(tokens, token, tokenizer::Kind::RightParen);
-    let token = consume(tokens, token, tokenizer::Kind::Colon);
-    parse_function_body(func, tokens, token)
+    let token = consume(top_level, inc_token(token), tokenizer::Kind::LeftParen);
+    let token = consume(top_level, token, tokenizer::Kind::RightParen);
+    let token = consume(top_level, token, tokenizer::Kind::Colon);
+    parse_function_body(func, top_level, token)
 }
 
 pub fn parse(tokens: Tokens) -> Ast {
-    let func = parse_function(&tokens, Token(0));
-    let name = tokens.symbols[func.name].clone();
+    let functions: Vec<Function> = tokens
+        .top_level
+        .into_par_iter()
+        .map(|top_level| {
+            let mut func = parse_function(&top_level, Token(0));
+            func.symbols = top_level.symbols;
+            func.ints = top_level.ints;
+            func
+        })
+        .collect();
+    let top_level =
+        functions
+            .iter()
+            .enumerate()
+            .fold(HashMap::new(), |mut top_level, (i, func)| {
+                top_level
+                    .try_insert(func.symbols[func.name].clone(), i)
+                    .unwrap();
+                top_level
+            });
     Ast {
-        functions: vec![func],
-        symbols: tokens.symbols,
-        ints: tokens.ints,
-        top_level: HashMap::from_iter([(name, 0)]),
+        functions,
+        top_level,
     }
 }
