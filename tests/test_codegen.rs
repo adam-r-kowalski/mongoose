@@ -220,12 +220,59 @@ fn test_codegen_multiply_then_add() {
 }
 
 #[test]
-fn test_parse_local_variables() {
+fn test_codegen_local_variables() {
     let source = r#"
 def start():
     x = 5
     y = 20
     x + y"#;
+    let tokens = tokenize(source);
+    let ast = parse(tokens);
+    let wasm = codegen(ast);
+    assert_eq!(
+        wasm,
+        Wasm {
+            functions: vec![Function {
+                name: 0,
+                instructions: vec![
+                    Instruction::I64Const,
+                    Instruction::SetLocal,
+                    Instruction::I64Const,
+                    Instruction::SetLocal,
+                    Instruction::GetLocal,
+                    Instruction::GetLocal,
+                    Instruction::I64Add
+                ],
+                operand_kinds: vec![
+                    vec![OperandKind::IntLiteral],
+                    vec![OperandKind::Local],
+                    vec![OperandKind::IntLiteral],
+                    vec![OperandKind::Local],
+                    vec![OperandKind::Local],
+                    vec![OperandKind::Local],
+                    vec![]
+                ],
+                operands: vec![vec![0], vec![0], vec![1], vec![1], vec![0], vec![1], vec![]],
+                locals: strings(["$x", "$y"]),
+                name_to_local: HashMap::from_iter([(String::from("x"), 0), (String::from("y"), 1)]),
+                symbols: strings(["start", "x", "y", "x", "y"]),
+                ints: strings(["5", "20"]),
+            }],
+        }
+    );
+}
+
+#[test]
+fn test_codegen_multiple_functions() {
+    let source = r#"
+def square(x): x * x
+
+def sum_of_squares(x, y):
+    x2 = square(x)
+    y2 = square(y)
+    x2 + y2
+
+def start(): sum_of_squares(5, 3)"#;
     let tokens = tokenize(source);
     let ast = parse(tokens);
     let wasm = codegen(ast);

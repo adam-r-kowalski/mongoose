@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::sync::mpsc::{self, Sender};
 
 use crate::parser::{self, Ast};
 
@@ -36,6 +37,11 @@ pub struct Wasm {
     pub functions: Vec<Function>,
 }
 
+enum Message {
+    Spawn(String),
+    Done,
+}
+
 fn codegen_int(mut wasm_func: Function, ast_func: &parser::Function, entity: usize) -> Function {
     wasm_func.instructions.push(Instruction::I64Const);
     wasm_func.operand_kinds.push(vec![OperandKind::IntLiteral]);
@@ -43,10 +49,21 @@ fn codegen_int(mut wasm_func: Function, ast_func: &parser::Function, entity: usi
     wasm_func
 }
 
-fn codegen_binary_op(wasm_func: Function, ast_func: &parser::Function, entity: usize) -> Function {
+fn codegen_binary_op(
+    tx: Sender<Message>,
+    wasm_func: Function,
+    ast_func: &parser::Function,
+    entity: usize,
+) -> Function {
     let index = ast_func.indices[entity];
-    let wasm_func = codegen_expression(wasm_func, ast_func, ast_func.binary_ops.lefts[index]);
-    let mut wasm_func = codegen_expression(wasm_func, ast_func, ast_func.binary_ops.rights[index]);
+    let wasm_func = codegen_expression(
+        tx.clone(),
+        wasm_func,
+        ast_func,
+        ast_func.binary_ops.lefts[index],
+    );
+    let mut wasm_func =
+        codegen_expression(tx, wasm_func, ast_func, ast_func.binary_ops.rights[index]);
     let instruction = match ast_func.binary_ops.ops[index] {
         parser::BinaryOp::Add => Instruction::I64Add,
         parser::BinaryOp::Subtract => Instruction::I64Sub,
@@ -59,11 +76,17 @@ fn codegen_binary_op(wasm_func: Function, ast_func: &parser::Function, entity: u
     wasm_func
 }
 
-fn codegen_definition(wasm_func: Function, ast_func: &parser::Function, entity: usize) -> Function {
+fn codegen_definition(
+    tx: Sender<Message>,
+    wasm_func: Function,
+    ast_func: &parser::Function,
+    entity: usize,
+) -> Function {
     let index = ast_func.indices[entity];
     let name_index = ast_func.definitions.names[index];
     assert_eq!(ast_func.kinds[name_index], parser::Kind::Symbol);
-    let mut wasm_func = codegen_expression(wasm_func, ast_func, ast_func.definitions.values[index]);
+    let mut wasm_func =
+        codegen_expression(tx, wasm_func, ast_func, ast_func.definitions.values[index]);
     let name = ast_func.symbols[ast_func.indices[name_index]].clone();
     let local = wasm_func.locals.len();
     wasm_func.locals.push(format!("${}", name));
@@ -75,6 +98,7 @@ fn codegen_definition(wasm_func: Function, ast_func: &parser::Function, entity: 
 }
 
 fn codegen_symbol(mut wasm_func: Function, ast_func: &parser::Function, entity: usize) -> Function {
+    println!("name to local {:?}!!!", wasm_func.name_to_local);
     let index = ast_func.indices[entity];
     let local = wasm_func
         .name_to_local
@@ -86,17 +110,40 @@ fn codegen_symbol(mut wasm_func: Function, ast_func: &parser::Function, entity: 
     wasm_func
 }
 
-fn codegen_expression(wasm_func: Function, ast_func: &parser::Function, entity: usize) -> Function {
+fn codegen_function_call(
+    tx: Sender<Message>,
+    wasm_func: Function,
+    ast_func: &parser::Function,
+    entity: usize,
+) -> Function {
+    assert_eq!(ast_func.kinds[entity], parser::Kind::FunctionCall);
+    let name = ast_func.function_calls.names[ast_func.indices[entity]];
+    assert_eq!(ast_func.kinds[name], parser::Kind::Symbol);
+    println!("spawning {}!!!", ast_func.symbols[ast_func.indices[name]]);
+    println!("TODO[ADAM]: Add function arguments to name to locals");
+    tx.send(Message::Spawn(
+        ast_func.symbols[ast_func.indices[name]].clone(),
+    ))
+    .unwrap();
+    wasm_func
+}
+
+fn codegen_expression(
+    tx: Sender<Message>,
+    wasm_func: Function,
+    ast_func: &parser::Function,
+    entity: usize,
+) -> Function {
     match ast_func.kinds[entity] {
         parser::Kind::Int => codegen_int(wasm_func, ast_func, entity),
-        parser::Kind::BinaryOp => codegen_binary_op(wasm_func, ast_func, entity),
-        parser::Kind::Definition => codegen_definition(wasm_func, ast_func, entity),
+        parser::Kind::BinaryOp => codegen_binary_op(tx, wasm_func, ast_func, entity),
+        parser::Kind::Definition => codegen_definition(tx, wasm_func, ast_func, entity),
         parser::Kind::Symbol => codegen_symbol(wasm_func, ast_func, entity),
-        parser::Kind::FunctionCall => panic!("codegen ast_function call"),
+        parser::Kind::FunctionCall => codegen_function_call(tx, wasm_func, ast_func, entity),
     }
 }
 
-fn codegen_function(ast_func: &parser::Function) -> Function {
+fn codegen_function(tx: Sender<Message>, ast_func: &parser::Function) -> Function {
     let wasm_func = Function {
         name: ast_func.name,
         instructions: vec![],
@@ -111,17 +158,34 @@ fn codegen_function(ast_func: &parser::Function) -> Function {
         .expressions
         .iter()
         .fold(wasm_func, |wasm_func, &expression| {
-            codegen_expression(wasm_func, ast_func, expression)
+            codegen_expression(tx.clone(), wasm_func, ast_func, expression)
         });
     wasm_func.symbols = ast_func.symbols.clone();
     wasm_func.ints = ast_func.ints.clone();
+    tx.send(Message::Done).unwrap();
     wasm_func
 }
 
 pub fn codegen(ast: Ast) -> Wasm {
-    let start = *ast.top_level.get("start").unwrap();
-    let wasm_func = codegen_function(&ast.functions[start]);
-    Wasm {
-        functions: vec![wasm_func],
+    let mut in_flight = 0;
+    let mut wasm = Wasm { functions: vec![] };
+    let (tx, rx) = mpsc::channel();
+    tx.send(Message::Spawn(String::from("start"))).unwrap();
+    loop {
+        match rx.recv().unwrap() {
+            Message::Spawn(name) => {
+                in_flight += 1;
+                let index = *ast.top_level.get(&name).unwrap();
+                let wasm_func = codegen_function(tx.clone(), &ast.functions[index]);
+                wasm.functions.push(wasm_func);
+            }
+            Message::Done => {
+                in_flight -= 1;
+                if in_flight == 0 {
+                    break;
+                }
+            }
+        }
     }
+    wasm
 }
