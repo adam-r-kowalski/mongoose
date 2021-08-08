@@ -144,13 +144,29 @@ fn codegen_expression(
 }
 
 fn codegen_function(tx: Sender<Message>, ast_func: &parser::Function) -> Function {
+    let locals = ast_func
+        .arguments
+        .iter()
+        .map(|&argument| {
+            assert_eq!(ast_func.kinds[argument], parser::Kind::Symbol);
+            ast_func.symbols[ast_func.indices[argument]].clone()
+        })
+        .collect::<Vec<String>>();
+    let name_to_local =
+        locals
+            .iter()
+            .enumerate()
+            .fold(HashMap::new(), |mut name_to_local, (local, name)| {
+                name_to_local.try_insert(name.clone(), local).unwrap();
+                name_to_local
+            });
     let wasm_func = Function {
         name: ast_func.name,
         instructions: vec![],
         operand_kinds: vec![],
         operands: vec![],
-        locals: vec![],
-        name_to_local: HashMap::new(),
+        locals,
+        name_to_local,
         symbols: vec![],
         ints: vec![],
     };
