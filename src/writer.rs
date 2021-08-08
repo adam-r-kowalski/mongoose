@@ -29,6 +29,15 @@ pub fn write_get_local<W: Write>(mut buffer: W, func: &Function, i: usize) -> Re
     Ok(buffer)
 }
 
+pub fn write_call<W: Write>(mut buffer: W, func: &Function, i: usize) -> Result<W> {
+    assert_eq!(func.operand_kinds[i], vec![OperandKind::Local]);
+    let operands = &func.operands[i];
+    assert_eq!(operands.len(), 1);
+    let local = &func.locals[operands[0]];
+    write!(buffer, "\n    (call {})", local)?;
+    Ok(buffer)
+}
+
 pub fn write_str<W: Write>(mut buffer: W, text: &str) -> Result<W> {
     write!(buffer, "\n    {}", text)?;
     Ok(buffer)
@@ -56,6 +65,7 @@ fn write_function<W: Write>(mut buffer: W, func: &Function) -> Result<W> {
                 Instruction::I64DivS => write_str(buffer, "i64.div_s"),
                 Instruction::SetLocal => write_set_local(buffer, &func, i),
                 Instruction::GetLocal => write_get_local(buffer, &func, i),
+                Instruction::Call => write_call(buffer, &func, i),
             })?;
     write!(buffer, ")")?;
     Ok(buffer)

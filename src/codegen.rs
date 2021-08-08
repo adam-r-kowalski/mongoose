@@ -12,12 +12,14 @@ pub enum Instruction {
     I64DivS,
     SetLocal,
     GetLocal,
+    Call,
 }
 
 #[derive(Debug, PartialEq)]
 pub enum OperandKind {
     IntLiteral,
     Local,
+    Symbol,
 }
 
 #[derive(Debug, PartialEq)]
@@ -35,6 +37,7 @@ pub struct Function {
 #[derive(Debug, PartialEq)]
 pub struct Wasm {
     pub functions: Vec<Function>,
+    pub name_to_function: HashMap<String, usize>,
 }
 
 enum Message {
@@ -98,7 +101,7 @@ fn codegen_definition(
 }
 
 fn codegen_symbol(mut wasm_func: Function, ast_func: &parser::Function, entity: usize) -> Function {
-    println!("name to local {:?}!!!", wasm_func.name_to_local);
+    assert_eq!(ast_func.kinds[entity], parser::Kind::Symbol);
     let index = ast_func.indices[entity];
     let local = wasm_func
         .name_to_local
@@ -117,10 +120,17 @@ fn codegen_function_call(
     entity: usize,
 ) -> Function {
     assert_eq!(ast_func.kinds[entity], parser::Kind::FunctionCall);
-    let name = ast_func.function_calls.names[ast_func.indices[entity]];
+    let function_call = ast_func.indices[entity];
+    let name = ast_func.function_calls.names[function_call];
     assert_eq!(ast_func.kinds[name], parser::Kind::Symbol);
-    println!("spawning {}!!!", ast_func.symbols[ast_func.indices[name]]);
-    println!("TODO[ADAM]: Add function arguments to name to locals");
+    let mut wasm_func = ast_func.function_calls.parameters[function_call]
+        .iter()
+        .fold(wasm_func, |wasm_func, &parameter| {
+            codegen_expression(tx.clone(), wasm_func, ast_func, parameter)
+        });
+    wasm_func.instructions.push(Instruction::Call);
+    wasm_func.operand_kinds.push(vec![OperandKind::Symbol]);
+    wasm_func.operands.push(vec![ast_func.indices[name]]);
     tx.send(Message::Spawn(
         ast_func.symbols[ast_func.indices[name]].clone(),
     ))
@@ -147,19 +157,17 @@ fn codegen_function(tx: Sender<Message>, ast_func: &parser::Function) -> Functio
     let locals = ast_func
         .arguments
         .iter()
-        .map(|&argument| {
-            assert_eq!(ast_func.kinds[argument], parser::Kind::Symbol);
-            ast_func.symbols[ast_func.indices[argument]].clone()
-        })
+        .map(|&argument| format!("${}", ast_func.symbols[argument].clone()))
         .collect::<Vec<String>>();
-    let name_to_local =
-        locals
-            .iter()
-            .enumerate()
-            .fold(HashMap::new(), |mut name_to_local, (local, name)| {
-                name_to_local.try_insert(name.clone(), local).unwrap();
-                name_to_local
-            });
+    let name_to_local = ast_func.arguments.iter().enumerate().fold(
+        HashMap::new(),
+        |mut name_to_local, (i, &argument)| {
+            name_to_local
+                .try_insert(ast_func.symbols[argument].clone(), i)
+                .unwrap();
+            name_to_local
+        },
+    );
     let wasm_func = Function {
         name: ast_func.name,
         instructions: vec![],
@@ -184,16 +192,24 @@ fn codegen_function(tx: Sender<Message>, ast_func: &parser::Function) -> Functio
 
 pub fn codegen(ast: Ast) -> Wasm {
     let mut in_flight = 0;
-    let mut wasm = Wasm { functions: vec![] };
+    let mut wasm = Wasm {
+        functions: vec![],
+        name_to_function: HashMap::new(),
+    };
     let (tx, rx) = mpsc::channel();
     tx.send(Message::Spawn(String::from("start"))).unwrap();
     loop {
         match rx.recv().unwrap() {
             Message::Spawn(name) => {
-                in_flight += 1;
-                let index = *ast.top_level.get(&name).unwrap();
-                let wasm_func = codegen_function(tx.clone(), &ast.functions[index]);
-                wasm.functions.push(wasm_func);
+                if let None = wasm.name_to_function.get(&name) {
+                    in_flight += 1;
+                    let index = *ast.top_level.get(&name).unwrap();
+                    let wasm_func = codegen_function(tx.clone(), &ast.functions[index]);
+                    wasm.name_to_function
+                        .try_insert(name, wasm.functions.len())
+                        .unwrap();
+                    wasm.functions.push(wasm_func);
+                }
             }
             Message::Done => {
                 in_flight -= 1;

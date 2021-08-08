@@ -26,7 +26,8 @@ fn test_codegen_int() {
                 name_to_local: HashMap::new(),
                 symbols: strings(["start"]),
                 ints: strings(["0"]),
-            }]
+            }],
+            name_to_function: HashMap::from_iter([(String::from("start"), 0)])
         }
     );
 }
@@ -56,7 +57,8 @@ fn test_codegen_add() {
                 name_to_local: HashMap::new(),
                 symbols: strings(["start"]),
                 ints: strings(["5", "10"]),
-            }]
+            }],
+            name_to_function: HashMap::from_iter([(String::from("start"), 0)])
         }
     );
 }
@@ -87,6 +89,7 @@ fn test_codegen_subtract() {
                 symbols: strings(["start"]),
                 ints: strings(["5", "10"]),
             }],
+            name_to_function: HashMap::from_iter([(String::from("start"), 0)])
         }
     );
 }
@@ -117,6 +120,7 @@ fn test_codegen_multiply() {
                 symbols: strings(["start"]),
                 ints: strings(["5", "10"]),
             }],
+            name_to_function: HashMap::from_iter([(String::from("start"), 0)])
         }
     );
 }
@@ -147,6 +151,7 @@ fn test_codegen_divide() {
                 symbols: strings(["start"]),
                 ints: strings(["10", "5"]),
             }],
+            name_to_function: HashMap::from_iter([(String::from("start"), 0)])
         }
     );
 }
@@ -181,6 +186,7 @@ fn test_codegen_add_then_multiply() {
                 symbols: strings(["start"]),
                 ints: strings(["3", "5", "10"]),
             }],
+            name_to_function: HashMap::from_iter([(String::from("start"), 0)])
         }
     );
 }
@@ -215,6 +221,7 @@ fn test_codegen_multiply_then_add() {
                 symbols: strings(["start"]),
                 ints: strings(["3", "5", "10"]),
             }],
+            name_to_function: HashMap::from_iter([(String::from("start"), 0)])
         }
     );
 }
@@ -258,6 +265,7 @@ def start():
                 symbols: strings(["start", "x", "y", "x", "y"]),
                 ints: strings(["5", "20"]),
             }],
+            name_to_function: HashMap::from_iter([(String::from("start"), 0)])
         }
     );
 }
@@ -279,32 +287,102 @@ def start(): sum_of_squares(5, 3)"#;
     assert_eq!(
         wasm,
         Wasm {
-            functions: vec![Function {
-                name: 0,
-                instructions: vec![
-                    Instruction::I64Const,
-                    Instruction::SetLocal,
-                    Instruction::I64Const,
-                    Instruction::SetLocal,
-                    Instruction::GetLocal,
-                    Instruction::GetLocal,
-                    Instruction::I64Add
-                ],
-                operand_kinds: vec![
-                    vec![OperandKind::IntLiteral],
-                    vec![OperandKind::Local],
-                    vec![OperandKind::IntLiteral],
-                    vec![OperandKind::Local],
-                    vec![OperandKind::Local],
-                    vec![OperandKind::Local],
-                    vec![]
-                ],
-                operands: vec![vec![0], vec![0], vec![1], vec![1], vec![0], vec![1], vec![]],
-                locals: strings(["$x", "$y"]),
-                name_to_local: HashMap::from_iter([(String::from("x"), 0), (String::from("y"), 1)]),
-                symbols: strings(["start", "x", "y", "x", "y"]),
-                ints: strings(["5", "20"]),
-            }],
+            functions: vec![
+                Function {
+                    name: 0,
+                    instructions: vec![
+                        Instruction::I64Const,
+                        Instruction::I64Const,
+                        Instruction::Call,
+                    ],
+                    operand_kinds: vec![
+                        vec![OperandKind::IntLiteral],
+                        vec![OperandKind::IntLiteral],
+                        vec![OperandKind::Symbol],
+                    ],
+                    operands: vec![vec![0], vec![1], vec![1]],
+                    locals: strings([]),
+                    name_to_local: HashMap::new(),
+                    symbols: strings(["start", "sum_of_squares"]),
+                    ints: strings(["5", "3"]),
+                },
+                Function {
+                    name: 0,
+                    instructions: vec![
+                        Instruction::GetLocal,
+                        Instruction::Call,
+                        Instruction::SetLocal,
+                        Instruction::GetLocal,
+                        Instruction::Call,
+                        Instruction::SetLocal,
+                        Instruction::GetLocal,
+                        Instruction::GetLocal,
+                        Instruction::I64Add,
+                    ],
+                    operand_kinds: vec![
+                        vec![OperandKind::Local],
+                        vec![OperandKind::Symbol],
+                        vec![OperandKind::Local],
+                        vec![OperandKind::Local],
+                        vec![OperandKind::Symbol],
+                        vec![OperandKind::Local],
+                        vec![OperandKind::Local],
+                        vec![OperandKind::Local],
+                        vec![],
+                    ],
+                    operands: vec![
+                        vec![0],
+                        vec![4],
+                        vec![2],
+                        vec![1],
+                        vec![7],
+                        vec![3],
+                        vec![2],
+                        vec![3],
+                        vec![]
+                    ],
+                    locals: strings(["$x", "$y", "$x2", "$y2"]),
+                    name_to_local: HashMap::from_iter([
+                        (String::from("x"), 0),
+                        (String::from("y"), 1),
+                        (String::from("x2"), 2),
+                        (String::from("y2"), 3),
+                    ]),
+                    symbols: strings([
+                        "sum_of_squares",
+                        "x",
+                        "y",
+                        "x2",
+                        "square",
+                        "x",
+                        "y2",
+                        "square",
+                        "y",
+                        "x2",
+                        "y2"
+                    ]),
+                    ints: vec![],
+                },
+                Function {
+                    name: 0,
+                    instructions: vec![
+                        Instruction::GetLocal,
+                        Instruction::GetLocal,
+                        Instruction::I64Mul,
+                    ],
+                    operand_kinds: vec![vec![OperandKind::Local], vec![OperandKind::Local], vec![],],
+                    operands: vec![vec![0], vec![0], vec![]],
+                    locals: strings(["$x"]),
+                    name_to_local: HashMap::from_iter([(String::from("x"), 0)]),
+                    symbols: strings(["square", "x", "x", "x"]),
+                    ints: vec![],
+                },
+            ],
+            name_to_function: HashMap::from_iter([
+                (String::from("start"), 0),
+                (String::from("sum_of_squares"), 1),
+                (String::from("square"), 2),
+            ])
         }
     );
 }
