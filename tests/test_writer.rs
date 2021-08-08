@@ -23,6 +23,7 @@ fn test_write_int() {
     assert_eq!(
         str::from_utf8(&code).unwrap(),
         r#"(module
+
   (func $start (result i64)
     (i64.const 0))
 
@@ -40,6 +41,7 @@ fn test_write_add() {
     assert_eq!(
         str::from_utf8(&code).unwrap(),
         r#"(module
+
   (func $start (result i64)
     (i64.const 5)
     (i64.const 10)
@@ -59,6 +61,7 @@ fn test_write_subtract() {
     assert_eq!(
         str::from_utf8(&code).unwrap(),
         r#"(module
+
   (func $start (result i64)
     (i64.const 5)
     (i64.const 10)
@@ -78,6 +81,7 @@ fn test_write_multiply() {
     assert_eq!(
         str::from_utf8(&code).unwrap(),
         r#"(module
+
   (func $start (result i64)
     (i64.const 5)
     (i64.const 10)
@@ -97,6 +101,7 @@ fn test_write_divide() {
     assert_eq!(
         str::from_utf8(&code).unwrap(),
         r#"(module
+
   (func $start (result i64)
     (i64.const 10)
     (i64.const 5)
@@ -116,6 +121,7 @@ fn test_write_add_then_multiply() {
     assert_eq!(
         str::from_utf8(&code).unwrap(),
         r#"(module
+
   (func $start (result i64)
     (i64.const 3)
     (i64.const 5)
@@ -137,6 +143,7 @@ fn test_write_multiply_then_add() {
     assert_eq!(
         str::from_utf8(&code).unwrap(),
         r#"(module
+
   (func $start (result i64)
     (i64.const 3)
     (i64.const 5)
@@ -163,6 +170,7 @@ def start():
     assert_eq!(
         str::from_utf8(&code).unwrap(),
         r#"(module
+
   (func $start (result i64)
     (local $x i64)
     (local $y i64)
@@ -177,4 +185,54 @@ def start():
   (export "_start" (func $start)))"#
     );
     assert_eq!(run(&code), Value::I64(25));
+}
+
+#[test]
+fn test_write_multiple_functions() {
+    let source = r#"
+def square(x): x * x
+
+def sum_of_squares(x, y):
+    x2 = square(x)
+    y2 = square(y)
+    x2 + y2
+
+def start(): sum_of_squares(5, 3)"#;
+    let tokens = tokenize(source);
+    let ast = parse(tokens);
+    let wasm = codegen(ast);
+    let code = write(Vec::<u8>::new(), wasm).unwrap();
+    assert_eq!(
+        str::from_utf8(&code).unwrap(),
+        r#"(module
+
+  (func $start (result i64)
+    (i64.const 5)
+    (i64.const 3)
+    (call $sum_of_squares))
+
+  (func $sum_of_squares (result i64)
+    (local $x i64)
+    (local $y i64)
+    (local $x2 i64)
+    (local $y2 i64)
+    (get_local $x)
+    (call $square)
+    (set_local $x2)
+    (get_local $y)
+    (call $square)
+    (set_local $y2)
+    (get_local $x2)
+    (get_local $y2)
+    i64.add)
+
+  (func $square (result i64)
+    (local $x i64)
+    (get_local $x)
+    (get_local $x)
+    i64.mul)
+
+  (export "_start" (func $start)))"#
+    );
+    // assert_eq!(run(&code), Value::I64(25));
 }

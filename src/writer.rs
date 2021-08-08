@@ -30,11 +30,11 @@ pub fn write_get_local<W: Write>(mut buffer: W, func: &Function, i: usize) -> Re
 }
 
 pub fn write_call<W: Write>(mut buffer: W, func: &Function, i: usize) -> Result<W> {
-    assert_eq!(func.operand_kinds[i], vec![OperandKind::Local]);
+    assert_eq!(func.operand_kinds[i], vec![OperandKind::Symbol]);
     let operands = &func.operands[i];
     assert_eq!(operands.len(), 1);
-    let local = &func.locals[operands[0]];
-    write!(buffer, "\n    (call {})", local)?;
+    let symbol = &func.symbols[operands[0]];
+    write!(buffer, "\n    (call ${})", symbol)?;
     Ok(buffer)
 }
 
@@ -51,7 +51,11 @@ fn write_locals<W: Write>(buffer: W, func: &Function) -> Result<W> {
 }
 
 fn write_function<W: Write>(mut buffer: W, func: &Function) -> Result<W> {
-    write!(buffer, "  (func ${} (result i64)", func.symbols[func.name])?;
+    write!(
+        buffer,
+        "\n\n  (func ${} (result i64)",
+        func.symbols[func.name]
+    )?;
     let buffer = write_locals(buffer, &func)?;
     let mut buffer =
         func.instructions
@@ -72,8 +76,10 @@ fn write_function<W: Write>(mut buffer: W, func: &Function) -> Result<W> {
 }
 
 pub fn write<W: Write>(mut buffer: W, wasm: Wasm) -> Result<W> {
-    write!(buffer, "(module\n")?;
-    let mut buffer = write_function(buffer, &wasm.functions[0])?;
+    write!(buffer, "(module")?;
+    let mut buffer = wasm.functions.iter().fold(buffer, |buffer, function| {
+        write_function(buffer, function).unwrap()
+    });
     write!(buffer, "\n\n  (export \"_start\" (func $start)))")?;
     Ok(buffer)
 }
