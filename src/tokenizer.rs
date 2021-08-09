@@ -62,7 +62,7 @@ fn tokenize_number(mut top_level: TopLevel, source: &str) -> (TopLevel, &str) {
 fn tokenize_indent(mut top_level: TopLevel, source: &str) -> (TopLevel, &str) {
     let length = source[1..]
         .chars()
-        .take_while(|&c| is_whitespace(c))
+        .take_while(|c| ['\t', '\x0C', ' '].contains(c))
         .count();
     if length > 0 {
         top_level.kinds.push(Kind::Indent);
@@ -74,20 +74,13 @@ fn tokenize_indent(mut top_level: TopLevel, source: &str) -> (TopLevel, &str) {
     }
 }
 
-fn is_whitespace(c: char) -> bool {
-    match c {
-        '\t' | '\x0C' | '\r' | ' ' => true,
-        _ => false,
-    }
-}
-
-fn trim(source: &str, predicate: fn(char) -> bool) -> &str {
-    let length = source.chars().take_while(|&c| predicate(c)).count();
+fn trim(source: &str, predicate: fn(&char) -> bool) -> &str {
+    let length = source.chars().take_while(|c| predicate(c)).count();
     &source[length..]
 }
 
 fn tokenize_top_level(top_level: TopLevel, source: &str) -> (TopLevel, &str) {
-    let source = trim(source, is_whitespace);
+    let source = trim(source, |c| ['\t', '\x0C', '\r', ' '].contains(c));
     match source.chars().next() {
         Some(c) if c.is_alphabetic() || c == '_' => tokenize_symbol(top_level, source),
         Some('(') => tokenize_one(top_level, source, Kind::LeftParen),
