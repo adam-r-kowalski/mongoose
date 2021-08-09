@@ -43,7 +43,7 @@ pub struct Wasm {
 
 enum Message {
     Spawn(String),
-    Done,
+    Done(usize, Function),
 }
 
 fn codegen_int(mut wasm_func: Function, ast_func: &parser::Function, entity: usize) -> Function {
@@ -188,7 +188,6 @@ fn codegen_function(tx: Sender<Message>, ast_func: &parser::Function) -> Functio
         });
     wasm_func.symbols = ast_func.symbols.clone();
     wasm_func.ints = ast_func.ints.clone();
-    tx.send(Message::Done).unwrap();
     wasm_func
 }
 
@@ -206,14 +205,31 @@ pub fn codegen(ast: Ast) -> Wasm {
                 if let None = wasm.name_to_function.get(&name) {
                     in_flight += 1;
                     let index = *ast.top_level.get(&name).unwrap();
-                    let wasm_func = codegen_function(tx.clone(), &ast.functions[index]);
-                    wasm.name_to_function
-                        .try_insert(name, wasm.functions.len())
-                        .unwrap();
-                    wasm.functions.push(wasm_func);
+                    let ast_func = &ast.functions[index];
+                    let i = wasm.functions.len();
+                    wasm.functions.push(Function {
+                        name: 0,
+                        instructions: vec![],
+                        operand_kinds: vec![],
+                        operands: vec![],
+                        locals: vec![],
+                        name_to_local: HashMap::new(),
+                        symbols: vec![],
+                        ints: vec![],
+                        arguments: 0,
+                    });
+                    wasm.name_to_function.try_insert(name, i).unwrap();
+                    let local_tx = tx.clone();
+                    rayon::scope(|s| {
+                        s.spawn(move |_| {
+                            let wasm_func = codegen_function(local_tx.clone(), ast_func);
+                            local_tx.send(Message::Done(i, wasm_func)).unwrap();
+                        });
+                    });
                 }
             }
-            Message::Done => {
+            Message::Done(i, wasm_func) => {
+                wasm.functions[i] = wasm_func;
                 in_flight -= 1;
                 if in_flight == 0 {
                     break;
