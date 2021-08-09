@@ -32,6 +32,7 @@ pub struct Function {
     pub name_to_local: HashMap<String, usize>,
     pub symbols: Vec<String>,
     pub ints: Vec<String>,
+    pub arguments: usize,
 }
 
 #[derive(Debug, PartialEq)]
@@ -177,6 +178,7 @@ fn codegen_function(tx: Sender<Message>, ast_func: &parser::Function) -> Functio
         name_to_local,
         symbols: vec![],
         ints: vec![],
+        arguments: ast_func.arguments.len(),
     };
     let mut wasm_func = ast_func
         .expressions

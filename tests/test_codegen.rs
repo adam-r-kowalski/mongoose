@@ -26,6 +26,7 @@ fn test_codegen_int() {
                 name_to_local: HashMap::new(),
                 symbols: strings(["start"]),
                 ints: strings(["0"]),
+                arguments: 0,
             }],
             name_to_function: HashMap::from_iter([(String::from("start"), 0)])
         }
@@ -57,6 +58,7 @@ fn test_codegen_add() {
                 name_to_local: HashMap::new(),
                 symbols: strings(["start"]),
                 ints: strings(["5", "10"]),
+                arguments: 0,
             }],
             name_to_function: HashMap::from_iter([(String::from("start"), 0)])
         }
@@ -88,6 +90,7 @@ fn test_codegen_subtract() {
                 name_to_local: HashMap::new(),
                 symbols: strings(["start"]),
                 ints: strings(["5", "10"]),
+                arguments: 0,
             }],
             name_to_function: HashMap::from_iter([(String::from("start"), 0)])
         }
@@ -119,6 +122,7 @@ fn test_codegen_multiply() {
                 name_to_local: HashMap::new(),
                 symbols: strings(["start"]),
                 ints: strings(["5", "10"]),
+                arguments: 0,
             }],
             name_to_function: HashMap::from_iter([(String::from("start"), 0)])
         }
@@ -150,6 +154,7 @@ fn test_codegen_divide() {
                 name_to_local: HashMap::new(),
                 symbols: strings(["start"]),
                 ints: strings(["10", "5"]),
+                arguments: 0,
             }],
             name_to_function: HashMap::from_iter([(String::from("start"), 0)])
         }
@@ -185,6 +190,7 @@ fn test_codegen_add_then_multiply() {
                 name_to_local: HashMap::new(),
                 symbols: strings(["start"]),
                 ints: strings(["3", "5", "10"]),
+                arguments: 0,
             }],
             name_to_function: HashMap::from_iter([(String::from("start"), 0)])
         }
@@ -220,6 +226,7 @@ fn test_codegen_multiply_then_add() {
                 name_to_local: HashMap::new(),
                 symbols: strings(["start"]),
                 ints: strings(["3", "5", "10"]),
+                arguments: 0,
             }],
             name_to_function: HashMap::from_iter([(String::from("start"), 0)])
         }
@@ -264,6 +271,7 @@ def start():
                 name_to_local: HashMap::from_iter([(String::from("x"), 0), (String::from("y"), 1)]),
                 symbols: strings(["start", "x", "y", "x", "y"]),
                 ints: strings(["5", "20"]),
+                arguments: 0,
             }],
             name_to_function: HashMap::from_iter([(String::from("start"), 0)])
         }
@@ -305,6 +313,7 @@ def start(): sum_of_squares(5, 3)"#;
                     name_to_local: HashMap::new(),
                     symbols: strings(["start", "sum_of_squares"]),
                     ints: strings(["5", "3"]),
+                    arguments: 0,
                 },
                 Function {
                     name: 0,
@@ -362,6 +371,7 @@ def start(): sum_of_squares(5, 3)"#;
                         "y2"
                     ]),
                     ints: vec![],
+                    arguments: 2,
                 },
                 Function {
                     name: 0,
@@ -376,6 +386,7 @@ def start(): sum_of_squares(5, 3)"#;
                     name_to_local: HashMap::from_iter([(String::from("x"), 0)]),
                     symbols: strings(["square", "x", "x", "x"]),
                     ints: vec![],
+                    arguments: 1,
                 },
             ],
             name_to_function: HashMap::from_iter([

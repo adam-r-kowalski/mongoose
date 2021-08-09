@@ -211,9 +211,7 @@ def start(): sum_of_squares(5, 3)"#;
     (i64.const 3)
     (call $sum_of_squares))
 
-  (func $sum_of_squares (result i64)
-    (local $x i64)
-    (local $y i64)
+  (func $sum_of_squares (param $x i64) (param $y i64) (result i64)
     (local $x2 i64)
     (local $y2 i64)
     (get_local $x)
@@ -226,13 +224,12 @@ def start(): sum_of_squares(5, 3)"#;
     (get_local $y2)
     i64.add)
 
-  (func $square (result i64)
-    (local $x i64)
+  (func $square (param $x i64) (result i64)
     (get_local $x)
     (get_local $x)
     i64.mul)
 
   (export "_start" (func $start)))"#
     );
-    // assert_eq!(run(&code), Value::I64(25));
+    assert_eq!(run(&code), Value::I64(34));
 }

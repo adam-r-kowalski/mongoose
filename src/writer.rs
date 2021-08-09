@@ -43,19 +43,28 @@ pub fn write_str<W: Write>(mut buffer: W, text: &str) -> Result<W> {
     Ok(buffer)
 }
 
+fn write_arguments<W: Write>(buffer: W, func: &Function) -> Result<W> {
+    func.locals[..func.arguments]
+        .iter()
+        .try_fold(buffer, |mut buffer, local| {
+            write!(buffer, " (param {} i64)", local)?;
+            Ok(buffer)
+        })
+}
+
 fn write_locals<W: Write>(buffer: W, func: &Function) -> Result<W> {
-    func.locals.iter().try_fold(buffer, |mut buffer, local| {
-        write!(buffer, "\n    (local {} i64)", local)?;
-        Ok(buffer)
-    })
+    func.locals[func.arguments..]
+        .iter()
+        .try_fold(buffer, |mut buffer, local| {
+            write!(buffer, "\n    (local {} i64)", local)?;
+            Ok(buffer)
+        })
 }
 
 fn write_function<W: Write>(mut buffer: W, func: &Function) -> Result<W> {
-    write!(
-        buffer,
-        "\n\n  (func ${} (result i64)",
-        func.symbols[func.name]
-    )?;
+    write!(buffer, "\n\n  (func ${}", func.symbols[func.name])?;
+    let mut buffer = write_arguments(buffer, &func)?;
+    write!(buffer, " (result i64)")?;
     let buffer = write_locals(buffer, &func)?;
     let mut buffer =
         func.instructions
