@@ -78,12 +78,13 @@ const ADD: Precedence = 10;
 const SUBTRACT: Precedence = ADD;
 const MULTIPLY: Precedence = 20;
 const DIVIDE: Precedence = MULTIPLY;
+const HIGHEST: Precedence = 100;
 
 fn precedence_of(parser: &InfixParser) -> Precedence {
     match parser {
         InfixParser::BinaryOp(precedence, _) => *precedence,
         InfixParser::Definition => LOWEST,
-        InfixParser::FunctionCall => LOWEST,
+        InfixParser::FunctionCall => HIGHEST,
     }
 }
 
