@@ -2,7 +2,7 @@ use std::{env, fs::File, io::Read};
 
 use wasmer::{imports, Instance, Module, Store};
 
-use ra::{codegen::codegen, parser::parse, tokenizer::tokenize, writer::write};
+use smith::{codegen::codegen, parser::parse, tokenizer::tokenize, writer::write};
 
 fn main() {
     let args: Vec<String> = env::args().collect();

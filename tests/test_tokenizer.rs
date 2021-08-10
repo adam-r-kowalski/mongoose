@@ -1,6 +1,6 @@
 use pretty_assertions::assert_eq;
 
-use ra::tokenizer::{tokenize, Kind, Tokens, TopLevel};
+use smith::tokenizer::{tokenize, Kind, Tokens, TopLevel};
 use test_utilities::strings;
 
 #[test]

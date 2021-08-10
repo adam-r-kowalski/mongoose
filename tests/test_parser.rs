@@ -3,7 +3,7 @@ use std::iter::FromIterator;
 
 use pretty_assertions::assert_eq;
 
-use ra::{
+use smith::{
     parser::{parse, Ast, BinaryOp, BinaryOps, Definitions, Function, FunctionCalls, Kind},
     tokenizer::tokenize,
 };

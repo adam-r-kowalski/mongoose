@@ -2,7 +2,7 @@ use std::{collections::HashMap, iter::FromIterator};
 
 use pretty_assertions::assert_eq;
 
-use ra::{
+use smith::{
     codegen::{codegen, Function, Instruction, OperandKind, Wasm},
     parser::parse,
     tokenizer::tokenize,
