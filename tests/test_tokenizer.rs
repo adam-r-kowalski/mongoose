@@ -276,3 +276,48 @@ def start(): sum_of_squares(5, 3)"#;
         }
     )
 }
+
+#[test]
+fn test_tokenize_if() {
+    let source = r#"
+def min(x, y):
+  if x < y:
+    x
+  else:
+    y"#;
+    let tokens = tokenize(source);
+    assert_eq!(
+        tokens,
+        Tokens {
+            top_level: vec![TopLevel {
+                indices: vec![0, 0, 0, 1, 0, 2, 0, 0, 0, 0, 3, 0, 4, 0, 1, 5, 2, 0, 0, 3, 6],
+                kinds: vec![
+                    Kind::Def,
+                    Kind::Symbol,
+                    Kind::LeftParen,
+                    Kind::Symbol,
+                    Kind::Comma,
+                    Kind::Symbol,
+                    Kind::RightParen,
+                    Kind::Colon,
+                    Kind::Indent,
+                    Kind::If,
+                    Kind::Symbol,
+                    Kind::LessThan,
+                    Kind::Symbol,
+                    Kind::Colon,
+                    Kind::Indent,
+                    Kind::Symbol,
+                    Kind::Indent,
+                    Kind::Else,
+                    Kind::Colon,
+                    Kind::Indent,
+                    Kind::Symbol,
+                ],
+                symbols: strings(["min", "x", "y", "x", "y", "x", "y"]),
+                ints: vec![],
+                indents: vec![2, 4, 2, 4],
+            }]
+        }
+    )
+}

@@ -11,8 +11,11 @@ pub enum Kind {
     Slash,
     Equal,
     Comma,
+    LessThan,
     Indent,
     Int,
+    If,
+    Else,
 }
 
 #[derive(Debug, PartialEq)]
@@ -29,19 +32,30 @@ pub struct Tokens {
     pub top_level: Vec<TopLevel>,
 }
 
-fn tokenize_symbol(mut top_level: TopLevel, source: &str) -> (TopLevel, &str) {
+fn insert_keyword(mut top_level: TopLevel, kind: Kind) -> TopLevel {
+    top_level.kinds.push(kind);
+    top_level.indices.push(0);
+    top_level
+}
+
+fn insert_symbol(mut top_level: TopLevel, symbol: String) -> TopLevel {
+    top_level.kinds.push(Kind::Symbol);
+    top_level.indices.push(top_level.symbols.len());
+    top_level.symbols.push(symbol);
+    top_level
+}
+
+fn tokenize_symbol(top_level: TopLevel, source: &str) -> (TopLevel, &str) {
     let length = 1 + source[1..]
         .chars()
         .take_while(|&c| c.is_alphanumeric() || c == '_')
         .count();
-    if &source[..length] == "def" {
-        top_level.kinds.push(Kind::Def);
-        top_level.indices.push(0);
-    } else {
-        top_level.kinds.push(Kind::Symbol);
-        top_level.indices.push(top_level.symbols.len());
-        top_level.symbols.push(source[..length].to_string());
-    }
+    let top_level = match &source[..length] {
+        "def" => insert_keyword(top_level, Kind::Def),
+        "if" => insert_keyword(top_level, Kind::If),
+        "else" => insert_keyword(top_level, Kind::Else),
+        _ => insert_symbol(top_level, source[..length].to_string()),
+    };
     tokenize_top_level(top_level, &source[length..])
 }
 
@@ -92,6 +106,7 @@ fn tokenize_top_level(top_level: TopLevel, source: &str) -> (TopLevel, &str) {
         Some('/') => tokenize_one(top_level, source, Kind::Slash),
         Some('=') => tokenize_one(top_level, source, Kind::Equal),
         Some(',') => tokenize_one(top_level, source, Kind::Comma),
+        Some('<') => tokenize_one(top_level, source, Kind::LessThan),
         Some('0'..='9') => tokenize_number(top_level, source),
         Some('\n') => tokenize_indent(top_level, source),
         Some(c) => panic!("not implemented for char \"{}\"", c),
