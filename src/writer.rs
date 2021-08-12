@@ -76,9 +76,13 @@ fn write_function<W: Write>(mut buffer: W, func: &Function) -> Result<W> {
                 Instruction::I64Sub => write_str(buffer, "i64.sub"),
                 Instruction::I64Mul => write_str(buffer, "i64.mul"),
                 Instruction::I64DivS => write_str(buffer, "i64.div_s"),
+                Instruction::I64LtS => write_str(buffer, "i64.lt_s"),
                 Instruction::SetLocal => write_set_local(buffer, &func, i),
                 Instruction::GetLocal => write_get_local(buffer, &func, i),
                 Instruction::Call => write_call(buffer, &func, i),
+                Instruction::If => write_str(buffer, "if (result i64)"),
+                Instruction::Else => write_str(buffer, "else"),
+                Instruction::End => write_str(buffer, "end"),
             })?;
     write!(buffer, ")")?;
     Ok(buffer)

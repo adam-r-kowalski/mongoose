@@ -233,3 +233,39 @@ def start(): sum_of_squares(5, 3)"#;
     );
     assert_eq!(run(&code), Value::I64(34));
 }
+
+#[test]
+fn test_write_single_line_if() {
+    let source = r#"
+def start():
+  x = 5
+  y = 10
+  if x < y: x else: y"#;
+    let tokens = tokenize(source);
+    let ast = parse(tokens);
+    let wasm = codegen(ast);
+    let code = write(Vec::<u8>::new(), wasm).unwrap();
+    assert_eq!(
+        str::from_utf8(&code).unwrap(),
+        r#"(module
+
+  (func $start (result i64)
+    (local $x i64)
+    (local $y i64)
+    (i64.const 5)
+    (set_local $x)
+    (i64.const 10)
+    (set_local $y)
+    (get_local $x)
+    (get_local $y)
+    i64.lt_s
+    if (result i64)
+    (get_local $x)
+    else
+    (get_local $y)
+    end)
+
+  (export "_start" (func $start)))"#
+    );
+    // assert_eq!(run(&code), Value::I64(34));
+}

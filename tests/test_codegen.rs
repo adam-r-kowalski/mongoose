@@ -397,3 +397,32 @@ def start(): sum_of_squares(5, 3)"#;
         }
     );
 }
+
+#[test]
+fn test_codegen_single_line_if() {
+    let source = r#"
+def start():
+  x = 5
+  y = 10
+  if x < y: x else: y"#;
+    let tokens = tokenize(source);
+    let ast = parse(tokens);
+    let wasm = codegen(ast);
+    assert_eq!(
+        wasm,
+        Wasm {
+            functions: vec![Function {
+                name: 0,
+                instructions: vec![Instruction::I64Const],
+                operand_kinds: vec![vec![OperandKind::IntLiteral]],
+                operands: vec![vec![0]],
+                locals: vec![],
+                name_to_local: HashMap::new(),
+                symbols: strings(["start"]),
+                ints: strings(["0"]),
+                arguments: 0,
+            }],
+            name_to_function: HashMap::from_iter([(String::from("start"), 0)])
+        }
+    );
+}

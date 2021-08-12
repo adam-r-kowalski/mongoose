@@ -10,9 +10,13 @@ pub enum Instruction {
     I64Sub,
     I64Mul,
     I64DivS,
+    I64LtS,
     SetLocal,
     GetLocal,
     Call,
+    If,
+    Else,
+    End,
 }
 
 #[derive(Debug, PartialEq)]
@@ -73,7 +77,7 @@ fn codegen_binary_op(
         parser::BinaryOp::Subtract => Instruction::I64Sub,
         parser::BinaryOp::Multiply => Instruction::I64Mul,
         parser::BinaryOp::Divide => Instruction::I64DivS,
-        op => panic!("binary op {:?} not supported in codegen", op),
+        parser::BinaryOp::LessThan => Instruction::I64LtS,
     };
     wasm_func.instructions.push(instruction);
     wasm_func.operand_kinds.push(vec![]);
@@ -140,6 +144,39 @@ fn codegen_function_call(
     wasm_func
 }
 
+fn codegen_if(
+    tx: Sender<Message>,
+    wasm_func: Function,
+    ast_func: &parser::Function,
+    entity: usize,
+) -> Function {
+    let index = ast_func.indices[entity];
+    let mut wasm_func = codegen_expression(
+        tx.clone(),
+        wasm_func,
+        ast_func,
+        ast_func.ifs.conditionals[index],
+    );
+    wasm_func.instructions.push(Instruction::If);
+    wasm_func.operand_kinds.push(vec![]);
+    wasm_func.operands.push(vec![]);
+    let mut wasm_func = codegen_expression(
+        tx.clone(),
+        wasm_func,
+        ast_func,
+        ast_func.ifs.then_branches[index],
+    );
+    wasm_func.instructions.push(Instruction::Else);
+    wasm_func.operand_kinds.push(vec![]);
+    wasm_func.operands.push(vec![]);
+    let mut wasm_func =
+        codegen_expression(tx, wasm_func, ast_func, ast_func.ifs.else_branches[index]);
+    wasm_func.instructions.push(Instruction::End);
+    wasm_func.operand_kinds.push(vec![]);
+    wasm_func.operands.push(vec![]);
+    wasm_func
+}
+
 fn codegen_expression(
     tx: Sender<Message>,
     wasm_func: Function,
@@ -152,7 +189,7 @@ fn codegen_expression(
         parser::Kind::Definition => codegen_definition(tx, wasm_func, ast_func, entity),
         parser::Kind::Symbol => codegen_symbol(wasm_func, ast_func, entity),
         parser::Kind::FunctionCall => codegen_function_call(tx, wasm_func, ast_func, entity),
-        kind => panic!("codegen expression {:?} not supported", kind),
+        parser::Kind::If => codegen_if(tx, wasm_func, ast_func, entity),
     }
 }
 
