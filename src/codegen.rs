@@ -73,6 +73,7 @@ fn codegen_binary_op(
         parser::BinaryOp::Subtract => Instruction::I64Sub,
         parser::BinaryOp::Multiply => Instruction::I64Mul,
         parser::BinaryOp::Divide => Instruction::I64DivS,
+        op => panic!("binary op {:?} not supported in codegen", op),
     };
     wasm_func.instructions.push(instruction);
     wasm_func.operand_kinds.push(vec![]);
@@ -151,6 +152,7 @@ fn codegen_expression(
         parser::Kind::Definition => codegen_definition(tx, wasm_func, ast_func, entity),
         parser::Kind::Symbol => codegen_symbol(wasm_func, ast_func, entity),
         parser::Kind::FunctionCall => codegen_function_call(tx, wasm_func, ast_func, entity),
+        kind => panic!("codegen expression {:?} not supported", kind),
     }
 }
 

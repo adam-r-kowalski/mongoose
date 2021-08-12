@@ -13,6 +13,7 @@ pub enum Kind {
     BinaryOp,
     Definition,
     FunctionCall,
+    If,
 }
 
 #[derive(Debug, PartialEq, Copy, Clone)]
@@ -21,6 +22,7 @@ pub enum BinaryOp {
     Subtract,
     Multiply,
     Divide,
+    LessThan,
 }
 
 #[derive(Debug, PartialEq)]
@@ -43,6 +45,13 @@ pub struct FunctionCalls {
 }
 
 #[derive(Debug, PartialEq)]
+pub struct Ifs {
+    pub conditionals: Vec<usize>,
+    pub then_branches: Vec<usize>,
+    pub else_branches: Vec<usize>,
+}
+
+#[derive(Debug, PartialEq)]
 pub struct Function {
     pub name: usize,
     pub arguments: Vec<usize>,
@@ -54,6 +63,7 @@ pub struct Function {
     pub expressions: Vec<usize>,
     pub symbols: Vec<String>,
     pub ints: Vec<String>,
+    pub ifs: Ifs,
 }
 
 #[derive(Debug, PartialEq)]
@@ -74,11 +84,12 @@ enum InfixParser {
 struct ParseResult(Function, Token, usize);
 
 const LOWEST: Precedence = 0;
-const ADD: Precedence = 10;
+const LESS_THAN: Precedence = 10;
+const ADD: Precedence = LESS_THAN + 10;
 const SUBTRACT: Precedence = ADD;
-const MULTIPLY: Precedence = 20;
+const MULTIPLY: Precedence = ADD + 10;
 const DIVIDE: Precedence = MULTIPLY;
-const HIGHEST: Precedence = 100;
+const HIGHEST: Precedence = DIVIDE + 10;
 
 fn precedence_of(parser: &InfixParser) -> Precedence {
     match parser {
@@ -108,6 +119,24 @@ fn parse_primitive(
     ParseResult(func, token, entity)
 }
 
+fn parse_if(func: Function, top_level: &tokenizer::TopLevel, token: Token) -> ParseResult {
+    let token = consume(top_level, token, tokenizer::Kind::If);
+    let ParseResult(func, token, conditional) = parse_expression(func, top_level, token, LOWEST);
+    let token = consume(top_level, token, tokenizer::Kind::Colon);
+    let ParseResult(func, token, then_branch) = parse_expression(func, top_level, token, LOWEST);
+    let token = consume(top_level, token, tokenizer::Kind::Else);
+    let token = consume(top_level, token, tokenizer::Kind::Colon);
+    let ParseResult(mut func, token, else_branch) =
+        parse_expression(func, top_level, token, LOWEST);
+    let entity = fresh_entity(&func);
+    func.kinds.push(Kind::If);
+    func.indices.push(func.ifs.conditionals.len());
+    func.ifs.conditionals.push(conditional);
+    func.ifs.then_branches.push(then_branch);
+    func.ifs.else_branches.push(else_branch);
+    ParseResult(func, token, entity)
+}
+
 fn prefix_parser(
     func: Function,
     top_level: &tokenizer::TopLevel,
@@ -117,6 +146,7 @@ fn prefix_parser(
     match kind {
         tokenizer::Kind::Symbol => parse_primitive(func, top_level, token, Kind::Symbol),
         tokenizer::Kind::Int => parse_primitive(func, top_level, token, Kind::Int),
+        tokenizer::Kind::If => parse_if(func, top_level, token),
         token => panic!("no prefix parser for {:?}", token),
     }
 }
@@ -206,6 +236,7 @@ fn infix_parser(kind: tokenizer::Kind) -> Option<InfixParser> {
         tokenizer::Kind::Minus => Some(InfixParser::BinaryOp(SUBTRACT, BinaryOp::Subtract)),
         tokenizer::Kind::Times => Some(InfixParser::BinaryOp(MULTIPLY, BinaryOp::Multiply)),
         tokenizer::Kind::Slash => Some(InfixParser::BinaryOp(DIVIDE, BinaryOp::Divide)),
+        tokenizer::Kind::LessThan => Some(InfixParser::BinaryOp(LESS_THAN, BinaryOp::LessThan)),
         tokenizer::Kind::Equal => Some(InfixParser::Definition),
         tokenizer::Kind::LeftParen => Some(InfixParser::FunctionCall),
         _ => None,
@@ -320,6 +351,11 @@ fn parse_function(top_level: &tokenizer::TopLevel, token: Token) -> Function {
         expressions: vec![],
         symbols: vec![],
         ints: vec![],
+        ifs: Ifs {
+            conditionals: vec![],
+            then_branches: vec![],
+            else_branches: vec![],
+        },
     };
     let token = consume(top_level, inc_token(token), tokenizer::Kind::LeftParen);
     let (func, token) = if top_level.kinds[token.0] != tokenizer::Kind::RightParen {

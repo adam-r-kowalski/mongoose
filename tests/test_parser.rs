@@ -4,7 +4,7 @@ use std::iter::FromIterator;
 use pretty_assertions::assert_eq;
 
 use smith::{
-    parser::{parse, Ast, BinaryOp, BinaryOps, Definitions, Function, FunctionCalls, Kind},
+    parser::{parse, Ast, BinaryOp, BinaryOps, Definitions, Function, FunctionCalls, Ifs, Kind},
     tokenizer::tokenize,
 };
 
@@ -38,6 +38,11 @@ fn test_parse_int() {
                 expressions: vec![0],
                 symbols: strings(["start"]),
                 ints: strings(["0"]),
+                ifs: Ifs {
+                    conditionals: vec![],
+                    then_branches: vec![],
+                    else_branches: vec![],
+                }
             }],
             top_level: HashMap::from_iter([(String::from("start"), 0)])
         }
@@ -72,6 +77,11 @@ fn test_parse_add() {
                 expressions: vec![2],
                 symbols: strings(["start"]),
                 ints: strings(["5", "10"]),
+                ifs: Ifs {
+                    conditionals: vec![],
+                    then_branches: vec![],
+                    else_branches: vec![],
+                }
             }],
             top_level: HashMap::from_iter([(String::from("start"), 0)])
         }
@@ -106,6 +116,11 @@ fn test_parse_subtract() {
                 expressions: vec![2],
                 symbols: strings(["start"]),
                 ints: strings(["5", "10"]),
+                ifs: Ifs {
+                    conditionals: vec![],
+                    then_branches: vec![],
+                    else_branches: vec![],
+                }
             }],
             top_level: HashMap::from_iter([(String::from("start"), 0)])
         }
@@ -140,6 +155,11 @@ fn test_parse_multiply() {
                 expressions: vec![2],
                 symbols: strings(["start"]),
                 ints: strings(["5", "10"]),
+                ifs: Ifs {
+                    conditionals: vec![],
+                    then_branches: vec![],
+                    else_branches: vec![],
+                }
             }],
             top_level: HashMap::from_iter([(String::from("start"), 0)])
         }
@@ -174,6 +194,11 @@ fn test_parse_divide() {
                 expressions: vec![2],
                 symbols: strings(["start"]),
                 ints: strings(["10", "5"]),
+                ifs: Ifs {
+                    conditionals: vec![],
+                    then_branches: vec![],
+                    else_branches: vec![],
+                }
             }],
             top_level: HashMap::from_iter([(String::from("start"), 0)])
         }
@@ -214,6 +239,11 @@ fn test_parse_add_then_multiply() {
                 expressions: vec![4],
                 symbols: strings(["start"]),
                 ints: strings(["3", "5", "10"]),
+                ifs: Ifs {
+                    conditionals: vec![],
+                    then_branches: vec![],
+                    else_branches: vec![],
+                }
             }],
             top_level: HashMap::from_iter([(String::from("start"), 0)])
         }
@@ -254,6 +284,11 @@ fn test_parse_multiply_then_add() {
                 expressions: vec![4],
                 symbols: strings(["start"]),
                 ints: strings(["3", "5", "10"]),
+                ifs: Ifs {
+                    conditionals: vec![],
+                    then_branches: vec![],
+                    else_branches: vec![],
+                }
             }],
             top_level: HashMap::from_iter([(String::from("start"), 0)])
         }
@@ -303,6 +338,11 @@ fn test_parse_local_variables() {
                 expressions: vec![2, 5, 8],
                 symbols: strings(["start", "x", "y", "x", "y"]),
                 ints: strings(["5", "20"]),
+                ifs: Ifs {
+                    conditionals: vec![],
+                    then_branches: vec![],
+                    else_branches: vec![],
+                }
             }],
             top_level: HashMap::from_iter([(String::from("start"), 0)])
         }
@@ -347,6 +387,11 @@ def start(): sum_of_squares(5, 3)"#;
                     expressions: vec![2],
                     symbols: strings(["square", "x", "x", "x"]),
                     ints: vec![],
+                    ifs: Ifs {
+                        conditionals: vec![],
+                        then_branches: vec![],
+                        else_branches: vec![],
+                    }
                 },
                 Function {
                     name: 0,
@@ -395,6 +440,11 @@ def start(): sum_of_squares(5, 3)"#;
                         "y2"
                     ]),
                     ints: vec![],
+                    ifs: Ifs {
+                        conditionals: vec![],
+                        then_branches: vec![],
+                        else_branches: vec![],
+                    }
                 },
                 Function {
                     name: 0,
@@ -417,6 +467,11 @@ def start(): sum_of_squares(5, 3)"#;
                     expressions: vec![3],
                     symbols: strings(["start", "sum_of_squares"]),
                     ints: strings(["5", "3"]),
+                    ifs: Ifs {
+                        conditionals: vec![],
+                        then_branches: vec![],
+                        else_branches: vec![],
+                    }
                 }
             ],
             top_level: HashMap::from_iter([
@@ -424,6 +479,55 @@ def start(): sum_of_squares(5, 3)"#;
                 (String::from("sum_of_squares"), 1),
                 (String::from("start"), 2),
             ])
+        }
+    )
+}
+
+#[test]
+fn test_parse_single_line_if() {
+    let source = r#"
+def min(x, y):
+  if x < y: x else: y"#;
+    let tokens = tokenize(source);
+    let ast = parse(tokens);
+    assert_eq!(
+        ast,
+        Ast {
+            functions: vec![Function {
+                name: 0,
+                arguments: vec![1, 2],
+                kinds: vec![
+                    Kind::Symbol,
+                    Kind::Symbol,
+                    Kind::BinaryOp,
+                    Kind::Symbol,
+                    Kind::Symbol,
+                    Kind::If
+                ],
+                indices: vec![3, 4, 0, 5, 6, 0],
+                binary_ops: BinaryOps {
+                    ops: vec![BinaryOp::LessThan],
+                    lefts: vec![0],
+                    rights: vec![1],
+                },
+                definitions: Definitions {
+                    names: vec![],
+                    values: vec![],
+                },
+                function_calls: FunctionCalls {
+                    names: vec![],
+                    parameters: vec![],
+                },
+                expressions: vec![5],
+                symbols: strings(["min", "x", "y", "x", "y", "x", "y"]),
+                ints: vec![],
+                ifs: Ifs {
+                    conditionals: vec![2],
+                    then_branches: vec![3],
+                    else_branches: vec![4],
+                }
+            }],
+            top_level: HashMap::from_iter([(String::from("min"), 0)])
         }
     )
 }
