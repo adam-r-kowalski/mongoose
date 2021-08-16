@@ -14,6 +14,19 @@ use test_utilities::strings;
 fn test_parse_int() {
     let tokens = tokenize("def start(): 0");
     let ast = parse(tokens);
+    // assert_eq!(
+    //     ast_string(&ast),
+    //     r#"
+    // Function(
+    // name=start,
+    // arguments=[
+    // ],
+    // body=[
+    // Int(0)
+    // ]
+    // )
+    // "#
+    // );
     assert_eq!(
         ast,
         Ast {

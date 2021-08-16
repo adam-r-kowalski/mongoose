@@ -8,32 +8,36 @@ fn token_string_literal(
     mut output: String,
     text: &str,
 ) -> String {
+    output.push_str("        ");
     output.push_str(text);
-    output.push_str("\n");
+    output.push_str(",\n");
     token_string_impl(top_level, token + 1, output)
 }
 
 fn token_string_symbol(top_level: &TopLevel, token: usize, mut output: String) -> String {
     let text = &top_level.symbols[top_level.indices[token]];
-    output.push_str("Symbol ");
+    output.push_str("        ");
+    output.push_str("Symbol(");
     output.push_str(text);
-    output.push_str("\n");
+    output.push_str("),\n");
     token_string_impl(top_level, token + 1, output)
 }
 
 fn token_string_int(top_level: &TopLevel, token: usize, mut output: String) -> String {
     let text = &top_level.ints[top_level.indices[token]];
-    output.push_str("Int ");
+    output.push_str("        ");
+    output.push_str("Int(");
     output.push_str(text);
-    output.push_str("\n");
+    output.push_str("),\n");
     token_string_impl(top_level, token + 1, output)
 }
 
 fn token_string_indent(top_level: &TopLevel, token: usize, mut output: String) -> String {
     let indent = &top_level.indents[top_level.indices[token]];
-    output.push_str("Indent ");
+    output.push_str("        ");
+    output.push_str("Indent(");
     output.push_str(&indent.to_string());
-    output.push_str("\n");
+    output.push_str("),\n");
     token_string_impl(top_level, token + 1, output)
 }
 
@@ -60,13 +64,18 @@ fn token_string_impl(top_level: &TopLevel, token: usize, output: String) -> Stri
 }
 
 fn token_string(tokens: &Tokens) -> String {
-    tokens
-        .top_level
-        .iter()
-        .fold(String::from(""), |mut output, top_level| {
-            output.push_str("\n");
-            token_string_impl(top_level, 0, output)
-        })
+    let mut output =
+        tokens
+            .top_level
+            .iter()
+            .fold(String::from("\nTokens([\n"), |mut output, top_level| {
+                output.push_str("    TopLevel([\n");
+                let mut output = token_string_impl(top_level, 0, output);
+                output.push_str("    ]),\n");
+                output
+            });
+    output.push_str("])\n");
+    output
 }
 
 #[test]
@@ -75,12 +84,16 @@ fn test_tokenize_int() {
     assert_eq!(
         token_string(&tokens),
         r#"
-Def
-Symbol start
-LeftParen
-RightParen
-Colon
-Int 0
+Tokens([
+    TopLevel([
+        Def,
+        Symbol(start),
+        LeftParen,
+        RightParen,
+        Colon,
+        Int(0),
+    ]),
+])
 "#
     );
 }
@@ -91,14 +104,18 @@ fn test_tokenize_add() {
     assert_eq!(
         token_string(&tokens),
         r#"
-Def
-Symbol start
-LeftParen
-RightParen
-Colon
-Int 5
-Plus
-Int 10
+Tokens([
+    TopLevel([
+        Def,
+        Symbol(start),
+        LeftParen,
+        RightParen,
+        Colon,
+        Int(5),
+        Plus,
+        Int(10),
+    ]),
+])
 "#
     );
 }
@@ -109,14 +126,18 @@ fn test_tokenize_subtract() {
     assert_eq!(
         token_string(&tokens),
         r#"
-Def
-Symbol start
-LeftParen
-RightParen
-Colon
-Int 5
-Minus
-Int 10
+Tokens([
+    TopLevel([
+        Def,
+        Symbol(start),
+        LeftParen,
+        RightParen,
+        Colon,
+        Int(5),
+        Minus,
+        Int(10),
+    ]),
+])
 "#
     );
 }
@@ -127,14 +148,18 @@ fn test_tokenize_multiply() {
     assert_eq!(
         token_string(&tokens),
         r#"
-Def
-Symbol start
-LeftParen
-RightParen
-Colon
-Int 5
-Times
-Int 10
+Tokens([
+    TopLevel([
+        Def,
+        Symbol(start),
+        LeftParen,
+        RightParen,
+        Colon,
+        Int(5),
+        Times,
+        Int(10),
+    ]),
+])
 "#
     );
 }
@@ -145,14 +170,18 @@ fn test_tokenize_divide() {
     assert_eq!(
         token_string(&tokens),
         r#"
-Def
-Symbol start
-LeftParen
-RightParen
-Colon
-Int 10
-Slash
-Int 5
+Tokens([
+    TopLevel([
+        Def,
+        Symbol(start),
+        LeftParen,
+        RightParen,
+        Colon,
+        Int(10),
+        Slash,
+        Int(5),
+    ]),
+])
 "#
     );
 }
@@ -168,23 +197,27 @@ def start():
     assert_eq!(
         token_string(&tokens),
         r#"
-Def
-Symbol start
-LeftParen
-RightParen
-Colon
-Indent 4
-Symbol x
-Equal
-Int 5
-Indent 4
-Symbol y
-Equal
-Int 20
-Indent 4
-Symbol x
-Plus
-Symbol y
+Tokens([
+    TopLevel([
+        Def,
+        Symbol(start),
+        LeftParen,
+        RightParen,
+        Colon,
+        Indent(4),
+        Symbol(x),
+        Equal,
+        Int(5),
+        Indent(4),
+        Symbol(y),
+        Equal,
+        Int(20),
+        Indent(4),
+        Symbol(x),
+        Plus,
+        Symbol(y),
+    ]),
+])
 "#
     );
 }
@@ -204,54 +237,60 @@ def start(): sum_of_squares(5, 3)"#;
     assert_eq!(
         token_string(&tokens),
         r#"
-Def
-Symbol square
-LeftParen
-Symbol x
-RightParen
-Colon
-Symbol x
-Times
-Symbol x
-
-Def
-Symbol sum_of_squares
-LeftParen
-Symbol x
-Comma
-Symbol y
-RightParen
-Colon
-Indent 4
-Symbol x2
-Equal
-Symbol square
-LeftParen
-Symbol x
-RightParen
-Indent 4
-Symbol y2
-Equal
-Symbol square
-LeftParen
-Symbol y
-RightParen
-Indent 4
-Symbol x2
-Plus
-Symbol y2
-
-Def
-Symbol start
-LeftParen
-RightParen
-Colon
-Symbol sum_of_squares
-LeftParen
-Int 5
-Comma
-Int 3
-RightParen
+Tokens([
+    TopLevel([
+        Def,
+        Symbol(square),
+        LeftParen,
+        Symbol(x),
+        RightParen,
+        Colon,
+        Symbol(x),
+        Times,
+        Symbol(x),
+    ]),
+    TopLevel([
+        Def,
+        Symbol(sum_of_squares),
+        LeftParen,
+        Symbol(x),
+        Comma,
+        Symbol(y),
+        RightParen,
+        Colon,
+        Indent(4),
+        Symbol(x2),
+        Equal,
+        Symbol(square),
+        LeftParen,
+        Symbol(x),
+        RightParen,
+        Indent(4),
+        Symbol(y2),
+        Equal,
+        Symbol(square),
+        LeftParen,
+        Symbol(y),
+        RightParen,
+        Indent(4),
+        Symbol(x2),
+        Plus,
+        Symbol(y2),
+    ]),
+    TopLevel([
+        Def,
+        Symbol(start),
+        LeftParen,
+        RightParen,
+        Colon,
+        Symbol(sum_of_squares),
+        LeftParen,
+        Int(5),
+        Comma,
+        Int(3),
+        RightParen,
+    ]),
+])
 "#
     );
 }
@@ -268,27 +307,31 @@ def min(x, y):
     assert_eq!(
         token_string(&tokens),
         r#"
-Def
-Symbol min
-LeftParen
-Symbol x
-Comma
-Symbol y
-RightParen
-Colon
-Indent 2
-If
-Symbol x
-LessThan
-Symbol y
-Colon
-Indent 4
-Symbol x
-Indent 2
-Else
-Colon
-Indent 4
-Symbol y
+Tokens([
+    TopLevel([
+        Def,
+        Symbol(min),
+        LeftParen,
+        Symbol(x),
+        Comma,
+        Symbol(y),
+        RightParen,
+        Colon,
+        Indent(2),
+        If,
+        Symbol(x),
+        LessThan,
+        Symbol(y),
+        Colon,
+        Indent(4),
+        Symbol(x),
+        Indent(2),
+        Else,
+        Colon,
+        Indent(4),
+        Symbol(y),
+    ]),
+])
 "#
     );
 }
