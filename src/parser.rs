@@ -47,8 +47,8 @@ pub struct FunctionCalls {
 #[derive(Debug, PartialEq)]
 pub struct Ifs {
     pub conditionals: Vec<usize>,
-    pub then_branches: Vec<usize>,
-    pub else_branches: Vec<usize>,
+    pub then_branches: Vec<Vec<usize>>,
+    pub else_branches: Vec<Vec<usize>>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -119,15 +119,54 @@ fn parse_primitive(
     ParseResult(func, token, entity)
 }
 
+fn parse_then_branch(
+    func: Function,
+    top_level: &tokenizer::TopLevel,
+    token: Token,
+    mut expressions: Vec<usize>,
+) -> (Function, Token, Vec<usize>) {
+    match top_level.kinds[token.0] {
+        tokenizer::Kind::Indent => {
+            parse_then_branch(func, top_level, inc_token(token), expressions)
+        }
+        tokenizer::Kind::Else => (func, token, expressions),
+        _ => {
+            let ParseResult(func, token, expression) =
+                parse_expression(func, top_level, token, LOWEST);
+            expressions.push(expression);
+            parse_then_branch(func, top_level, token, expressions)
+        }
+    }
+}
+
+fn parse_else_branch(
+    func: Function,
+    top_level: &tokenizer::TopLevel,
+    token: Token,
+    mut expressions: Vec<usize>,
+) -> (Function, Token, Vec<usize>) {
+    match top_level.kinds.get(token.0) {
+        Some(tokenizer::Kind::Indent) => {
+            parse_else_branch(func, top_level, inc_token(token), expressions)
+        }
+        Some(_) => {
+            let ParseResult(func, token, expression) =
+                parse_expression(func, top_level, token, LOWEST);
+            expressions.push(expression);
+            parse_else_branch(func, top_level, token, expressions)
+        }
+        None => (func, token, expressions),
+    }
+}
+
 fn parse_if(func: Function, top_level: &tokenizer::TopLevel, token: Token) -> ParseResult {
     let token = consume(top_level, token, tokenizer::Kind::If);
     let ParseResult(func, token, conditional) = parse_expression(func, top_level, token, LOWEST);
     let token = consume(top_level, token, tokenizer::Kind::Colon);
-    let ParseResult(func, token, then_branch) = parse_expression(func, top_level, token, LOWEST);
+    let (func, token, then_branch) = parse_then_branch(func, top_level, token, vec![]);
     let token = consume(top_level, token, tokenizer::Kind::Else);
     let token = consume(top_level, token, tokenizer::Kind::Colon);
-    let ParseResult(mut func, token, else_branch) =
-        parse_expression(func, top_level, token, LOWEST);
+    let (mut func, token, else_branch) = parse_else_branch(func, top_level, token, vec![]);
     let entity = fresh_entity(&func);
     func.kinds.push(Kind::If);
     func.indices.push(func.ifs.conditionals.len());

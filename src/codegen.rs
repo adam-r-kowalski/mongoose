@@ -160,17 +160,19 @@ fn codegen_if(
     wasm_func.instructions.push(Instruction::If);
     wasm_func.operand_kinds.push(vec![]);
     wasm_func.operands.push(vec![]);
-    let mut wasm_func = codegen_expression(
-        tx.clone(),
-        wasm_func,
-        ast_func,
-        ast_func.ifs.then_branches[index],
-    );
+    let mut wasm_func = ast_func.ifs.then_branches[index]
+        .iter()
+        .fold(wasm_func, |wasm_func, &expression| {
+            codegen_expression(tx.clone(), wasm_func, ast_func, expression)
+        });
     wasm_func.instructions.push(Instruction::Else);
     wasm_func.operand_kinds.push(vec![]);
     wasm_func.operands.push(vec![]);
-    let mut wasm_func =
-        codegen_expression(tx, wasm_func, ast_func, ast_func.ifs.else_branches[index]);
+    let mut wasm_func = ast_func.ifs.else_branches[index]
+        .iter()
+        .fold(wasm_func, |wasm_func, &expression| {
+            codegen_expression(tx.clone(), wasm_func, ast_func, expression)
+        });
     wasm_func.instructions.push(Instruction::End);
     wasm_func.operand_kinds.push(vec![]);
     wasm_func.operands.push(vec![]);

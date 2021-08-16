@@ -523,11 +523,98 @@ def min(x, y):
                 ints: vec![],
                 ifs: Ifs {
                     conditionals: vec![2],
-                    then_branches: vec![3],
-                    else_branches: vec![4],
+                    then_branches: vec![vec![3]],
+                    else_branches: vec![vec![4]],
                 }
             }],
             top_level: HashMap::from_iter([(String::from("min"), 0)])
+        }
+    )
+}
+
+#[test]
+fn test_parse_multi_line_if() {
+    let source = r#"
+def main():
+  a = 5
+  b = 10
+  if a < b:
+    c = 7
+    a + b + c
+  else:
+    d = 8
+    a * b * c"#;
+    let tokens = tokenize(source);
+    let ast = parse(tokens);
+    assert_eq!(
+        ast,
+        Ast {
+            functions: vec![Function {
+                name: 0,
+                arguments: vec![],
+                kinds: vec![
+                    Kind::Symbol,
+                    Kind::Int,
+                    Kind::Definition,
+                    Kind::Symbol,
+                    Kind::Int,
+                    Kind::Definition,
+                    Kind::Symbol,
+                    Kind::Symbol,
+                    Kind::BinaryOp,
+                    Kind::Symbol,
+                    Kind::Int,
+                    Kind::Definition,
+                    Kind::Symbol,
+                    Kind::Symbol,
+                    Kind::Symbol,
+                    Kind::BinaryOp,
+                    Kind::BinaryOp,
+                    Kind::Symbol,
+                    Kind::Int,
+                    Kind::Definition,
+                    Kind::Symbol,
+                    Kind::Symbol,
+                    Kind::Symbol,
+                    Kind::BinaryOp,
+                    Kind::BinaryOp,
+                    Kind::If
+                ],
+                indices: vec![
+                    1, 0, 0, 2, 1, 1, 3, 4, 0, 5, 2, 2, 6, 7, 8, 1, 2, 9, 3, 3, 10, 11, 12, 3, 4,
+                    0,
+                ],
+                binary_ops: BinaryOps {
+                    ops: vec![
+                        BinaryOp::LessThan,
+                        BinaryOp::Add,
+                        BinaryOp::Add,
+                        BinaryOp::Multiply,
+                        BinaryOp::Multiply
+                    ],
+                    lefts: vec![6, 13, 12, 21, 20],
+                    rights: vec![7, 14, 15, 22, 23],
+                },
+                definitions: Definitions {
+                    names: vec![0, 3, 9, 17],
+                    values: vec![1, 4, 10, 18],
+                },
+                function_calls: FunctionCalls {
+                    names: vec![],
+                    parameters: vec![],
+                },
+                expressions: vec![2, 5, 25],
+                symbols: strings([
+                    "main", "a", "b", "a", "b", "c", "a", "b", "c", "d", "a", "b", "c"
+                ]),
+                ints: strings(["5", "10", "7", "8"]),
+                ifs: Ifs {
+                    conditionals: vec![8],
+                    then_branches: vec![vec![11, 16]],
+                    else_branches: vec![vec![19, 24]],
+                }
+            }],
+            top_level: HashMap::from_iter([(String::from("main"), 0)])
         }
     )
 }
