@@ -1,7 +1,6 @@
 use pretty_assertions::assert_eq;
 
 use smith::tokenizer::{tokenize, Kind, Tokens, TopLevel};
-use test_utilities::strings;
 
 fn token_string_literal(
     top_level: &TopLevel,
@@ -49,10 +48,13 @@ fn token_string_impl(top_level: &TopLevel, token: usize, output: String) -> Stri
         Some(Kind::Times) => token_string_literal(top_level, token, output, "Times"),
         Some(Kind::Slash) => token_string_literal(top_level, token, output, "Slash"),
         Some(Kind::Equal) => token_string_literal(top_level, token, output, "Equal"),
+        Some(Kind::Comma) => token_string_literal(top_level, token, output, "Comma"),
+        Some(Kind::If) => token_string_literal(top_level, token, output, "If"),
+        Some(Kind::LessThan) => token_string_literal(top_level, token, output, "LessThan"),
+        Some(Kind::Else) => token_string_literal(top_level, token, output, "Else"),
         Some(Kind::Symbol) => token_string_symbol(top_level, token, output),
         Some(Kind::Int) => token_string_int(top_level, token, output),
         Some(Kind::Indent) => token_string_indent(top_level, token, output),
-        Some(kind) => panic!("not implemented for kind {:?}", kind),
         None => output,
     }
 }
@@ -61,7 +63,8 @@ fn token_string(tokens: &Tokens) -> String {
     tokens
         .top_level
         .iter()
-        .fold(String::from("\n"), |output, top_level| {
+        .fold(String::from(""), |mut output, top_level| {
+            output.push_str("\n");
             token_string_impl(top_level, 0, output)
         })
 }
@@ -199,97 +202,58 @@ def sum_of_squares(x, y):
 def start(): sum_of_squares(5, 3)"#;
     let tokens = tokenize(source);
     assert_eq!(
-        tokens,
-        Tokens {
-            top_level: vec![
-                TopLevel {
-                    indices: vec![0, 0, 0, 1, 0, 0, 2, 0, 3],
-                    kinds: vec![
-                        Kind::Def,
-                        Kind::Symbol,
-                        Kind::LeftParen,
-                        Kind::Symbol,
-                        Kind::RightParen,
-                        Kind::Colon,
-                        Kind::Symbol,
-                        Kind::Times,
-                        Kind::Symbol
-                    ],
-                    symbols: strings(["square", "x", "x", "x"]),
-                    ints: strings([]),
-                    indents: vec![],
-                },
-                TopLevel {
-                    indices: vec![
-                        0, 0, 0, 1, 0, 2, 0, 0, 0, 3, 0, 4, 0, 5, 0, 1, 6, 0, 7, 0, 8, 0, 2, 9, 0,
-                        10
-                    ],
-                    kinds: vec![
-                        Kind::Def,
-                        Kind::Symbol,
-                        Kind::LeftParen,
-                        Kind::Symbol,
-                        Kind::Comma,
-                        Kind::Symbol,
-                        Kind::RightParen,
-                        Kind::Colon,
-                        Kind::Indent,
-                        Kind::Symbol,
-                        Kind::Equal,
-                        Kind::Symbol,
-                        Kind::LeftParen,
-                        Kind::Symbol,
-                        Kind::RightParen,
-                        Kind::Indent,
-                        Kind::Symbol,
-                        Kind::Equal,
-                        Kind::Symbol,
-                        Kind::LeftParen,
-                        Kind::Symbol,
-                        Kind::RightParen,
-                        Kind::Indent,
-                        Kind::Symbol,
-                        Kind::Plus,
-                        Kind::Symbol,
-                    ],
-                    symbols: strings([
-                        "sum_of_squares",
-                        "x",
-                        "y",
-                        "x2",
-                        "square",
-                        "x",
-                        "y2",
-                        "square",
-                        "y",
-                        "x2",
-                        "y2"
-                    ]),
-                    ints: strings([]),
-                    indents: vec![4, 4, 4],
-                },
-                TopLevel {
-                    indices: vec![0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0],
-                    kinds: vec![
-                        Kind::Def,
-                        Kind::Symbol,
-                        Kind::LeftParen,
-                        Kind::RightParen,
-                        Kind::Colon,
-                        Kind::Symbol,
-                        Kind::LeftParen,
-                        Kind::Int,
-                        Kind::Comma,
-                        Kind::Int,
-                        Kind::RightParen,
-                    ],
-                    symbols: strings(["start", "sum_of_squares"]),
-                    ints: strings(["5", "3"]),
-                    indents: vec![],
-                }
-            ]
-        }
-    )
+        token_string(&tokens),
+        r#"
+Def
+Symbol square
+LeftParen
+Symbol x
+RightParen
+Colon
+Symbol x
+Times
+Symbol x
+
+Def
+Symbol sum_of_squares
+LeftParen
+Symbol x
+Comma
+Symbol y
+RightParen
+Colon
+Indent 4
+Symbol x2
+Equal
+Symbol square
+LeftParen
+Symbol x
+RightParen
+Indent 4
+Symbol y2
+Equal
+Symbol square
+LeftParen
+Symbol y
+RightParen
+Indent 4
+Symbol x2
+Plus
+Symbol y2
+
+Def
+Symbol start
+LeftParen
+RightParen
+Colon
+Symbol sum_of_squares
+LeftParen
+Int 5
+Comma
+Int 3
+RightParen
+"#
+    );
 }
 
 #[test]
@@ -302,37 +266,29 @@ def min(x, y):
     y"#;
     let tokens = tokenize(source);
     assert_eq!(
-        tokens,
-        Tokens {
-            top_level: vec![TopLevel {
-                indices: vec![0, 0, 0, 1, 0, 2, 0, 0, 0, 0, 3, 0, 4, 0, 1, 5, 2, 0, 0, 3, 6],
-                kinds: vec![
-                    Kind::Def,
-                    Kind::Symbol,
-                    Kind::LeftParen,
-                    Kind::Symbol,
-                    Kind::Comma,
-                    Kind::Symbol,
-                    Kind::RightParen,
-                    Kind::Colon,
-                    Kind::Indent,
-                    Kind::If,
-                    Kind::Symbol,
-                    Kind::LessThan,
-                    Kind::Symbol,
-                    Kind::Colon,
-                    Kind::Indent,
-                    Kind::Symbol,
-                    Kind::Indent,
-                    Kind::Else,
-                    Kind::Colon,
-                    Kind::Indent,
-                    Kind::Symbol,
-                ],
-                symbols: strings(["min", "x", "y", "x", "y", "x", "y"]),
-                ints: vec![],
-                indents: vec![2, 4, 2, 4],
-            }]
-        }
-    )
+        token_string(&tokens),
+        r#"
+Def
+Symbol min
+LeftParen
+Symbol x
+Comma
+Symbol y
+RightParen
+Colon
+Indent 2
+If
+Symbol x
+LessThan
+Symbol y
+Colon
+Indent 4
+Symbol x
+Indent 2
+Else
+Colon
+Indent 4
+Symbol y
+"#
+    );
 }
