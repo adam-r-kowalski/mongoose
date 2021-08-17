@@ -35,7 +35,10 @@ fn ast_string_binary_op(
     output.push_str("op=");
     let index = func.indices[expression];
     match func.binary_ops.ops[index] {
-        BinaryOp::Add => output.push_str("Plus"),
+        BinaryOp::Add => output.push_str("Add"),
+        BinaryOp::Subtract => output.push_str("Subtract"),
+        BinaryOp::Multiply => output.push_str("Multiply"),
+        BinaryOp::Divide => output.push_str("Divide"),
         op => panic!("ast string binary op not implemented for {:?}", op),
     };
     output.push_str(",\n");
@@ -127,7 +130,7 @@ Ast([
         ],
         body=[
             BinaryOp(
-                op=Plus,
+                op=Add,
                 left=Int(5),
                 right=Int(10),
             ),
@@ -136,39 +139,6 @@ Ast([
 ])
 "#
     );
-    assert_eq!(
-        ast,
-        Ast {
-            functions: vec![Function {
-                name: 0,
-                arguments: vec![],
-                kinds: vec![Kind::Int, Kind::Int, Kind::BinaryOp],
-                indices: vec![0, 1, 0],
-                binary_ops: BinaryOps {
-                    ops: vec![BinaryOp::Add],
-                    lefts: vec![0],
-                    rights: vec![1],
-                },
-                definitions: Definitions {
-                    names: vec![],
-                    values: vec![],
-                },
-                function_calls: FunctionCalls {
-                    names: vec![],
-                    parameters: vec![],
-                },
-                expressions: vec![2],
-                symbols: strings(["start"]),
-                ints: strings(["5", "10"]),
-                ifs: Ifs {
-                    conditionals: vec![],
-                    then_branches: vec![],
-                    else_branches: vec![],
-                }
-            }],
-            top_level: HashMap::from_iter([(String::from("start"), 0)])
-        }
-    )
 }
 
 #[test]
@@ -176,38 +146,24 @@ fn test_parse_subtract() {
     let tokens = tokenize("def start(): 5 - 10");
     let ast = parse(tokens);
     assert_eq!(
-        ast,
-        Ast {
-            functions: vec![Function {
-                name: 0,
-                arguments: vec![],
-                kinds: vec![Kind::Int, Kind::Int, Kind::BinaryOp],
-                indices: vec![0, 1, 0],
-                binary_ops: BinaryOps {
-                    ops: vec![BinaryOp::Subtract],
-                    lefts: vec![0],
-                    rights: vec![1],
-                },
-                definitions: Definitions {
-                    names: vec![],
-                    values: vec![],
-                },
-                function_calls: FunctionCalls {
-                    names: vec![],
-                    parameters: vec![],
-                },
-                expressions: vec![2],
-                symbols: strings(["start"]),
-                ints: strings(["5", "10"]),
-                ifs: Ifs {
-                    conditionals: vec![],
-                    then_branches: vec![],
-                    else_branches: vec![],
-                }
-            }],
-            top_level: HashMap::from_iter([(String::from("start"), 0)])
-        }
+        ast_string(&ast),
+        r#"
+Ast([
+    Function(
+        name=start,
+        arguments=[
+        ],
+        body=[
+            BinaryOp(
+                op=Subtract,
+                left=Int(5),
+                right=Int(10),
+            ),
+        ]
     )
+])
+"#
+    );
 }
 
 #[test]
@@ -215,38 +171,24 @@ fn test_parse_multiply() {
     let tokens = tokenize("def start(): 5 * 10");
     let ast = parse(tokens);
     assert_eq!(
-        ast,
-        Ast {
-            functions: vec![Function {
-                name: 0,
-                arguments: vec![],
-                kinds: vec![Kind::Int, Kind::Int, Kind::BinaryOp],
-                indices: vec![0, 1, 0],
-                binary_ops: BinaryOps {
-                    ops: vec![BinaryOp::Multiply],
-                    lefts: vec![0],
-                    rights: vec![1],
-                },
-                definitions: Definitions {
-                    names: vec![],
-                    values: vec![],
-                },
-                function_calls: FunctionCalls {
-                    names: vec![],
-                    parameters: vec![],
-                },
-                expressions: vec![2],
-                symbols: strings(["start"]),
-                ints: strings(["5", "10"]),
-                ifs: Ifs {
-                    conditionals: vec![],
-                    then_branches: vec![],
-                    else_branches: vec![],
-                }
-            }],
-            top_level: HashMap::from_iter([(String::from("start"), 0)])
-        }
+        ast_string(&ast),
+        r#"
+Ast([
+    Function(
+        name=start,
+        arguments=[
+        ],
+        body=[
+            BinaryOp(
+                op=Multiply,
+                left=Int(5),
+                right=Int(10),
+            ),
+        ]
     )
+])
+"#
+    );
 }
 
 #[test]
@@ -254,38 +196,24 @@ fn test_parse_divide() {
     let tokens = tokenize("def start(): 10 / 5");
     let ast = parse(tokens);
     assert_eq!(
-        ast,
-        Ast {
-            functions: vec![Function {
-                name: 0,
-                arguments: vec![],
-                kinds: vec![Kind::Int, Kind::Int, Kind::BinaryOp],
-                indices: vec![0, 1, 0],
-                binary_ops: BinaryOps {
-                    ops: vec![BinaryOp::Divide],
-                    lefts: vec![0],
-                    rights: vec![1],
-                },
-                definitions: Definitions {
-                    names: vec![],
-                    values: vec![],
-                },
-                function_calls: FunctionCalls {
-                    names: vec![],
-                    parameters: vec![],
-                },
-                expressions: vec![2],
-                symbols: strings(["start"]),
-                ints: strings(["10", "5"]),
-                ifs: Ifs {
-                    conditionals: vec![],
-                    then_branches: vec![],
-                    else_branches: vec![],
-                }
-            }],
-            top_level: HashMap::from_iter([(String::from("start"), 0)])
-        }
+        ast_string(&ast),
+        r#"
+Ast([
+    Function(
+        name=start,
+        arguments=[
+        ],
+        body=[
+            BinaryOp(
+                op=Divide,
+                left=Int(10),
+                right=Int(5),
+            ),
+        ]
     )
+])
+"#
+    );
 }
 
 #[test]
@@ -293,44 +221,28 @@ fn test_parse_add_then_multiply() {
     let tokens = tokenize("def start(): 3 + 5 * 10");
     let ast = parse(tokens);
     assert_eq!(
-        ast,
-        Ast {
-            functions: vec![Function {
-                name: 0,
-                arguments: vec![],
-                kinds: vec![
-                    Kind::Int,
-                    Kind::Int,
-                    Kind::Int,
-                    Kind::BinaryOp,
-                    Kind::BinaryOp
-                ],
-                indices: vec![0, 1, 2, 0, 1],
-                binary_ops: BinaryOps {
-                    ops: vec![BinaryOp::Multiply, BinaryOp::Add],
-                    lefts: vec![1, 0],
-                    rights: vec![2, 3],
-                },
-                definitions: Definitions {
-                    names: vec![],
-                    values: vec![],
-                },
-                function_calls: FunctionCalls {
-                    names: vec![],
-                    parameters: vec![],
-                },
-                expressions: vec![4],
-                symbols: strings(["start"]),
-                ints: strings(["3", "5", "10"]),
-                ifs: Ifs {
-                    conditionals: vec![],
-                    then_branches: vec![],
-                    else_branches: vec![],
-                }
-            }],
-            top_level: HashMap::from_iter([(String::from("start"), 0)])
-        }
+        ast_string(&ast),
+        r#"
+Ast([
+    Function(
+        name=start,
+        arguments=[
+        ],
+        body=[
+            BinaryOp(
+                op=Add,
+                left=Int(3),
+                right=BinaryOp(
+                    op=Multiply,
+                    left=Int(5),
+                    right=Int(10),
+                ),
+            ),
+        ]
     )
+])
+"#
+    );
 }
 
 #[test]
@@ -338,44 +250,28 @@ fn test_parse_multiply_then_add() {
     let tokens = tokenize("def start(): 3 * 5 + 10");
     let ast = parse(tokens);
     assert_eq!(
-        ast,
-        Ast {
-            functions: vec![Function {
-                name: 0,
-                arguments: vec![],
-                kinds: vec![
-                    Kind::Int,
-                    Kind::Int,
-                    Kind::BinaryOp,
-                    Kind::Int,
-                    Kind::BinaryOp
-                ],
-                indices: vec![0, 1, 0, 2, 1],
-                binary_ops: BinaryOps {
-                    ops: vec![BinaryOp::Multiply, BinaryOp::Add],
-                    lefts: vec![0, 2],
-                    rights: vec![1, 3],
-                },
-                definitions: Definitions {
-                    names: vec![],
-                    values: vec![],
-                },
-                function_calls: FunctionCalls {
-                    names: vec![],
-                    parameters: vec![],
-                },
-                expressions: vec![4],
-                symbols: strings(["start"]),
-                ints: strings(["3", "5", "10"]),
-                ifs: Ifs {
-                    conditionals: vec![],
-                    then_branches: vec![],
-                    else_branches: vec![],
-                }
-            }],
-            top_level: HashMap::from_iter([(String::from("start"), 0)])
-        }
+        ast_string(&ast),
+        r#"
+Ast([
+    Function(
+        name=start,
+        arguments=[
+        ],
+        body=[
+            BinaryOp(
+                op=Add,
+                left=BinaryOp(
+                    op=Multiply,
+                    left=Int(3),
+                    right=Int(5),
+                ),
+                right=Int(10),
+            ),
+        ]
     )
+])
+"#
+    );
 }
 
 #[test]
