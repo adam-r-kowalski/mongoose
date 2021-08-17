@@ -10,62 +10,132 @@ use smith::{
 
 use test_utilities::strings;
 
+fn write_indent(mut output: String, indent: usize) -> String {
+    output.push_str(&String::from_utf8(vec![b' '; indent]).unwrap());
+    output
+}
+
+fn ast_string_int(mut output: String, func: &Function, expression: usize) -> String {
+    output.push_str("Int(");
+    output.push_str(&func.ints[func.indices[expression]]);
+    output.push_str("),\n");
+    output
+}
+
+const INDENT: usize = 4;
+
+fn ast_string_binary_op(
+    mut output: String,
+    func: &Function,
+    expression: usize,
+    indent: usize,
+) -> String {
+    output.push_str("BinaryOp(\n");
+    let mut output = write_indent(output, indent);
+    output.push_str("op=");
+    let index = func.indices[expression];
+    match func.binary_ops.ops[index] {
+        BinaryOp::Add => output.push_str("Plus"),
+        op => panic!("ast string binary op not implemented for {:?}", op),
+    };
+    output.push_str(",\n");
+    let mut output = write_indent(output, indent);
+    output.push_str("left=");
+    let output = ast_string_expression(output, func, func.binary_ops.lefts[index], indent);
+    let mut output = write_indent(output, indent);
+    output.push_str("right=");
+    let output = ast_string_expression(output, func, func.binary_ops.rights[index], indent);
+    let mut output = write_indent(output, indent - INDENT);
+    output.push_str("),\n");
+    output
+}
+
+fn ast_string_expression(
+    output: String,
+    func: &Function,
+    expression: usize,
+    indent: usize,
+) -> String {
+    match func.kinds[expression] {
+        Kind::Int => ast_string_int(output, func, expression),
+        Kind::BinaryOp => ast_string_binary_op(output, func, expression, indent + INDENT),
+        kind => panic!("ast string expression not implemented for {:?}!!!", kind),
+    }
+}
+
+fn ast_string_function(mut output: String, func: &Function) -> String {
+    output.push_str("    Function(\n");
+    output.push_str("        name=");
+    output.push_str(&func.symbols[func.name]);
+    output.push_str(",\n        arguments=[\n");
+    let mut output = func.arguments.iter().fold(output, |mut output, &argument| {
+        output.push_str("            ");
+        output.push_str(&func.symbols[func.indices[argument]]);
+        output
+    });
+    output.push_str("        ],\n        body=[\n");
+    let mut output = func.expressions.iter().fold(output, |output, &expression| {
+        let indent = 12;
+        let output = write_indent(output, indent);
+        ast_string_expression(output, func, expression, indent)
+    });
+    output.push_str("        ]\n    )\n");
+    output
+}
+
+fn ast_string(ast: &Ast) -> String {
+    let mut output = ast
+        .functions
+        .iter()
+        .fold(String::from("\nAst([\n"), ast_string_function);
+    output.push_str("])\n");
+    output
+}
+
 #[test]
 fn test_parse_int() {
     let tokens = tokenize("def start(): 0");
     let ast = parse(tokens);
-    // assert_eq!(
-    //     ast_string(&ast),
-    //     r#"
-    // Function(
-    // name=start,
-    // arguments=[
-    // ],
-    // body=[
-    // Int(0)
-    // ]
-    // )
-    // "#
-    // );
     assert_eq!(
-        ast,
-        Ast {
-            functions: vec![Function {
-                name: 0,
-                arguments: vec![],
-                kinds: vec![Kind::Int],
-                indices: vec![0],
-                binary_ops: BinaryOps {
-                    ops: vec![],
-                    lefts: vec![],
-                    rights: vec![],
-                },
-                definitions: Definitions {
-                    names: vec![],
-                    values: vec![],
-                },
-                function_calls: FunctionCalls {
-                    names: vec![],
-                    parameters: vec![],
-                },
-                expressions: vec![0],
-                symbols: strings(["start"]),
-                ints: strings(["0"]),
-                ifs: Ifs {
-                    conditionals: vec![],
-                    then_branches: vec![],
-                    else_branches: vec![],
-                }
-            }],
-            top_level: HashMap::from_iter([(String::from("start"), 0)])
-        }
+        ast_string(&ast),
+        r#"
+Ast([
+    Function(
+        name=start,
+        arguments=[
+        ],
+        body=[
+            Int(0),
+        ]
     )
+])
+"#
+    );
 }
 
 #[test]
 fn test_parse_add() {
     let tokens = tokenize("def start(): 5 + 10");
     let ast = parse(tokens);
+    assert_eq!(
+        ast_string(&ast),
+        r#"
+Ast([
+    Function(
+        name=start,
+        arguments=[
+        ],
+        body=[
+            BinaryOp(
+                op=Plus,
+                left=Int(5),
+                right=Int(10),
+            ),
+        ]
+    )
+])
+"#
+    );
     assert_eq!(
         ast,
         Ast {
