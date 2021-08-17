@@ -22,6 +22,13 @@ fn ast_string_int(mut output: String, func: &Function, expression: usize) -> Str
     output
 }
 
+fn ast_string_symbol(mut output: String, func: &Function, expression: usize) -> String {
+    output.push_str("Symbol(");
+    output.push_str(&func.symbols[func.indices[expression]]);
+    output.push_str("),\n");
+    output
+}
+
 const INDENT: usize = 4;
 
 fn ast_string_binary_op(
@@ -53,6 +60,26 @@ fn ast_string_binary_op(
     output
 }
 
+fn ast_string_definition(
+    mut output: String,
+    func: &Function,
+    expression: usize,
+    indent: usize,
+) -> String {
+    output.push_str("Definition(\n");
+    let mut output = write_indent(output, indent);
+    output.push_str("name=");
+    let index = func.indices[expression];
+    output.push_str(&func.symbols[func.indices[func.definitions.names[index]]]);
+    output.push_str(",\n");
+    let mut output = write_indent(output, indent);
+    output.push_str("value=");
+    let output = ast_string_expression(output, func, func.definitions.values[index], indent);
+    let mut output = write_indent(output, indent - INDENT);
+    output.push_str("),\n");
+    output
+}
+
 fn ast_string_expression(
     output: String,
     func: &Function,
@@ -61,7 +88,9 @@ fn ast_string_expression(
 ) -> String {
     match func.kinds[expression] {
         Kind::Int => ast_string_int(output, func, expression),
+        Kind::Symbol => ast_string_symbol(output, func, expression),
         Kind::BinaryOp => ast_string_binary_op(output, func, expression, indent + INDENT),
+        Kind::Definition => ast_string_definition(output, func, expression, indent + INDENT),
         kind => panic!("ast string expression not implemented for {:?}!!!", kind),
     }
 }
@@ -284,48 +313,32 @@ fn test_parse_local_variables() {
     let tokens = tokenize(source);
     let ast = parse(tokens);
     assert_eq!(
-        ast,
-        Ast {
-            functions: vec![Function {
-                name: 0,
-                arguments: vec![],
-                kinds: vec![
-                    Kind::Symbol,
-                    Kind::Int,
-                    Kind::Definition,
-                    Kind::Symbol,
-                    Kind::Int,
-                    Kind::Definition,
-                    Kind::Symbol,
-                    Kind::Symbol,
-                    Kind::BinaryOp,
-                ],
-                indices: vec![1, 0, 0, 2, 1, 1, 3, 4, 0],
-                binary_ops: BinaryOps {
-                    ops: vec![BinaryOp::Add],
-                    lefts: vec![6],
-                    rights: vec![7],
-                },
-                definitions: Definitions {
-                    names: vec![0, 3],
-                    values: vec![1, 4],
-                },
-                function_calls: FunctionCalls {
-                    names: vec![],
-                    parameters: vec![],
-                },
-                expressions: vec![2, 5, 8],
-                symbols: strings(["start", "x", "y", "x", "y"]),
-                ints: strings(["5", "20"]),
-                ifs: Ifs {
-                    conditionals: vec![],
-                    then_branches: vec![],
-                    else_branches: vec![],
-                }
-            }],
-            top_level: HashMap::from_iter([(String::from("start"), 0)])
-        }
+        ast_string(&ast),
+        r#"
+Ast([
+    Function(
+        name=start,
+        arguments=[
+        ],
+        body=[
+            Definition(
+                name=x,
+                value=Int(5),
+            ),
+            Definition(
+                name=y,
+                value=Int(20),
+            ),
+            BinaryOp(
+                op=Add,
+                left=Symbol(x),
+                right=Symbol(y),
+            ),
+        ]
     )
+])
+"#
+    );
 }
 
 #[test]
