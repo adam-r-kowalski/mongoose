@@ -1,14 +1,9 @@
-use std::collections::HashMap;
-use std::iter::FromIterator;
-
 use pretty_assertions::assert_eq;
 
 use smith::{
-    parser::{parse, Ast, BinaryOp, BinaryOps, Definitions, Function, FunctionCalls, Ifs, Kind},
+    parser::{parse, Ast, BinaryOp, Function, Kind},
     tokenizer::tokenize,
 };
-
-use test_utilities::strings;
 
 fn write_indent(mut output: String, indent: usize) -> String {
     output.push_str(&String::from_utf8(vec![b' '; indent]).unwrap());
@@ -46,7 +41,7 @@ fn ast_string_binary_op(
         BinaryOp::Subtract => output.push_str("Subtract"),
         BinaryOp::Multiply => output.push_str("Multiply"),
         BinaryOp::Divide => output.push_str("Divide"),
-        op => panic!("ast string binary op not implemented for {:?}", op),
+        BinaryOp::LessThan => output.push_str("LessThan"),
     };
     output.push_str(",\n");
     let mut output = write_indent(output, indent);
@@ -80,6 +75,66 @@ fn ast_string_definition(
     output
 }
 
+fn ast_string_function_call(
+    mut output: String,
+    func: &Function,
+    expression: usize,
+    indent: usize,
+) -> String {
+    output.push_str("FunctionCall(\n");
+    let mut output = write_indent(output, indent);
+    output.push_str("name=");
+    let index = func.indices[expression];
+    output.push_str(&func.symbols[func.indices[func.function_calls.names[index]]]);
+    output.push_str(",\n");
+    let mut output = write_indent(output, indent);
+    output.push_str("parameters=[\n");
+    let indent = indent + INDENT;
+    let output = func.function_calls.parameters[index]
+        .iter()
+        .fold(output, |output, &parameter| {
+            let output = write_indent(output, indent);
+            ast_string_expression(output, func, parameter, indent)
+        });
+    let mut output = write_indent(output, indent - INDENT);
+    output.push_str("]\n");
+    let mut output = write_indent(output, indent - 2 * INDENT);
+    output.push_str("),\n");
+    output
+}
+
+fn ast_string_if(mut output: String, func: &Function, expression: usize, indent: usize) -> String {
+    output.push_str("If(\n");
+    let mut output = write_indent(output, indent);
+    output.push_str("condition=");
+    let index = func.indices[expression];
+    let output = ast_string_expression(output, func, func.ifs.conditionals[index], indent);
+    let mut output = write_indent(output, indent);
+    output.push_str("then=[\n");
+    let next_indent = indent + INDENT;
+    let output = func.ifs.then_branches[index]
+        .iter()
+        .fold(output, |output, &parameter| {
+            let output = write_indent(output, next_indent);
+            ast_string_expression(output, func, parameter, next_indent)
+        });
+    let mut output = write_indent(output, indent);
+    output.push_str("],\n");
+    let mut output = write_indent(output, indent);
+    output.push_str("else=[\n");
+    let output = func.ifs.else_branches[index]
+        .iter()
+        .fold(output, |output, &parameter| {
+            let output = write_indent(output, next_indent);
+            ast_string_expression(output, func, parameter, next_indent)
+        });
+    let mut output = write_indent(output, indent);
+    output.push_str("]\n");
+    let mut output = write_indent(output, indent - INDENT);
+    output.push_str("),\n");
+    output
+}
+
 fn ast_string_expression(
     output: String,
     func: &Function,
@@ -91,7 +146,8 @@ fn ast_string_expression(
         Kind::Symbol => ast_string_symbol(output, func, expression),
         Kind::BinaryOp => ast_string_binary_op(output, func, expression, indent + INDENT),
         Kind::Definition => ast_string_definition(output, func, expression, indent + INDENT),
-        kind => panic!("ast string expression not implemented for {:?}!!!", kind),
+        Kind::FunctionCall => ast_string_function_call(output, func, expression, indent + INDENT),
+        Kind::If => ast_string_if(output, func, expression, indent + INDENT),
     }
 }
 
@@ -102,7 +158,8 @@ fn ast_string_function(mut output: String, func: &Function) -> String {
     output.push_str(",\n        arguments=[\n");
     let mut output = func.arguments.iter().fold(output, |mut output, &argument| {
         output.push_str("            ");
-        output.push_str(&func.symbols[func.indices[argument]]);
+        output.push_str(&func.symbols[argument]);
+        output.push_str(",\n");
         output
     });
     output.push_str("        ],\n        body=[\n");
@@ -111,7 +168,7 @@ fn ast_string_function(mut output: String, func: &Function) -> String {
         let output = write_indent(output, indent);
         ast_string_expression(output, func, expression, indent)
     });
-    output.push_str("        ]\n    )\n");
+    output.push_str("        ]\n    ),\n");
     output
 }
 
@@ -139,7 +196,7 @@ Ast([
         body=[
             Int(0),
         ]
-    )
+    ),
 ])
 "#
     );
@@ -164,7 +221,7 @@ Ast([
                 right=Int(10),
             ),
         ]
-    )
+    ),
 ])
 "#
     );
@@ -189,7 +246,7 @@ Ast([
                 right=Int(10),
             ),
         ]
-    )
+    ),
 ])
 "#
     );
@@ -214,7 +271,7 @@ Ast([
                 right=Int(10),
             ),
         ]
-    )
+    ),
 ])
 "#
     );
@@ -239,7 +296,7 @@ Ast([
                 right=Int(5),
             ),
         ]
-    )
+    ),
 ])
 "#
     );
@@ -268,7 +325,7 @@ Ast([
                 ),
             ),
         ]
-    )
+    ),
 ])
 "#
     );
@@ -297,7 +354,7 @@ Ast([
                 right=Int(10),
             ),
         ]
-    )
+    ),
 ])
 "#
     );
@@ -335,7 +392,7 @@ Ast([
                 right=Symbol(y),
             ),
         ]
-    )
+    ),
 ])
 "#
     );
@@ -355,124 +412,71 @@ def start(): sum_of_squares(5, 3)"#;
     let tokens = tokenize(source);
     let ast = parse(tokens);
     assert_eq!(
-        ast,
-        Ast {
-            functions: vec![
-                Function {
-                    name: 0,
-                    arguments: vec![1],
-                    kinds: vec![Kind::Symbol, Kind::Symbol, Kind::BinaryOp,],
-                    indices: vec![2, 3, 0],
-                    binary_ops: BinaryOps {
-                        ops: vec![BinaryOp::Multiply],
-                        lefts: vec![0],
-                        rights: vec![1],
-                    },
-                    definitions: Definitions {
-                        names: vec![],
-                        values: vec![],
-                    },
-                    function_calls: FunctionCalls {
-                        names: vec![],
-                        parameters: vec![],
-                    },
-                    expressions: vec![2],
-                    symbols: strings(["square", "x", "x", "x"]),
-                    ints: vec![],
-                    ifs: Ifs {
-                        conditionals: vec![],
-                        then_branches: vec![],
-                        else_branches: vec![],
-                    }
-                },
-                Function {
-                    name: 0,
-                    arguments: vec![1, 2],
-                    kinds: vec![
-                        Kind::Symbol,
-                        Kind::Symbol,
-                        Kind::Symbol,
-                        Kind::FunctionCall,
-                        Kind::Definition,
-                        Kind::Symbol,
-                        Kind::Symbol,
-                        Kind::Symbol,
-                        Kind::FunctionCall,
-                        Kind::Definition,
-                        Kind::Symbol,
-                        Kind::Symbol,
-                        Kind::BinaryOp,
-                    ],
-                    indices: vec![3, 4, 5, 0, 0, 6, 7, 8, 1, 1, 9, 10, 0],
-                    binary_ops: BinaryOps {
-                        ops: vec![BinaryOp::Add],
-                        lefts: vec![10],
-                        rights: vec![11],
-                    },
-                    definitions: Definitions {
-                        names: vec![0, 5],
-                        values: vec![3, 8],
-                    },
-                    function_calls: FunctionCalls {
-                        names: vec![1, 6],
-                        parameters: vec![vec![2], vec![7]],
-                    },
-                    expressions: vec![4, 9, 12],
-                    symbols: strings([
-                        "sum_of_squares",
-                        "x",
-                        "y",
-                        "x2",
-                        "square",
-                        "x",
-                        "y2",
-                        "square",
-                        "y",
-                        "x2",
-                        "y2"
-                    ]),
-                    ints: vec![],
-                    ifs: Ifs {
-                        conditionals: vec![],
-                        then_branches: vec![],
-                        else_branches: vec![],
-                    }
-                },
-                Function {
-                    name: 0,
-                    arguments: vec![],
-                    kinds: vec![Kind::Symbol, Kind::Int, Kind::Int, Kind::FunctionCall],
-                    indices: vec![1, 0, 1, 0],
-                    binary_ops: BinaryOps {
-                        ops: vec![],
-                        lefts: vec![],
-                        rights: vec![],
-                    },
-                    definitions: Definitions {
-                        names: vec![],
-                        values: vec![],
-                    },
-                    function_calls: FunctionCalls {
-                        names: vec![0],
-                        parameters: vec![vec![1, 2]],
-                    },
-                    expressions: vec![3],
-                    symbols: strings(["start", "sum_of_squares"]),
-                    ints: strings(["5", "3"]),
-                    ifs: Ifs {
-                        conditionals: vec![],
-                        then_branches: vec![],
-                        else_branches: vec![],
-                    }
-                }
-            ],
-            top_level: HashMap::from_iter([
-                (String::from("square"), 0),
-                (String::from("sum_of_squares"), 1),
-                (String::from("start"), 2),
-            ])
-        }
-    )
+        ast_string(&ast),
+        r#"
+Ast([
+    Function(
+        name=square,
+        arguments=[
+            x,
+        ],
+        body=[
+            BinaryOp(
+                op=Multiply,
+                left=Symbol(x),
+                right=Symbol(x),
+            ),
+        ]
+    ),
+    Function(
+        name=sum_of_squares,
+        arguments=[
+            x,
+            y,
+        ],
+        body=[
+            Definition(
+                name=x2,
+                value=FunctionCall(
+                    name=square,
+                    parameters=[
+                        Symbol(x),
+                    ]
+                ),
+            ),
+            Definition(
+                name=y2,
+                value=FunctionCall(
+                    name=square,
+                    parameters=[
+                        Symbol(y),
+                    ]
+                ),
+            ),
+            BinaryOp(
+                op=Add,
+                left=Symbol(x2),
+                right=Symbol(y2),
+            ),
+        ]
+    ),
+    Function(
+        name=start,
+        arguments=[
+        ],
+        body=[
+            FunctionCall(
+                name=sum_of_squares,
+                parameters=[
+                    Int(5),
+                    Int(3),
+                ]
+            ),
+        ]
+    ),
+])
+"#
+    );
 }
 
 #[test]
@@ -483,45 +487,34 @@ def min(x, y):
     let tokens = tokenize(source);
     let ast = parse(tokens);
     assert_eq!(
-        ast,
-        Ast {
-            functions: vec![Function {
-                name: 0,
-                arguments: vec![1, 2],
-                kinds: vec![
-                    Kind::Symbol,
-                    Kind::Symbol,
-                    Kind::BinaryOp,
-                    Kind::Symbol,
-                    Kind::Symbol,
-                    Kind::If
+        ast_string(&ast),
+        r#"
+Ast([
+    Function(
+        name=min,
+        arguments=[
+            x,
+            y,
+        ],
+        body=[
+            If(
+                condition=BinaryOp(
+                    op=LessThan,
+                    left=Symbol(x),
+                    right=Symbol(y),
+                ),
+                then=[
+                    Symbol(x),
                 ],
-                indices: vec![3, 4, 0, 5, 6, 0],
-                binary_ops: BinaryOps {
-                    ops: vec![BinaryOp::LessThan],
-                    lefts: vec![0],
-                    rights: vec![1],
-                },
-                definitions: Definitions {
-                    names: vec![],
-                    values: vec![],
-                },
-                function_calls: FunctionCalls {
-                    names: vec![],
-                    parameters: vec![],
-                },
-                expressions: vec![5],
-                symbols: strings(["min", "x", "y", "x", "y", "x", "y"]),
-                ints: vec![],
-                ifs: Ifs {
-                    conditionals: vec![2],
-                    then_branches: vec![vec![3]],
-                    else_branches: vec![vec![4]],
-                }
-            }],
-            top_level: HashMap::from_iter([(String::from("min"), 0)])
-        }
-    )
+                else=[
+                    Symbol(y),
+                ]
+            ),
+        ]
+    ),
+])
+"#
+    );
 }
 
 #[test]
@@ -539,74 +532,62 @@ def main():
     let tokens = tokenize(source);
     let ast = parse(tokens);
     assert_eq!(
-        ast,
-        Ast {
-            functions: vec![Function {
-                name: 0,
-                arguments: vec![],
-                kinds: vec![
-                    Kind::Symbol,
-                    Kind::Int,
-                    Kind::Definition,
-                    Kind::Symbol,
-                    Kind::Int,
-                    Kind::Definition,
-                    Kind::Symbol,
-                    Kind::Symbol,
-                    Kind::BinaryOp,
-                    Kind::Symbol,
-                    Kind::Int,
-                    Kind::Definition,
-                    Kind::Symbol,
-                    Kind::Symbol,
-                    Kind::Symbol,
-                    Kind::BinaryOp,
-                    Kind::BinaryOp,
-                    Kind::Symbol,
-                    Kind::Int,
-                    Kind::Definition,
-                    Kind::Symbol,
-                    Kind::Symbol,
-                    Kind::Symbol,
-                    Kind::BinaryOp,
-                    Kind::BinaryOp,
-                    Kind::If
+        ast_string(&ast),
+        r#"
+Ast([
+    Function(
+        name=main,
+        arguments=[
+        ],
+        body=[
+            Definition(
+                name=a,
+                value=Int(5),
+            ),
+            Definition(
+                name=b,
+                value=Int(10),
+            ),
+            If(
+                condition=BinaryOp(
+                    op=LessThan,
+                    left=Symbol(a),
+                    right=Symbol(b),
+                ),
+                then=[
+                    Definition(
+                        name=c,
+                        value=Int(7),
+                    ),
+                    BinaryOp(
+                        op=Add,
+                        left=Symbol(a),
+                        right=BinaryOp(
+                            op=Add,
+                            left=Symbol(b),
+                            right=Symbol(c),
+                        ),
+                    ),
                 ],
-                indices: vec![
-                    1, 0, 0, 2, 1, 1, 3, 4, 0, 5, 2, 2, 6, 7, 8, 1, 2, 9, 3, 3, 10, 11, 12, 3, 4,
-                    0,
-                ],
-                binary_ops: BinaryOps {
-                    ops: vec![
-                        BinaryOp::LessThan,
-                        BinaryOp::Add,
-                        BinaryOp::Add,
-                        BinaryOp::Multiply,
-                        BinaryOp::Multiply
-                    ],
-                    lefts: vec![6, 13, 12, 21, 20],
-                    rights: vec![7, 14, 15, 22, 23],
-                },
-                definitions: Definitions {
-                    names: vec![0, 3, 9, 17],
-                    values: vec![1, 4, 10, 18],
-                },
-                function_calls: FunctionCalls {
-                    names: vec![],
-                    parameters: vec![],
-                },
-                expressions: vec![2, 5, 25],
-                symbols: strings([
-                    "main", "a", "b", "a", "b", "c", "a", "b", "c", "d", "a", "b", "c"
-                ]),
-                ints: strings(["5", "10", "7", "8"]),
-                ifs: Ifs {
-                    conditionals: vec![8],
-                    then_branches: vec![vec![11, 16]],
-                    else_branches: vec![vec![19, 24]],
-                }
-            }],
-            top_level: HashMap::from_iter([(String::from("main"), 0)])
-        }
-    )
+                else=[
+                    Definition(
+                        name=d,
+                        value=Int(8),
+                    ),
+                    BinaryOp(
+                        op=Multiply,
+                        left=Symbol(a),
+                        right=BinaryOp(
+                            op=Multiply,
+                            left=Symbol(b),
+                            right=Symbol(c),
+                        ),
+                    ),
+                ]
+            ),
+        ]
+    ),
+])
+"#
+    );
 }
