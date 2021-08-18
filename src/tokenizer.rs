@@ -9,7 +9,9 @@ pub enum Kind {
     Minus,
     Times,
     Slash,
+    Percent,
     Equal,
+    EqualEqual,
     Comma,
     LessThan,
     Indent,
@@ -65,6 +67,16 @@ fn tokenize_one(mut top_level: TopLevel, source: &str, kind: Kind) -> (TopLevel,
     tokenize_top_level(top_level, &source[1..])
 }
 
+fn tokenize_equal(mut top_level: TopLevel, source: &str) -> (TopLevel, &str) {
+    let (length, kind) = match source.chars().skip(1).next() {
+        Some('=') => (2, Kind::EqualEqual),
+        _ => (1, Kind::Equal),
+    };
+    top_level.kinds.push(kind);
+    top_level.indices.push(0);
+    tokenize_top_level(top_level, &source[length..])
+}
+
 fn tokenize_number(mut top_level: TopLevel, source: &str) -> (TopLevel, &str) {
     let length = 1 + source[1..].chars().take_while(|c| c.is_numeric()).count();
     top_level.kinds.push(Kind::Int);
@@ -104,9 +116,10 @@ fn tokenize_top_level(top_level: TopLevel, source: &str) -> (TopLevel, &str) {
         Some('-') => tokenize_one(top_level, source, Kind::Minus),
         Some('*') => tokenize_one(top_level, source, Kind::Times),
         Some('/') => tokenize_one(top_level, source, Kind::Slash),
-        Some('=') => tokenize_one(top_level, source, Kind::Equal),
+        Some('%') => tokenize_one(top_level, source, Kind::Percent),
         Some(',') => tokenize_one(top_level, source, Kind::Comma),
         Some('<') => tokenize_one(top_level, source, Kind::LessThan),
+        Some('=') => tokenize_equal(top_level, source),
         Some('0'..='9') => tokenize_number(top_level, source),
         Some('\n') => tokenize_indent(top_level, source),
         Some(c) => panic!("not implemented for char \"{}\"", c),

@@ -41,6 +41,8 @@ fn ast_string_binary_op(
         BinaryOp::Subtract => output.push_str("Subtract"),
         BinaryOp::Multiply => output.push_str("Multiply"),
         BinaryOp::Divide => output.push_str("Divide"),
+        BinaryOp::Modulo => output.push_str("Modulo"),
+        BinaryOp::Equal => output.push_str("Equal"),
         BinaryOp::LessThan => output.push_str("LessThan"),
     };
     output.push_str(",\n");
@@ -292,6 +294,56 @@ Ast([
         body=[
             BinaryOp(
                 op=Divide,
+                left=Int(10),
+                right=Int(5),
+            ),
+        ]
+    ),
+])
+"#
+    );
+}
+
+#[test]
+fn test_parse_modulo() {
+    let tokens = tokenize("def start(): 10 % 5");
+    let ast = parse(tokens);
+    assert_eq!(
+        ast_string(&ast),
+        r#"
+Ast([
+    Function(
+        name=start,
+        arguments=[
+        ],
+        body=[
+            BinaryOp(
+                op=Modulo,
+                left=Int(10),
+                right=Int(5),
+            ),
+        ]
+    ),
+])
+"#
+    );
+}
+
+#[test]
+fn test_parse_compare() {
+    let tokens = tokenize("def start(): 10 == 5");
+    let ast = parse(tokens);
+    assert_eq!(
+        ast_string(&ast),
+        r#"
+Ast([
+    Function(
+        name=start,
+        arguments=[
+        ],
+        body=[
+            BinaryOp(
+                op=Equal,
                 left=Int(10),
                 right=Int(5),
             ),

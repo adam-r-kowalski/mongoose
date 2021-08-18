@@ -51,7 +51,9 @@ fn token_string_impl(top_level: &TopLevel, token: usize, output: String) -> Stri
         Some(Kind::Minus) => token_string_literal(top_level, token, output, "Minus"),
         Some(Kind::Times) => token_string_literal(top_level, token, output, "Times"),
         Some(Kind::Slash) => token_string_literal(top_level, token, output, "Slash"),
+        Some(Kind::Percent) => token_string_literal(top_level, token, output, "Percent"),
         Some(Kind::Equal) => token_string_literal(top_level, token, output, "Equal"),
+        Some(Kind::EqualEqual) => token_string_literal(top_level, token, output, "EqualEqual"),
         Some(Kind::Comma) => token_string_literal(top_level, token, output, "Comma"),
         Some(Kind::If) => token_string_literal(top_level, token, output, "If"),
         Some(Kind::LessThan) => token_string_literal(top_level, token, output, "LessThan"),
@@ -179,6 +181,50 @@ Tokens([
         Colon,
         Int(10),
         Slash,
+        Int(5),
+    ]),
+])
+"#
+    );
+}
+
+#[test]
+fn test_tokenize_modulo() {
+    let tokens = tokenize("def start(): 10 % 5");
+    assert_eq!(
+        token_string(&tokens),
+        r#"
+Tokens([
+    TopLevel([
+        Def,
+        Symbol(start),
+        LeftParen,
+        RightParen,
+        Colon,
+        Int(10),
+        Percent,
+        Int(5),
+    ]),
+])
+"#
+    );
+}
+
+#[test]
+fn test_tokenize_compare() {
+    let tokens = tokenize("def start(): 10 == 5");
+    assert_eq!(
+        token_string(&tokens),
+        r#"
+Tokens([
+    TopLevel([
+        Def,
+        Symbol(start),
+        LeftParen,
+        RightParen,
+        Colon,
+        Int(10),
+        EqualEqual,
         Int(5),
     ]),
 ])

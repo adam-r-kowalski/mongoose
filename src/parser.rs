@@ -22,6 +22,8 @@ pub enum BinaryOp {
     Subtract,
     Multiply,
     Divide,
+    Modulo,
+    Equal,
     LessThan,
 }
 
@@ -84,11 +86,13 @@ enum InfixParser {
 struct ParseResult(Function, Token, usize);
 
 const LOWEST: Precedence = 0;
-const LESS_THAN: Precedence = 10;
-const ADD: Precedence = LESS_THAN + 10;
+const EQUAL: Precedence = 10;
+const COMPARE: Precedence = EQUAL + 10;
+const ADD: Precedence = COMPARE + 10;
 const SUBTRACT: Precedence = ADD;
 const MULTIPLY: Precedence = ADD + 10;
 const DIVIDE: Precedence = MULTIPLY;
+const MODULO: Precedence = MULTIPLY;
 const HIGHEST: Precedence = DIVIDE + 10;
 
 fn precedence_of(parser: &InfixParser) -> Precedence {
@@ -285,7 +289,9 @@ fn infix_parser(kind: tokenizer::Kind) -> Option<InfixParser> {
         tokenizer::Kind::Minus => Some(InfixParser::BinaryOp(SUBTRACT, BinaryOp::Subtract)),
         tokenizer::Kind::Times => Some(InfixParser::BinaryOp(MULTIPLY, BinaryOp::Multiply)),
         tokenizer::Kind::Slash => Some(InfixParser::BinaryOp(DIVIDE, BinaryOp::Divide)),
-        tokenizer::Kind::LessThan => Some(InfixParser::BinaryOp(LESS_THAN, BinaryOp::LessThan)),
+        tokenizer::Kind::Percent => Some(InfixParser::BinaryOp(MODULO, BinaryOp::Modulo)),
+        tokenizer::Kind::LessThan => Some(InfixParser::BinaryOp(COMPARE, BinaryOp::LessThan)),
+        tokenizer::Kind::EqualEqual => Some(InfixParser::BinaryOp(EQUAL, BinaryOp::Equal)),
         tokenizer::Kind::Equal => Some(InfixParser::Definition),
         tokenizer::Kind::LeftParen => Some(InfixParser::FunctionCall),
         _ => None,

@@ -10,6 +10,8 @@ pub enum Instruction {
     I64Sub,
     I64Mul,
     I64DivS,
+    I64RemS,
+    I64Eq,
     I64LtS,
     SetLocal,
     GetLocal,
@@ -77,6 +79,8 @@ fn codegen_binary_op(
         parser::BinaryOp::Subtract => Instruction::I64Sub,
         parser::BinaryOp::Multiply => Instruction::I64Mul,
         parser::BinaryOp::Divide => Instruction::I64DivS,
+        parser::BinaryOp::Modulo => Instruction::I64RemS,
+        parser::BinaryOp::Equal => Instruction::I64Eq,
         parser::BinaryOp::LessThan => Instruction::I64LtS,
     };
     wasm_func.instructions.push(instruction);
