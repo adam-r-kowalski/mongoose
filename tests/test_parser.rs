@@ -663,3 +663,78 @@ Ast([
 "#
     );
 }
+
+#[test]
+fn test_parse_multi_line_if_returns_value() {
+    let source = r#"
+def main():
+  a = 5
+  b = 10
+  c = if a < b:
+    15
+  else:
+    20
+  d = if b < a: 5 else: 10
+  c + d"#;
+    let tokens = tokenize(source);
+    let ast = parse(tokens);
+    assert_eq!(
+        ast_string(&ast),
+        r#"
+Ast([
+    Function(
+        name=main,
+        arguments=[
+        ],
+        body=[
+            Definition(
+                name=a,
+                value=Int(5),
+            ),
+            Definition(
+                name=b,
+                value=Int(10),
+            ),
+            Definition(
+                name=c,
+                value=If(
+                    condition=BinaryOp(
+                        op=LessThan,
+                        left=Symbol(a),
+                        right=Symbol(b),
+                    ),
+                    then=[
+                        Int(15),
+                    ],
+                    else=[
+                        Int(20),
+                    ]
+                ),
+            ),
+            Definition(
+                name=d,
+                value=If(
+                    condition=BinaryOp(
+                        op=LessThan,
+                        left=Symbol(b),
+                        right=Symbol(a),
+                    ),
+                    then=[
+                        Int(5),
+                    ],
+                    else=[
+                        Int(10),
+                    ]
+                ),
+            ),
+            BinaryOp(
+                op=Add,
+                left=Symbol(c),
+                right=Symbol(d),
+            ),
+        ]
+    ),
+])
+"#
+    );
+}
