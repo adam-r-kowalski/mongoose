@@ -116,20 +116,17 @@ fn codegen_assignment(
     ast_func: &parser::Function,
     entity: usize,
 ) -> Function {
-    panic!("codegen assignment not implemented yet!");
-    // let index = ast_func.indices[entity];
-    // let name_index = ast_func.definitions.names[index];
-    // assert_eq!(ast_func.kinds[name_index], parser::Kind::Symbol);
-    // let mut wasm_func =
-    //     codegen_expression(tx, wasm_func, ast_func, ast_func.definitions.values[index]);
-    // let name = ast_func.symbols[ast_func.indices[name_index]].clone();
-    // let local = wasm_func.locals.len();
-    // wasm_func.locals.push(format!("${}", name));
-    // wasm_func.name_to_local.try_insert(name, local).unwrap();
-    // wasm_func.instructions.push(Instruction::SetLocal);
-    // wasm_func.operand_kinds.push(vec![OperandKind::Local]);
-    // wasm_func.operands.push(vec![local]);
-    // wasm_func
+    let index = ast_func.indices[entity];
+    let name_index = ast_func.assignments.names[index];
+    assert_eq!(ast_func.kinds[name_index], parser::Kind::Symbol);
+    let mut wasm_func =
+        codegen_expression(tx, wasm_func, ast_func, ast_func.assignments.values[index]);
+    let name = &ast_func.symbols[ast_func.indices[name_index]];
+    let local = wasm_func.name_to_local.get(name).unwrap();
+    wasm_func.instructions.push(Instruction::SetLocal);
+    wasm_func.operand_kinds.push(vec![OperandKind::Local]);
+    wasm_func.operands.push(vec![*local]);
+    wasm_func
 }
 
 fn codegen_symbol(mut wasm_func: Function, ast_func: &parser::Function, entity: usize) -> Function {

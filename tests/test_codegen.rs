@@ -269,3 +269,33 @@ def start():
     );
     assert_eq!(run(&code), Value::I64(5));
 }
+
+#[test]
+fn test_parse_assign() {
+    let source = r#"
+def start():
+    x = 10
+    x := x * 2
+    x"#;
+    let tokens = tokenize(source);
+    let ast = parse(tokens);
+    let wasm = codegen(ast);
+    let code = write(Vec::<u8>::new(), wasm).unwrap();
+    assert_eq!(
+        str::from_utf8(&code).unwrap(),
+        r#"(module
+
+  (func $start (result i64)
+    (local $x i64)
+    (i64.const 10)
+    (set_local $x)
+    (get_local $x)
+    (i64.const 2)
+    i64.mul
+    (set_local $x)
+    (get_local $x))
+
+  (export "_start" (func $start)))"#
+    );
+    assert_eq!(run(&code), Value::I64(20));
+}
