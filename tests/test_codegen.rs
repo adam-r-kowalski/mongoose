@@ -1,36 +1,35 @@
-use std::{collections::HashMap, iter::FromIterator};
+use std::str;
 
 use pretty_assertions::assert_eq;
+use wasmer::{imports, Instance, Module, Store, Value};
 
-use smith::{
-    codegen::{codegen, Function, Instruction, OperandKind, Wasm},
-    parser::parse,
-    tokenizer::tokenize,
-};
-use test_utilities::strings;
+use smith::{codegen::codegen, parser::parse, tokenizer::tokenize, writer::write};
+
+fn run(code: &[u8]) -> Value {
+    let store = Store::default();
+    let module = Module::new(&store, code).unwrap();
+    let import_object = imports! {};
+    let instance = Instance::new(&module, &import_object).unwrap();
+    let start = instance.exports.get_function("_start").unwrap();
+    start.call(&[]).unwrap()[0].clone()
+}
 
 #[test]
 fn test_codegen_int() {
     let tokens = tokenize("def start(): 0");
     let ast = parse(tokens);
     let wasm = codegen(ast);
+    let code = write(Vec::<u8>::new(), wasm).unwrap();
     assert_eq!(
-        wasm,
-        Wasm {
-            functions: vec![Function {
-                name: 0,
-                instructions: vec![Instruction::I64Const],
-                operand_kinds: vec![vec![OperandKind::IntLiteral]],
-                operands: vec![vec![0]],
-                locals: vec![],
-                name_to_local: HashMap::new(),
-                symbols: strings(["start"]),
-                ints: strings(["0"]),
-                arguments: 0,
-            }],
-            name_to_function: HashMap::from_iter([(String::from("start"), 0)])
-        }
+        str::from_utf8(&code).unwrap(),
+        r#"(module
+
+  (func $start (result i64)
+    (i64.const 0))
+
+  (export "_start" (func $start)))"#
     );
+    assert_eq!(run(&code), Value::I64(0));
 }
 
 #[test]
@@ -38,31 +37,19 @@ fn test_codegen_add() {
     let tokens = tokenize("def start(): 5 + 10");
     let ast = parse(tokens);
     let wasm = codegen(ast);
+    let code = write(Vec::<u8>::new(), wasm).unwrap();
     assert_eq!(
-        wasm,
-        Wasm {
-            functions: vec![Function {
-                name: 0,
-                instructions: vec![
-                    Instruction::I64Const,
-                    Instruction::I64Const,
-                    Instruction::I64Add
-                ],
-                operand_kinds: vec![
-                    vec![OperandKind::IntLiteral],
-                    vec![OperandKind::IntLiteral],
-                    vec![]
-                ],
-                operands: vec![vec![0], vec![1], vec![]],
-                locals: vec![],
-                name_to_local: HashMap::new(),
-                symbols: strings(["start"]),
-                ints: strings(["5", "10"]),
-                arguments: 0,
-            }],
-            name_to_function: HashMap::from_iter([(String::from("start"), 0)])
-        }
+        str::from_utf8(&code).unwrap(),
+        r#"(module
+
+  (func $start (result i64)
+    (i64.const 5)
+    (i64.const 10)
+    i64.add)
+
+  (export "_start" (func $start)))"#
     );
+    assert_eq!(run(&code), Value::I64(15));
 }
 
 #[test]
@@ -70,31 +57,19 @@ fn test_codegen_subtract() {
     let tokens = tokenize("def start(): 5 - 10");
     let ast = parse(tokens);
     let wasm = codegen(ast);
+    let code = write(Vec::<u8>::new(), wasm).unwrap();
     assert_eq!(
-        wasm,
-        Wasm {
-            functions: vec![Function {
-                name: 0,
-                instructions: vec![
-                    Instruction::I64Const,
-                    Instruction::I64Const,
-                    Instruction::I64Sub
-                ],
-                operand_kinds: vec![
-                    vec![OperandKind::IntLiteral],
-                    vec![OperandKind::IntLiteral],
-                    vec![]
-                ],
-                operands: vec![vec![0], vec![1], vec![]],
-                locals: vec![],
-                name_to_local: HashMap::new(),
-                symbols: strings(["start"]),
-                ints: strings(["5", "10"]),
-                arguments: 0,
-            }],
-            name_to_function: HashMap::from_iter([(String::from("start"), 0)])
-        }
+        str::from_utf8(&code).unwrap(),
+        r#"(module
+
+  (func $start (result i64)
+    (i64.const 5)
+    (i64.const 10)
+    i64.sub)
+
+  (export "_start" (func $start)))"#
     );
+    assert_eq!(run(&code), Value::I64(-5));
 }
 
 #[test]
@@ -102,31 +77,19 @@ fn test_codegen_multiply() {
     let tokens = tokenize("def start(): 5 * 10");
     let ast = parse(tokens);
     let wasm = codegen(ast);
+    let code = write(Vec::<u8>::new(), wasm).unwrap();
     assert_eq!(
-        wasm,
-        Wasm {
-            functions: vec![Function {
-                name: 0,
-                instructions: vec![
-                    Instruction::I64Const,
-                    Instruction::I64Const,
-                    Instruction::I64Mul
-                ],
-                operand_kinds: vec![
-                    vec![OperandKind::IntLiteral],
-                    vec![OperandKind::IntLiteral],
-                    vec![]
-                ],
-                operands: vec![vec![0], vec![1], vec![]],
-                locals: vec![],
-                name_to_local: HashMap::new(),
-                symbols: strings(["start"]),
-                ints: strings(["5", "10"]),
-                arguments: 0,
-            }],
-            name_to_function: HashMap::from_iter([(String::from("start"), 0)])
-        }
+        str::from_utf8(&code).unwrap(),
+        r#"(module
+
+  (func $start (result i64)
+    (i64.const 5)
+    (i64.const 10)
+    i64.mul)
+
+  (export "_start" (func $start)))"#
     );
+    assert_eq!(run(&code), Value::I64(50));
 }
 
 #[test]
@@ -134,31 +97,19 @@ fn test_codegen_divide() {
     let tokens = tokenize("def start(): 10 / 5");
     let ast = parse(tokens);
     let wasm = codegen(ast);
+    let code = write(Vec::<u8>::new(), wasm).unwrap();
     assert_eq!(
-        wasm,
-        Wasm {
-            functions: vec![Function {
-                name: 0,
-                instructions: vec![
-                    Instruction::I64Const,
-                    Instruction::I64Const,
-                    Instruction::I64DivS
-                ],
-                operand_kinds: vec![
-                    vec![OperandKind::IntLiteral],
-                    vec![OperandKind::IntLiteral],
-                    vec![]
-                ],
-                operands: vec![vec![0], vec![1], vec![]],
-                locals: vec![],
-                name_to_local: HashMap::new(),
-                symbols: strings(["start"]),
-                ints: strings(["10", "5"]),
-                arguments: 0,
-            }],
-            name_to_function: HashMap::from_iter([(String::from("start"), 0)])
-        }
+        str::from_utf8(&code).unwrap(),
+        r#"(module
+
+  (func $start (result i64)
+    (i64.const 10)
+    (i64.const 5)
+    i64.div_s)
+
+  (export "_start" (func $start)))"#
     );
+    assert_eq!(run(&code), Value::I64(2));
 }
 
 #[test]
@@ -166,35 +117,21 @@ fn test_codegen_add_then_multiply() {
     let tokens = tokenize("def start(): 3 + 5 * 10");
     let ast = parse(tokens);
     let wasm = codegen(ast);
+    let code = write(Vec::<u8>::new(), wasm).unwrap();
     assert_eq!(
-        wasm,
-        Wasm {
-            functions: vec![Function {
-                name: 0,
-                instructions: vec![
-                    Instruction::I64Const,
-                    Instruction::I64Const,
-                    Instruction::I64Const,
-                    Instruction::I64Mul,
-                    Instruction::I64Add
-                ],
-                operand_kinds: vec![
-                    vec![OperandKind::IntLiteral],
-                    vec![OperandKind::IntLiteral],
-                    vec![OperandKind::IntLiteral],
-                    vec![],
-                    vec![]
-                ],
-                operands: vec![vec![0], vec![1], vec![2], vec![], vec![]],
-                locals: vec![],
-                name_to_local: HashMap::new(),
-                symbols: strings(["start"]),
-                ints: strings(["3", "5", "10"]),
-                arguments: 0,
-            }],
-            name_to_function: HashMap::from_iter([(String::from("start"), 0)])
-        }
+        str::from_utf8(&code).unwrap(),
+        r#"(module
+
+  (func $start (result i64)
+    (i64.const 3)
+    (i64.const 5)
+    (i64.const 10)
+    i64.mul
+    i64.add)
+
+  (export "_start" (func $start)))"#
     );
+    assert_eq!(run(&code), Value::I64(53));
 }
 
 #[test]
@@ -202,35 +139,21 @@ fn test_codegen_multiply_then_add() {
     let tokens = tokenize("def start(): 3 * 5 + 10");
     let ast = parse(tokens);
     let wasm = codegen(ast);
+    let code = write(Vec::<u8>::new(), wasm).unwrap();
     assert_eq!(
-        wasm,
-        Wasm {
-            functions: vec![Function {
-                name: 0,
-                instructions: vec![
-                    Instruction::I64Const,
-                    Instruction::I64Const,
-                    Instruction::I64Mul,
-                    Instruction::I64Const,
-                    Instruction::I64Add
-                ],
-                operand_kinds: vec![
-                    vec![OperandKind::IntLiteral],
-                    vec![OperandKind::IntLiteral],
-                    vec![],
-                    vec![OperandKind::IntLiteral],
-                    vec![]
-                ],
-                operands: vec![vec![0], vec![1], vec![], vec![2], vec![]],
-                locals: vec![],
-                name_to_local: HashMap::new(),
-                symbols: strings(["start"]),
-                ints: strings(["3", "5", "10"]),
-                arguments: 0,
-            }],
-            name_to_function: HashMap::from_iter([(String::from("start"), 0)])
-        }
+        str::from_utf8(&code).unwrap(),
+        r#"(module
+
+  (func $start (result i64)
+    (i64.const 3)
+    (i64.const 5)
+    i64.mul
+    (i64.const 10)
+    i64.add)
+
+  (export "_start" (func $start)))"#
     );
+    assert_eq!(run(&code), Value::I64(25));
 }
 
 #[test]
@@ -243,39 +166,25 @@ def start():
     let tokens = tokenize(source);
     let ast = parse(tokens);
     let wasm = codegen(ast);
+    let code = write(Vec::<u8>::new(), wasm).unwrap();
     assert_eq!(
-        wasm,
-        Wasm {
-            functions: vec![Function {
-                name: 0,
-                instructions: vec![
-                    Instruction::I64Const,
-                    Instruction::SetLocal,
-                    Instruction::I64Const,
-                    Instruction::SetLocal,
-                    Instruction::GetLocal,
-                    Instruction::GetLocal,
-                    Instruction::I64Add
-                ],
-                operand_kinds: vec![
-                    vec![OperandKind::IntLiteral],
-                    vec![OperandKind::Local],
-                    vec![OperandKind::IntLiteral],
-                    vec![OperandKind::Local],
-                    vec![OperandKind::Local],
-                    vec![OperandKind::Local],
-                    vec![]
-                ],
-                operands: vec![vec![0], vec![0], vec![1], vec![1], vec![0], vec![1], vec![]],
-                locals: strings(["$x", "$y"]),
-                name_to_local: HashMap::from_iter([(String::from("x"), 0), (String::from("y"), 1)]),
-                symbols: strings(["start", "x", "y", "x", "y"]),
-                ints: strings(["5", "20"]),
-                arguments: 0,
-            }],
-            name_to_function: HashMap::from_iter([(String::from("start"), 0)])
-        }
+        str::from_utf8(&code).unwrap(),
+        r#"(module
+
+  (func $start (result i64)
+    (local $x i64)
+    (local $y i64)
+    (i64.const 5)
+    (set_local $x)
+    (i64.const 20)
+    (set_local $y)
+    (get_local $x)
+    (get_local $y)
+    i64.add)
+
+  (export "_start" (func $start)))"#
     );
+    assert_eq!(run(&code), Value::I64(25));
 }
 
 #[test]
@@ -292,110 +201,37 @@ def start(): sum_of_squares(5, 3)"#;
     let tokens = tokenize(source);
     let ast = parse(tokens);
     let wasm = codegen(ast);
+    let code = write(Vec::<u8>::new(), wasm).unwrap();
     assert_eq!(
-        wasm,
-        Wasm {
-            functions: vec![
-                Function {
-                    name: 0,
-                    instructions: vec![
-                        Instruction::I64Const,
-                        Instruction::I64Const,
-                        Instruction::Call,
-                    ],
-                    operand_kinds: vec![
-                        vec![OperandKind::IntLiteral],
-                        vec![OperandKind::IntLiteral],
-                        vec![OperandKind::Symbol],
-                    ],
-                    operands: vec![vec![0], vec![1], vec![1]],
-                    locals: strings([]),
-                    name_to_local: HashMap::new(),
-                    symbols: strings(["start", "sum_of_squares"]),
-                    ints: strings(["5", "3"]),
-                    arguments: 0,
-                },
-                Function {
-                    name: 0,
-                    instructions: vec![
-                        Instruction::GetLocal,
-                        Instruction::Call,
-                        Instruction::SetLocal,
-                        Instruction::GetLocal,
-                        Instruction::Call,
-                        Instruction::SetLocal,
-                        Instruction::GetLocal,
-                        Instruction::GetLocal,
-                        Instruction::I64Add,
-                    ],
-                    operand_kinds: vec![
-                        vec![OperandKind::Local],
-                        vec![OperandKind::Symbol],
-                        vec![OperandKind::Local],
-                        vec![OperandKind::Local],
-                        vec![OperandKind::Symbol],
-                        vec![OperandKind::Local],
-                        vec![OperandKind::Local],
-                        vec![OperandKind::Local],
-                        vec![],
-                    ],
-                    operands: vec![
-                        vec![0],
-                        vec![4],
-                        vec![2],
-                        vec![1],
-                        vec![7],
-                        vec![3],
-                        vec![2],
-                        vec![3],
-                        vec![]
-                    ],
-                    locals: strings(["$x", "$y", "$x2", "$y2"]),
-                    name_to_local: HashMap::from_iter([
-                        (String::from("x"), 0),
-                        (String::from("y"), 1),
-                        (String::from("x2"), 2),
-                        (String::from("y2"), 3),
-                    ]),
-                    symbols: strings([
-                        "sum_of_squares",
-                        "x",
-                        "y",
-                        "x2",
-                        "square",
-                        "x",
-                        "y2",
-                        "square",
-                        "y",
-                        "x2",
-                        "y2"
-                    ]),
-                    ints: vec![],
-                    arguments: 2,
-                },
-                Function {
-                    name: 0,
-                    instructions: vec![
-                        Instruction::GetLocal,
-                        Instruction::GetLocal,
-                        Instruction::I64Mul,
-                    ],
-                    operand_kinds: vec![vec![OperandKind::Local], vec![OperandKind::Local], vec![],],
-                    operands: vec![vec![0], vec![0], vec![]],
-                    locals: strings(["$x"]),
-                    name_to_local: HashMap::from_iter([(String::from("x"), 0)]),
-                    symbols: strings(["square", "x", "x", "x"]),
-                    ints: vec![],
-                    arguments: 1,
-                },
-            ],
-            name_to_function: HashMap::from_iter([
-                (String::from("start"), 0),
-                (String::from("sum_of_squares"), 1),
-                (String::from("square"), 2),
-            ])
-        }
+        str::from_utf8(&code).unwrap(),
+        r#"(module
+
+  (func $start (result i64)
+    (i64.const 5)
+    (i64.const 3)
+    (call $sum_of_squares))
+
+  (func $sum_of_squares (param $x i64) (param $y i64) (result i64)
+    (local $x2 i64)
+    (local $y2 i64)
+    (get_local $x)
+    (call $square)
+    (set_local $x2)
+    (get_local $y)
+    (call $square)
+    (set_local $y2)
+    (get_local $x2)
+    (get_local $y2)
+    i64.add)
+
+  (func $square (param $x i64) (result i64)
+    (get_local $x)
+    (get_local $x)
+    i64.mul)
+
+  (export "_start" (func $start)))"#
     );
+    assert_eq!(run(&code), Value::I64(34));
 }
 
 #[test]
@@ -408,60 +244,28 @@ def start():
     let tokens = tokenize(source);
     let ast = parse(tokens);
     let wasm = codegen(ast);
+    let code = write(Vec::<u8>::new(), wasm).unwrap();
     assert_eq!(
-        wasm,
-        Wasm {
-            functions: vec![Function {
-                name: 0,
-                instructions: vec![
-                    Instruction::I64Const,
-                    Instruction::SetLocal,
-                    Instruction::I64Const,
-                    Instruction::SetLocal,
-                    Instruction::GetLocal,
-                    Instruction::GetLocal,
-                    Instruction::I64LtS,
-                    Instruction::If,
-                    Instruction::GetLocal,
-                    Instruction::Else,
-                    Instruction::GetLocal,
-                    Instruction::End,
-                ],
-                operand_kinds: vec![
-                    vec![OperandKind::IntLiteral],
-                    vec![OperandKind::Local],
-                    vec![OperandKind::IntLiteral],
-                    vec![OperandKind::Local],
-                    vec![OperandKind::Local],
-                    vec![OperandKind::Local],
-                    vec![],
-                    vec![],
-                    vec![OperandKind::Local],
-                    vec![],
-                    vec![OperandKind::Local],
-                    vec![],
-                ],
-                operands: vec![
-                    vec![0],
-                    vec![0],
-                    vec![1],
-                    vec![1],
-                    vec![0],
-                    vec![1],
-                    vec![],
-                    vec![],
-                    vec![0],
-                    vec![],
-                    vec![1],
-                    vec![]
-                ],
-                locals: strings(["$x", "$y"]),
-                name_to_local: HashMap::from_iter([(String::from("x"), 0), (String::from("y"), 1)]),
-                symbols: strings(["start", "x", "y", "x", "y", "x", "y"]),
-                ints: strings(["5", "10"]),
-                arguments: 0,
-            }],
-            name_to_function: HashMap::from_iter([(String::from("start"), 0)])
-        }
+        str::from_utf8(&code).unwrap(),
+        r#"(module
+
+  (func $start (result i64)
+    (local $x i64)
+    (local $y i64)
+    (i64.const 5)
+    (set_local $x)
+    (i64.const 10)
+    (set_local $y)
+    (get_local $x)
+    (get_local $y)
+    i64.lt_s
+    if (result i64)
+    (get_local $x)
+    else
+    (get_local $y)
+    end)
+
+  (export "_start" (func $start)))"#
     );
+    assert_eq!(run(&code), Value::I64(5));
 }

@@ -355,6 +355,31 @@ Ast([
 }
 
 #[test]
+fn test_parse_less_than() {
+    let tokens = tokenize("def start(): 10 < 5");
+    let ast = parse(tokens);
+    assert_eq!(
+        ast_string(&ast),
+        r#"
+Ast([
+    Function(
+        name=start,
+        arguments=[
+        ],
+        body=[
+            BinaryOp(
+                op=LessThan,
+                left=Int(10),
+                right=Int(5),
+            ),
+        ]
+    ),
+])
+"#
+    );
+}
+
+#[test]
 fn test_parse_add_then_multiply() {
     let tokens = tokenize("def start(): 3 + 5 * 10");
     let ast = parse(tokens);
