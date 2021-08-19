@@ -7,11 +7,12 @@ pub enum Kind {
     Colon,
     Plus,
     Minus,
-    Times,
+    Asterisk,
     Slash,
     Percent,
     Equal,
     EqualEqual,
+    ColonEqual,
     Comma,
     LessThan,
     Indent,
@@ -67,6 +68,16 @@ fn tokenize_one(mut top_level: TopLevel, source: &str, kind: Kind) -> (TopLevel,
     tokenize_top_level(top_level, &source[1..])
 }
 
+fn tokenize_colon(mut top_level: TopLevel, source: &str) -> (TopLevel, &str) {
+    let (length, kind) = match source.chars().skip(1).next() {
+        Some('=') => (2, Kind::ColonEqual),
+        _ => (1, Kind::Colon),
+    };
+    top_level.kinds.push(kind);
+    top_level.indices.push(0);
+    tokenize_top_level(top_level, &source[length..])
+}
+
 fn tokenize_equal(mut top_level: TopLevel, source: &str) -> (TopLevel, &str) {
     let (length, kind) = match source.chars().skip(1).next() {
         Some('=') => (2, Kind::EqualEqual),
@@ -111,14 +122,14 @@ fn tokenize_top_level(top_level: TopLevel, source: &str) -> (TopLevel, &str) {
         Some(c) if c.is_alphabetic() || c == '_' => tokenize_symbol(top_level, source),
         Some('(') => tokenize_one(top_level, source, Kind::LeftParen),
         Some(')') => tokenize_one(top_level, source, Kind::RightParen),
-        Some(':') => tokenize_one(top_level, source, Kind::Colon),
         Some('+') => tokenize_one(top_level, source, Kind::Plus),
         Some('-') => tokenize_one(top_level, source, Kind::Minus),
-        Some('*') => tokenize_one(top_level, source, Kind::Times),
+        Some('*') => tokenize_one(top_level, source, Kind::Asterisk),
         Some('/') => tokenize_one(top_level, source, Kind::Slash),
         Some('%') => tokenize_one(top_level, source, Kind::Percent),
         Some(',') => tokenize_one(top_level, source, Kind::Comma),
         Some('<') => tokenize_one(top_level, source, Kind::LessThan),
+        Some(':') => tokenize_colon(top_level, source),
         Some('=') => tokenize_equal(top_level, source),
         Some('0'..='9') => tokenize_number(top_level, source),
         Some('\n') => tokenize_indent(top_level, source),

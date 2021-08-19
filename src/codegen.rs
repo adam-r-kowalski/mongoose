@@ -110,6 +110,28 @@ fn codegen_definition(
     wasm_func
 }
 
+fn codegen_assignment(
+    tx: Sender<Message>,
+    wasm_func: Function,
+    ast_func: &parser::Function,
+    entity: usize,
+) -> Function {
+    panic!("codegen assignment not implemented yet!");
+    // let index = ast_func.indices[entity];
+    // let name_index = ast_func.definitions.names[index];
+    // assert_eq!(ast_func.kinds[name_index], parser::Kind::Symbol);
+    // let mut wasm_func =
+    //     codegen_expression(tx, wasm_func, ast_func, ast_func.definitions.values[index]);
+    // let name = ast_func.symbols[ast_func.indices[name_index]].clone();
+    // let local = wasm_func.locals.len();
+    // wasm_func.locals.push(format!("${}", name));
+    // wasm_func.name_to_local.try_insert(name, local).unwrap();
+    // wasm_func.instructions.push(Instruction::SetLocal);
+    // wasm_func.operand_kinds.push(vec![OperandKind::Local]);
+    // wasm_func.operands.push(vec![local]);
+    // wasm_func
+}
+
 fn codegen_symbol(mut wasm_func: Function, ast_func: &parser::Function, entity: usize) -> Function {
     assert_eq!(ast_func.kinds[entity], parser::Kind::Symbol);
     let index = ast_func.indices[entity];
@@ -193,6 +215,7 @@ fn codegen_expression(
         parser::Kind::Int => codegen_int(wasm_func, ast_func, entity),
         parser::Kind::BinaryOp => codegen_binary_op(tx, wasm_func, ast_func, entity),
         parser::Kind::Definition => codegen_definition(tx, wasm_func, ast_func, entity),
+        parser::Kind::Assignment => codegen_assignment(tx, wasm_func, ast_func, entity),
         parser::Kind::Symbol => codegen_symbol(wasm_func, ast_func, entity),
         parser::Kind::FunctionCall => codegen_function_call(tx, wasm_func, ast_func, entity),
         parser::Kind::If => codegen_if(tx, wasm_func, ast_func, entity),
