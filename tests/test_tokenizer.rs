@@ -1,6 +1,6 @@
 use pretty_assertions::assert_eq;
 
-use smith::tokenizer::{tokenize, Kind, Tokens, TopLevel};
+use yeti::tokenizer::{tokenize, Kind, Tokens, TopLevel};
 
 fn token_string_literal(
     top_level: &TopLevel,

@@ -3,7 +3,7 @@ use std::str;
 use pretty_assertions::assert_eq;
 use wasmer::{imports, Instance, Module, Store, Value};
 
-use smith::{codegen::codegen, parser::parse, tokenizer::tokenize, writer::write};
+use yeti::{codegen::codegen, parser::parse, tokenizer::tokenize, writer::write};
 
 fn run(code: &[u8]) -> Value {
     let store = Store::default();

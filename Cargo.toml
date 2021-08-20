@@ -1,5 +1,5 @@
 [package]
-name = "smith"
+name = "yeti"
 version = "0.1.0"
 edition = "2018"
 
@@ -9,4 +9,3 @@ wasmer = "2.0"
 
 [dev-dependencies]
 pretty_assertions = "0.7.2"
-test_utilities = { path = "test_utilities" }

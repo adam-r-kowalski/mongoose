@@ -1,6 +1,6 @@
 use pretty_assertions::assert_eq;
 
-use smith::{
+use yeti::{
     parser::{parse, Ast, BinaryOp, Function, Kind},
     tokenizer::tokenize,
 };
