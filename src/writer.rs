@@ -1,5 +1,7 @@
 use std::fmt::{Error, Write};
 
+use rayon::prelude::*;
+
 use crate::codegen::{Function, Instruction, OperandKind, Wasm};
 
 pub fn write_i64_const(mut code: String, func: &Function, i: usize) -> Result<String, Error> {
@@ -96,9 +98,14 @@ pub fn write(wasm: Wasm) -> String {
     code.push_str("(module");
     let mut code = wasm
         .functions
+        .par_iter()
+        .map(|function| write_function(String::new(), function).unwrap())
+        .collect::<Vec<String>>()
         .iter()
-        .try_fold(code, |code, function| write_function(code, function))
-        .unwrap();
+        .fold(code, |mut code, fragment| {
+            code.push_str(&fragment);
+            code
+        });
     code.push_str("\n\n  (export \"_start\" (func $start)))");
     code
 }
