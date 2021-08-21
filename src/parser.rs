@@ -11,7 +11,7 @@ pub enum Kind {
     Symbol,
     Int,
     BinaryOp,
-    Definition,
+    Assign,
     FunctionCall,
     If,
 }
@@ -36,7 +36,7 @@ pub struct BinaryOps {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct Definitions {
+pub struct Assignments {
     pub names: Vec<usize>,
     pub values: Vec<usize>,
 }
@@ -61,7 +61,7 @@ pub struct Function {
     pub kinds: Vec<Kind>,
     pub indices: Vec<usize>,
     pub binary_ops: BinaryOps,
-    pub definitions: Definitions,
+    pub assignments: Assignments,
     pub function_calls: FunctionCalls,
     pub expressions: Vec<usize>,
     pub symbols: Vec<String>,
@@ -229,7 +229,7 @@ fn parse_binary_op(
     ParseResult(func, token, entity)
 }
 
-fn parse_definition(
+fn parse_assignment(
     func: Function,
     top_level: &tokenizer::TopLevel,
     token: Token,
@@ -237,10 +237,10 @@ fn parse_definition(
 ) -> ParseResult {
     let ParseResult(mut func, token, value) = parse_expression(func, top_level, token, 0);
     let entity = fresh_entity(&func);
-    func.kinds.push(Kind::Definition);
-    func.indices.push(func.definitions.names.len());
-    func.definitions.names.push(name);
-    func.definitions.values.push(value);
+    func.kinds.push(Kind::Assign);
+    func.indices.push(func.assignments.names.len());
+    func.assignments.names.push(name);
+    func.assignments.values.push(value);
     ParseResult(func, token, entity)
 }
 
@@ -293,7 +293,9 @@ fn infix_parser(kind: tokenizer::Kind) -> Option<InfixParser> {
         tokenizer::Kind::Slash => Some(InfixParser::BinaryOp(DIVIDE, BinaryOp::Divide)),
         tokenizer::Kind::Percent => Some(InfixParser::BinaryOp(MODULO, BinaryOp::Modulo)),
         tokenizer::Kind::LessThan => Some(InfixParser::BinaryOp(LESS_THAN, BinaryOp::LessThan)),
-        tokenizer::Kind::LessThanLessThan => Some(InfixParser::BinaryOp(SHIFT_LEFT, BinaryOp::ShiftLeft)),
+        tokenizer::Kind::LessThanLessThan => {
+            Some(InfixParser::BinaryOp(SHIFT_LEFT, BinaryOp::ShiftLeft))
+        }
         tokenizer::Kind::EqualEqual => Some(InfixParser::BinaryOp(IS_EQUAL, BinaryOp::Equal)),
         tokenizer::Kind::Equal => Some(InfixParser::Definition),
         tokenizer::Kind::LeftParen => Some(InfixParser::FunctionCall),
@@ -312,7 +314,7 @@ fn run_infix_parser(
         InfixParser::BinaryOp(precedence, binary_op) => {
             parse_binary_op(precedence, binary_op, func, top_level, token, left)
         }
-        InfixParser::Definition => parse_definition(func, top_level, token, left),
+        InfixParser::Definition => parse_assignment(func, top_level, token, left),
         InfixParser::FunctionCall => parse_function_call(func, top_level, token, left),
     }
 }
@@ -398,7 +400,7 @@ fn parse_function(top_level: &tokenizer::TopLevel, token: Token) -> Function {
             lefts: vec![],
             rights: vec![],
         },
-        definitions: Definitions {
+        assignments: Assignments {
             names: vec![],
             values: vec![],
         },

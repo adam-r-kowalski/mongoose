@@ -58,21 +58,21 @@ fn ast_string_binary_op(
     output
 }
 
-fn ast_string_definition(
+fn ast_string_assignment(
     mut output: String,
     func: &Function,
     expression: usize,
     indent: usize,
 ) -> String {
-    output.push_str("Definition(\n");
+    output.push_str("Assign(\n");
     let mut output = write_indent(output, indent);
     output.push_str("name=");
     let index = func.indices[expression];
-    output.push_str(&func.symbols[func.indices[func.definitions.names[index]]]);
+    output.push_str(&func.symbols[func.indices[func.assignments.names[index]]]);
     output.push_str(",\n");
     let mut output = write_indent(output, indent);
     output.push_str("value=");
-    let output = ast_string_expression(output, func, func.definitions.values[index], indent);
+    let output = ast_string_expression(output, func, func.assignments.values[index], indent);
     let mut output = write_indent(output, indent - INDENT);
     output.push_str("),\n");
     output
@@ -148,7 +148,7 @@ fn ast_string_expression(
         Kind::Int => ast_string_int(output, func, expression),
         Kind::Symbol => ast_string_symbol(output, func, expression),
         Kind::BinaryOp => ast_string_binary_op(output, func, expression, indent + INDENT),
-        Kind::Definition => ast_string_definition(output, func, expression, indent + INDENT),
+        Kind::Assign => ast_string_assignment(output, func, expression, indent + INDENT),
         Kind::FunctionCall => ast_string_function_call(output, func, expression, indent + INDENT),
         Kind::If => ast_string_if(output, func, expression, indent + INDENT),
     }
@@ -456,11 +456,11 @@ Ast([
         arguments=[
         ],
         body=[
-            Definition(
+            Assign(
                 name=x,
                 value=Int(5),
             ),
-            Definition(
+            Assign(
                 name=y,
                 value=Int(20),
             ),
@@ -513,7 +513,7 @@ Ast([
             y,
         ],
         body=[
-            Definition(
+            Assign(
                 name=x2,
                 value=FunctionCall(
                     name=square,
@@ -522,7 +522,7 @@ Ast([
                     ]
                 ),
             ),
-            Definition(
+            Assign(
                 name=y2,
                 value=FunctionCall(
                     name=square,
@@ -618,11 +618,11 @@ Ast([
         arguments=[
         ],
         body=[
-            Definition(
+            Assign(
                 name=a,
                 value=Int(5),
             ),
-            Definition(
+            Assign(
                 name=b,
                 value=Int(10),
             ),
@@ -633,7 +633,7 @@ Ast([
                     right=Symbol(b),
                 ),
                 then=[
-                    Definition(
+                    Assign(
                         name=c,
                         value=Int(7),
                     ),
@@ -648,7 +648,7 @@ Ast([
                     ),
                 ],
                 else=[
-                    Definition(
+                    Assign(
                         name=d,
                         value=Int(8),
                     ),
@@ -690,15 +690,15 @@ Ast([
         arguments=[
         ],
         body=[
-            Definition(
+            Assign(
                 name=a,
                 value=Int(5),
             ),
-            Definition(
+            Assign(
                 name=b,
                 value=Int(10),
             ),
-            Definition(
+            Assign(
                 name=c,
                 value=If(
                     condition=BinaryOp(
@@ -714,7 +714,7 @@ Ast([
                     ]
                 ),
             ),
-            Definition(
+            Assign(
                 name=d,
                 value=If(
                     condition=BinaryOp(
@@ -765,15 +765,15 @@ Ast([
         arguments=[
         ],
         body=[
-            Definition(
+            Assign(
                 name=a,
                 value=Int(5),
             ),
-            Definition(
+            Assign(
                 name=b,
                 value=Int(10),
             ),
-            Definition(
+            Assign(
                 name=c,
                 value=If(
                     condition=BinaryOp(
@@ -789,7 +789,7 @@ Ast([
                     ]
                 ),
             ),
-            Definition(
+            Assign(
                 name=d,
                 value=If(
                     condition=BinaryOp(

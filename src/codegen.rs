@@ -1,5 +1,7 @@
-use std::collections::HashMap;
-use std::sync::mpsc::{self, Sender};
+use std::{
+    collections::{hash_map::Entry, HashMap},
+    sync::mpsc::{self, Sender},
+};
 
 use crate::parser::{self, Ast};
 
@@ -91,21 +93,26 @@ fn codegen_binary_op(
     wasm_func
 }
 
-fn codegen_definition(
+fn codegen_assignment(
     tx: Sender<Message>,
     wasm_func: Function,
     ast_func: &parser::Function,
     entity: usize,
 ) -> Function {
     let index = ast_func.indices[entity];
-    let name_index = ast_func.definitions.names[index];
+    let name_index = ast_func.assignments.names[index];
     assert_eq!(ast_func.kinds[name_index], parser::Kind::Symbol);
     let mut wasm_func =
-        codegen_expression(tx, wasm_func, ast_func, ast_func.definitions.values[index]);
-    let name = ast_func.symbols[ast_func.indices[name_index]].clone();
-    let local = wasm_func.locals.len();
-    wasm_func.locals.push(format!("${}", name));
-    wasm_func.name_to_local.try_insert(name, local).unwrap();
+        codegen_expression(tx, wasm_func, ast_func, ast_func.assignments.values[index]);
+    let name = &ast_func.symbols[ast_func.indices[name_index]];
+    let local = match wasm_func.name_to_local.entry(name.clone()) {
+        Entry::Occupied(entry) => entry.get().clone(),
+        Entry::Vacant(entry) => {
+            let local = entry.insert(wasm_func.locals.len()).clone();
+            wasm_func.locals.push(format!("${}", name));
+            local
+        }
+    };
     wasm_func.instructions.push(Instruction::SetLocal);
     wasm_func.operand_kinds.push(vec![OperandKind::Local]);
     wasm_func.operands.push(vec![local]);
@@ -194,7 +201,7 @@ fn codegen_expression(
     match ast_func.kinds[entity] {
         parser::Kind::Int => codegen_int(wasm_func, ast_func, entity),
         parser::Kind::BinaryOp => codegen_binary_op(tx, wasm_func, ast_func, entity),
-        parser::Kind::Definition => codegen_definition(tx, wasm_func, ast_func, entity),
+        parser::Kind::Assign => codegen_assignment(tx, wasm_func, ast_func, entity),
         parser::Kind::Symbol => codegen_symbol(wasm_func, ast_func, entity),
         parser::Kind::FunctionCall => codegen_function_call(tx, wasm_func, ast_func, entity),
         parser::Kind::If => codegen_if(tx, wasm_func, ast_func, entity),

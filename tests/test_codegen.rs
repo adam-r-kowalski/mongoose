@@ -188,6 +188,36 @@ def start():
 }
 
 #[test]
+fn test_codegen_assignment() {
+    let source = r#"
+def start():
+    x = 5
+    x = x + 20
+    x"#;
+    let tokens = tokenize(source);
+    let ast = parse(tokens);
+    let wasm = codegen(ast);
+    let code = write(wasm);
+    assert_eq!(
+        code,
+        r#"(module
+
+  (func $start (result i64)
+    (local $x i64)
+    (i64.const 5)
+    (set_local $x)
+    (get_local $x)
+    (i64.const 20)
+    i64.add
+    (set_local $x)
+    (get_local $x))
+
+  (export "_start" (func $start)))"#
+    );
+    assert_eq!(run(&code), Value::I64(25));
+}
+
+#[test]
 fn test_codegen_multiple_functions() {
     let source = r#"
 def square(x): x * x
