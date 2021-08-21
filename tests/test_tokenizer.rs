@@ -54,7 +54,6 @@ fn token_string_impl(top_level: &TopLevel, token: usize, output: String) -> Stri
         Some(Kind::Colon) => token_string_literal(top_level, token, output, "Colon"),
         Some(Kind::Equal) => token_string_literal(top_level, token, output, "Equal"),
         Some(Kind::EqualEqual) => token_string_literal(top_level, token, output, "EqualEqual"),
-        Some(Kind::ColonEqual) => token_string_literal(top_level, token, output, "ColonEqual"),
         Some(Kind::Comma) => token_string_literal(top_level, token, output, "Comma"),
         Some(Kind::If) => token_string_literal(top_level, token, output, "If"),
         Some(Kind::LessThan) => token_string_literal(top_level, token, output, "LessThan"),
@@ -377,42 +376,6 @@ Tokens([
         Colon,
         Indent(4),
         Symbol(y),
-    ]),
-])
-"#
-    );
-}
-
-#[test]
-fn test_tokenize_assign() {
-    let source = r#"
-def start():
-    x = 10
-    x := x * 2
-    x"#;
-    let tokens = tokenize(source);
-    assert_eq!(
-        token_string(&tokens),
-        r#"
-Tokens([
-    TopLevel([
-        Def,
-        Symbol(start),
-        LeftParen,
-        RightParen,
-        Colon,
-        Indent(4),
-        Symbol(x),
-        Equal,
-        Int(10),
-        Indent(4),
-        Symbol(x),
-        ColonEqual,
-        Symbol(x),
-        Times,
-        Int(2),
-        Indent(4),
-        Symbol(x),
     ]),
 ])
 "#

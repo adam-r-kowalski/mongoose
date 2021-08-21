@@ -77,26 +77,6 @@ fn ast_string_definition(
     output
 }
 
-fn ast_string_assignment(
-    mut output: String,
-    func: &Function,
-    expression: usize,
-    indent: usize,
-) -> String {
-    output.push_str("Assignment(\n");
-    let mut output = write_indent(output, indent);
-    output.push_str("name=");
-    let index = func.indices[expression];
-    output.push_str(&func.symbols[func.indices[func.assignments.names[index]]]);
-    output.push_str(",\n");
-    let mut output = write_indent(output, indent);
-    output.push_str("value=");
-    let output = ast_string_expression(output, func, func.assignments.values[index], indent);
-    let mut output = write_indent(output, indent - INDENT);
-    output.push_str("),\n");
-    output
-}
-
 fn ast_string_function_call(
     mut output: String,
     func: &Function,
@@ -168,7 +148,6 @@ fn ast_string_expression(
         Kind::Symbol => ast_string_symbol(output, func, expression),
         Kind::BinaryOp => ast_string_binary_op(output, func, expression, indent + INDENT),
         Kind::Definition => ast_string_definition(output, func, expression, indent + INDENT),
-        Kind::Assignment => ast_string_assignment(output, func, expression, indent + INDENT),
         Kind::FunctionCall => ast_string_function_call(output, func, expression, indent + INDENT),
         Kind::If => ast_string_if(output, func, expression, indent + INDENT),
     }
@@ -830,44 +809,6 @@ Ast([
                 left=Symbol(c),
                 right=Symbol(d),
             ),
-        ]
-    ),
-])
-"#
-    );
-}
-
-#[test]
-fn test_parse_assign() {
-    let source = r#"
-def start():
-    x = 10
-    x := x * 2
-    x"#;
-    let tokens = tokenize(source);
-    let ast = parse(tokens);
-    assert_eq!(
-        ast_string(&ast),
-        r#"
-Ast([
-    Function(
-        name=start,
-        arguments=[
-        ],
-        body=[
-            Definition(
-                name=x,
-                value=Int(10),
-            ),
-            Assignment(
-                name=x,
-                value=BinaryOp(
-                    op=Multiply,
-                    left=Symbol(x),
-                    right=Int(2),
-                ),
-            ),
-            Symbol(x),
         ]
     ),
 ])
