@@ -1,6 +1,6 @@
 use pretty_assertions::assert_eq;
 
-use yeti::{
+use mongoose::{
     parser::{parse, Ast, BinaryOp, Function, Kind},
     tokenizer::tokenize,
 };
