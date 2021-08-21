@@ -205,6 +205,7 @@ fn codegen_expression(
         parser::Kind::Symbol => codegen_symbol(wasm_func, ast_func, entity),
         parser::Kind::FunctionCall => codegen_function_call(tx, wasm_func, ast_func, entity),
         parser::Kind::If => codegen_if(tx, wasm_func, ast_func, entity),
+        parser::Kind::While => panic!("codegen for while not yet implemented..."),
     }
 }
 
