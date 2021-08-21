@@ -43,6 +43,7 @@ fn ast_string_binary_op(
         BinaryOp::Divide => output.push_str("Divide"),
         BinaryOp::Modulo => output.push_str("Modulo"),
         BinaryOp::Equal => output.push_str("Equal"),
+        BinaryOp::ShiftLeft => output.push_str("ShiftLeft"),
         BinaryOp::LessThan => output.push_str("LessThan"),
     };
     output.push_str(",\n");
@@ -808,6 +809,31 @@ Ast([
                 op=Add,
                 left=Symbol(c),
                 right=Symbol(d),
+            ),
+        ]
+    ),
+])
+"#
+    );
+}
+
+#[test]
+fn test_parse_shift_left() {
+    let tokens = tokenize(r#"def start(): 2 << 1"#);
+    let ast = parse(tokens);
+    assert_eq!(
+        ast_string(&ast),
+        r#"
+Ast([
+    Function(
+        name=start,
+        arguments=[
+        ],
+        body=[
+            BinaryOp(
+                op=ShiftLeft,
+                left=Int(2),
+                right=Int(1),
             ),
         ]
     ),

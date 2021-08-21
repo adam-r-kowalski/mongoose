@@ -12,6 +12,7 @@ pub enum Instruction {
     I64DivS,
     I64RemS,
     I64Eq,
+    I64Shl,
     I64LtS,
     SetLocal,
     GetLocal,
@@ -80,6 +81,7 @@ fn codegen_binary_op(
         parser::BinaryOp::Multiply => Instruction::I64Mul,
         parser::BinaryOp::Divide => Instruction::I64DivS,
         parser::BinaryOp::Modulo => Instruction::I64RemS,
+        parser::BinaryOp::ShiftLeft => Instruction::I64Shl,
         parser::BinaryOp::Equal => Instruction::I64Eq,
         parser::BinaryOp::LessThan => Instruction::I64LtS,
     };
