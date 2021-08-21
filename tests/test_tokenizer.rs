@@ -57,6 +57,7 @@ fn token_string_impl(top_level: &TopLevel, token: usize, output: String) -> Stri
         Some(Kind::Comma) => token_string_literal(top_level, token, output, "Comma"),
         Some(Kind::If) => token_string_literal(top_level, token, output, "If"),
         Some(Kind::LessThan) => token_string_literal(top_level, token, output, "LessThan"),
+        Some(Kind::LessThanLessThan) => token_string_literal(top_level, token, output, "LessThanLessThan"),
         Some(Kind::Else) => token_string_literal(top_level, token, output, "Else"),
         Some(Kind::Symbol) => token_string_symbol(top_level, token, output),
         Some(Kind::Int) => token_string_int(top_level, token, output),
@@ -376,6 +377,29 @@ Tokens([
         Colon,
         Indent(4),
         Symbol(y),
+    ]),
+])
+"#
+    );
+}
+
+#[test]
+fn test_tokenize_shift_left() {
+    let source = r#"def start(): 2 << 1"#;
+    let tokens = tokenize(source);
+    assert_eq!(
+        token_string(&tokens),
+        r#"
+Tokens([
+    TopLevel([
+        Def,
+        Symbol(start),
+        LeftParen,
+        RightParen,
+        Colon,
+        Int(2),
+        LessThanLessThan,
+        Int(1),
     ]),
 ])
 "#

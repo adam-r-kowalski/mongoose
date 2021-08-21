@@ -269,3 +269,23 @@ def start():
     );
     assert_eq!(run(&code), Value::I64(5));
 }
+
+#[test]
+fn test_codegen_shift_left() {
+    let tokens = tokenize(r#"def start(): 2 << 1"#);
+    let ast = parse(tokens);
+    let wasm = codegen(ast);
+    let code = write(Vec::<u8>::new(), wasm).unwrap();
+    assert_eq!(
+        str::from_utf8(&code).unwrap(),
+        r#"(module
+
+  (func $start (result i64)
+    (i64.const 2)
+    (i64.const 1)
+    i64.shl)
+
+  (export "_start" (func $start)))"#
+    );
+    assert_eq!(run(&code), Value::I64(4));
+}
