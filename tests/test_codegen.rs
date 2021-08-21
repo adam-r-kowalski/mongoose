@@ -5,7 +5,7 @@ use wasmer::{imports, Instance, Module, Store, Value};
 
 use mongoose::{codegen::codegen, parser::parse, tokenizer::tokenize, writer::write};
 
-fn run(code: &[u8]) -> Value {
+fn run(code: &str) -> Value {
     let store = Store::default();
     let module = Module::new(&store, code).unwrap();
     let import_object = imports! {};
@@ -19,9 +19,9 @@ fn test_codegen_int() {
     let tokens = tokenize("def start(): 0");
     let ast = parse(tokens);
     let wasm = codegen(ast);
-    let code = write(Vec::<u8>::new(), wasm).unwrap();
+    let code = write(wasm);
     assert_eq!(
-        str::from_utf8(&code).unwrap(),
+        code,
         r#"(module
 
   (func $start (result i64)
@@ -37,9 +37,9 @@ fn test_codegen_add() {
     let tokens = tokenize("def start(): 5 + 10");
     let ast = parse(tokens);
     let wasm = codegen(ast);
-    let code = write(Vec::<u8>::new(), wasm).unwrap();
+    let code = write(wasm);
     assert_eq!(
-        str::from_utf8(&code).unwrap(),
+        code,
         r#"(module
 
   (func $start (result i64)
@@ -57,9 +57,9 @@ fn test_codegen_subtract() {
     let tokens = tokenize("def start(): 5 - 10");
     let ast = parse(tokens);
     let wasm = codegen(ast);
-    let code = write(Vec::<u8>::new(), wasm).unwrap();
+    let code = write(wasm);
     assert_eq!(
-        str::from_utf8(&code).unwrap(),
+        code,
         r#"(module
 
   (func $start (result i64)
@@ -77,9 +77,9 @@ fn test_codegen_multiply() {
     let tokens = tokenize("def start(): 5 * 10");
     let ast = parse(tokens);
     let wasm = codegen(ast);
-    let code = write(Vec::<u8>::new(), wasm).unwrap();
+    let code = write(wasm);
     assert_eq!(
-        str::from_utf8(&code).unwrap(),
+        code,
         r#"(module
 
   (func $start (result i64)
@@ -97,9 +97,9 @@ fn test_codegen_divide() {
     let tokens = tokenize("def start(): 10 / 5");
     let ast = parse(tokens);
     let wasm = codegen(ast);
-    let code = write(Vec::<u8>::new(), wasm).unwrap();
+    let code = write(wasm);
     assert_eq!(
-        str::from_utf8(&code).unwrap(),
+        code,
         r#"(module
 
   (func $start (result i64)
@@ -117,9 +117,9 @@ fn test_codegen_add_then_multiply() {
     let tokens = tokenize("def start(): 3 + 5 * 10");
     let ast = parse(tokens);
     let wasm = codegen(ast);
-    let code = write(Vec::<u8>::new(), wasm).unwrap();
+    let code = write(wasm);
     assert_eq!(
-        str::from_utf8(&code).unwrap(),
+        code,
         r#"(module
 
   (func $start (result i64)
@@ -139,9 +139,9 @@ fn test_codegen_multiply_then_add() {
     let tokens = tokenize("def start(): 3 * 5 + 10");
     let ast = parse(tokens);
     let wasm = codegen(ast);
-    let code = write(Vec::<u8>::new(), wasm).unwrap();
+    let code = write(wasm);
     assert_eq!(
-        str::from_utf8(&code).unwrap(),
+        code,
         r#"(module
 
   (func $start (result i64)
@@ -166,9 +166,9 @@ def start():
     let tokens = tokenize(source);
     let ast = parse(tokens);
     let wasm = codegen(ast);
-    let code = write(Vec::<u8>::new(), wasm).unwrap();
+    let code = write(wasm);
     assert_eq!(
-        str::from_utf8(&code).unwrap(),
+        code,
         r#"(module
 
   (func $start (result i64)
@@ -201,9 +201,9 @@ def start(): sum_of_squares(5, 3)"#;
     let tokens = tokenize(source);
     let ast = parse(tokens);
     let wasm = codegen(ast);
-    let code = write(Vec::<u8>::new(), wasm).unwrap();
+    let code = write(wasm);
     assert_eq!(
-        str::from_utf8(&code).unwrap(),
+        code,
         r#"(module
 
   (func $start (result i64)
@@ -244,9 +244,9 @@ def start():
     let tokens = tokenize(source);
     let ast = parse(tokens);
     let wasm = codegen(ast);
-    let code = write(Vec::<u8>::new(), wasm).unwrap();
+    let code = write(wasm);
     assert_eq!(
-        str::from_utf8(&code).unwrap(),
+        code,
         r#"(module
 
   (func $start (result i64)
@@ -272,12 +272,12 @@ def start():
 
 #[test]
 fn test_codegen_shift_left() {
-    let tokens = tokenize(r#"def start(): 2 << 1"#);
+    let tokens = tokenize("def start(): 2 << 1");
     let ast = parse(tokens);
     let wasm = codegen(ast);
-    let code = write(Vec::<u8>::new(), wasm).unwrap();
+    let code = write(wasm);
     assert_eq!(
-        str::from_utf8(&code).unwrap(),
+        code,
         r#"(module
 
   (func $start (result i64)

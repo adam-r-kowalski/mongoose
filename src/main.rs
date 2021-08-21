@@ -1,4 +1,8 @@
-use std::{env, fs::File, io::Read};
+use std::{
+    env,
+    fs::File,
+    io::{Read, Write},
+};
 
 use wasmer::{imports, Instance, Module, Store};
 
@@ -14,11 +18,12 @@ fn main() {
     let wasm = codegen(ast);
     match args.get(2) {
         Some(s) if s == "--emit-wasm" => {
-            let file = File::create(&args[3]).unwrap();
-            write(file, wasm).unwrap();
+            let mut file = File::create(&args[3]).unwrap();
+            let code = write(wasm);
+            write!(file, "{}", code).unwrap();
         }
         _ => {
-            let code = write(Vec::<u8>::new(), wasm).unwrap();
+            let code = write(wasm);
             let store = Store::default();
             let module = Module::new(&store, &code).unwrap();
             let import_object = imports! {};

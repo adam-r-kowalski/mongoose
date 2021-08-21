@@ -819,7 +819,7 @@ Ast([
 
 #[test]
 fn test_parse_shift_left() {
-    let tokens = tokenize(r#"def start(): 2 << 1"#);
+    let tokens = tokenize("def start(): 2 << 1");
     let ast = parse(tokens);
     assert_eq!(
         ast_string(&ast),
