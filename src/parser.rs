@@ -92,6 +92,7 @@ enum InfixParser {
     BinaryOp(Precedence, BinaryOp),
     Definition,
     FunctionCall,
+    DotFunctionCall,
 }
 
 struct ParseResult(Function, Token, usize);
@@ -112,6 +113,7 @@ fn precedence_of(parser: &InfixParser) -> Precedence {
         InfixParser::BinaryOp(precedence, _) => *precedence,
         InfixParser::Definition => LOWEST,
         InfixParser::FunctionCall => HIGHEST,
+        InfixParser::DotFunctionCall => HIGHEST,
     }
 }
 
@@ -351,6 +353,37 @@ fn parse_function_call(
     ParseResult(func, token, entity)
 }
 
+fn parse_dot_function_call(
+    func: Function,
+    top_level: &tokenizer::TopLevel,
+    token: Token,
+    first_parameter: usize,
+) -> ParseResult {
+    let ParseResult(func, token, name) = parse_primitive(func, top_level, token, Kind::Symbol);
+    let token = inc_token(token);
+    let parameters = vec![first_parameter];
+    let (mut func, token, parameters) = match top_level.kinds.get(token.0) {
+        Some(tokenizer::Kind::LeftParen) => {
+            let token = inc_token(token);
+            let (func, token, parameters) =
+                if top_level.kinds[token.0] != tokenizer::Kind::RightParen {
+                    parse_function_parameters(func, top_level, token, parameters)
+                } else {
+                    (func, token, parameters)
+                };
+            let token = consume(top_level, token, tokenizer::Kind::RightParen);
+            (func, token, parameters)
+        }
+        _ => (func, token, parameters),
+    };
+    let entity = fresh_entity(&func);
+    func.kinds.push(Kind::FunctionCall);
+    func.indices.push(func.function_calls.names.len());
+    func.function_calls.names.push(name);
+    func.function_calls.parameters.push(parameters);
+    ParseResult(func, token, entity)
+}
+
 fn infix_parser(kind: tokenizer::Kind) -> Option<InfixParser> {
     match kind {
         tokenizer::Kind::Plus => Some(InfixParser::BinaryOp(ADD, BinaryOp::Add)),
@@ -365,6 +398,7 @@ fn infix_parser(kind: tokenizer::Kind) -> Option<InfixParser> {
         tokenizer::Kind::EqualEqual => Some(InfixParser::BinaryOp(IS_EQUAL, BinaryOp::Equal)),
         tokenizer::Kind::Equal => Some(InfixParser::Definition),
         tokenizer::Kind::LeftParen => Some(InfixParser::FunctionCall),
+        tokenizer::Kind::Dot => Some(InfixParser::DotFunctionCall),
         _ => None,
     }
 }
@@ -382,6 +416,7 @@ fn run_infix_parser(
         }
         InfixParser::Definition => parse_assignment(func, top_level, token, left),
         InfixParser::FunctionCall => parse_function_call(func, top_level, token, left),
+        InfixParser::DotFunctionCall => parse_dot_function_call(func, top_level, token, left),
     }
 }
 

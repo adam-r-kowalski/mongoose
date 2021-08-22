@@ -62,6 +62,7 @@ fn token_string_impl(top_level: &TopLevel, token: usize, output: String) -> Stri
         }
         Some(Kind::Else) => token_string_literal(top_level, token, output, "Else"),
         Some(Kind::While) => token_string_literal(top_level, token, output, "While"),
+        Some(Kind::Dot) => token_string_literal(top_level, token, output, "Dot"),
         Some(Kind::Symbol) => token_string_symbol(top_level, token, output),
         Some(Kind::Int) => token_string_int(top_level, token, output),
         Some(Kind::Indent) => token_string_indent(top_level, token, output),
@@ -478,6 +479,50 @@ Tokens([
         Int(10),
         Indent(4),
         Symbol(x),
+    ]),
+])
+"#
+    );
+}
+
+#[test]
+fn test_parse_universal_function_call_syntax() {
+    let source = r#"
+def square(x): x * x
+
+def start(): 5.square().square()
+"#;
+    let tokens = tokenize(source);
+    assert_eq!(
+        token_string(&tokens),
+        r#"
+Tokens([
+    TopLevel([
+        Def,
+        Symbol(square),
+        LeftParen,
+        Symbol(x),
+        RightParen,
+        Colon,
+        Symbol(x),
+        Times,
+        Symbol(x),
+    ]),
+    TopLevel([
+        Def,
+        Symbol(start),
+        LeftParen,
+        RightParen,
+        Colon,
+        Int(5),
+        Dot,
+        Symbol(square),
+        LeftParen,
+        RightParen,
+        Dot,
+        Symbol(square),
+        LeftParen,
+        RightParen,
     ]),
 ])
 "#

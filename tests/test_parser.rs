@@ -964,3 +964,101 @@ Ast([
 "#
     );
 }
+
+#[test]
+fn test_parse_universal_function_call_syntax() {
+    let source = r#"
+def square(x): x * x
+
+def start(): 5.square().square()
+"#;
+    let tokens = tokenize(source);
+    let ast = parse(tokens);
+    assert_eq!(
+        ast_string(&ast),
+        r#"
+Ast([
+    Function(
+        name=square,
+        arguments=[
+            x,
+        ],
+        body=[
+            BinaryOp(
+                op=Multiply,
+                left=Symbol(x),
+                right=Symbol(x),
+            ),
+        ]
+    ),
+    Function(
+        name=start,
+        arguments=[
+        ],
+        body=[
+            FunctionCall(
+                name=square,
+                parameters=[
+                    FunctionCall(
+                        name=square,
+                        parameters=[
+                            Int(5),
+                        ]
+                    ),
+                ]
+            ),
+        ]
+    ),
+])
+"#
+    );
+}
+
+#[test]
+fn test_parse_universal_function_call_syntax_no_arguments() {
+    let source = r#"
+def square(x): x * x
+
+def start(): 5.square.square
+"#;
+    let tokens = tokenize(source);
+    let ast = parse(tokens);
+    assert_eq!(
+        ast_string(&ast),
+        r#"
+Ast([
+    Function(
+        name=square,
+        arguments=[
+            x,
+        ],
+        body=[
+            BinaryOp(
+                op=Multiply,
+                left=Symbol(x),
+                right=Symbol(x),
+            ),
+        ]
+    ),
+    Function(
+        name=start,
+        arguments=[
+        ],
+        body=[
+            FunctionCall(
+                name=square,
+                parameters=[
+                    FunctionCall(
+                        name=square,
+                        parameters=[
+                            Int(5),
+                        ]
+                    ),
+                ]
+            ),
+        ]
+    ),
+])
+"#
+    );
+}
