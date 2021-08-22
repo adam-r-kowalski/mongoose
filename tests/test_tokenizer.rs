@@ -54,12 +54,23 @@ fn token_string_impl(top_level: &TopLevel, token: usize, output: String) -> Stri
         Some(Kind::Colon) => token_string_literal(top_level, token, output, "Colon"),
         Some(Kind::Equal) => token_string_literal(top_level, token, output, "Equal"),
         Some(Kind::EqualEqual) => token_string_literal(top_level, token, output, "EqualEqual"),
-        Some(Kind::Comma) => token_string_literal(top_level, token, output, "Comma"),
-        Some(Kind::If) => token_string_literal(top_level, token, output, "If"),
+        Some(Kind::Exclamation) => token_string_literal(top_level, token, output, "Exclamation"),
+        Some(Kind::ExclamationEqual) => token_string_literal(top_level, token, output, "ExclamationEqual"),
+        Some(Kind::And) => token_string_literal(top_level, token, output, "And"),
+        Some(Kind::Or) => token_string_literal(top_level, token, output, "Or"),
+        Some(Kind::Xor) => token_string_literal(top_level, token, output, "Xor"),
         Some(Kind::LessThan) => token_string_literal(top_level, token, output, "LessThan"),
+        Some(Kind::LessThanEqual) => token_string_literal(top_level, token, output, "LessThanEqual"),
         Some(Kind::LessThanLessThan) => {
             token_string_literal(top_level, token, output, "LessThanLessThan")
         }
+        Some(Kind::GreaterThan) => token_string_literal(top_level, token, output, "GreaterThan"),
+        Some(Kind::GreaterThanEqual) => token_string_literal(top_level, token, output, "GreaterThanEqual"),
+        Some(Kind::GreaterThanGreaterThan) => {
+            token_string_literal(top_level, token, output, "GreaterThanGreaterThan")
+        }
+        Some(Kind::Comma) => token_string_literal(top_level, token, output, "Comma"),
+        Some(Kind::If) => token_string_literal(top_level, token, output, "If"),
         Some(Kind::Else) => token_string_literal(top_level, token, output, "Else"),
         Some(Kind::While) => token_string_literal(top_level, token, output, "While"),
         Some(Kind::Dot) => token_string_literal(top_level, token, output, "Dot"),
@@ -219,9 +230,71 @@ Tokens([
     );
 }
 
-// TODO: AND
-// TODO: OR
-// TODO: XOR
+#[test]
+fn test_tokenize_bitwise_and() {
+    let tokens = tokenize("def start(): 2 & 1");
+    assert_eq!(
+        token_string(&tokens),
+        r#"
+Tokens([
+    TopLevel([
+        Def,
+        Symbol(start),
+        LeftParen,
+        RightParen,
+        Colon,
+        Int(2),
+        And,
+        Int(1),
+    ]),
+])
+"#
+    );
+}
+
+#[test]
+fn test_tokenize_bitwise_or() {
+    let tokens = tokenize("def start(): 2 | 1");
+    assert_eq!(
+        token_string(&tokens),
+        r#"
+Tokens([
+    TopLevel([
+        Def,
+        Symbol(start),
+        LeftParen,
+        RightParen,
+        Colon,
+        Int(2),
+        Or,
+        Int(1),
+    ]),
+])
+"#
+    );
+}
+
+#[test]
+fn test_tokenize_bitwise_xor() {
+    let tokens = tokenize("def start(): 2 ^ 1");
+    assert_eq!(
+        token_string(&tokens),
+        r#"
+Tokens([
+    TopLevel([
+        Def,
+        Symbol(start),
+        LeftParen,
+        RightParen,
+        Colon,
+        Int(2),
+        Xor,
+        Int(1),
+    ]),
+])
+"#
+    );
+}
 
 #[test]
 fn test_tokenize_shift_left() {
@@ -245,7 +318,29 @@ Tokens([
     );
 }
 
-// TODO: SHR_sx
+#[test]
+fn test_tokenize_shift_right_signed() {
+    let tokens = tokenize("def start(): 8 >> 1");
+    assert_eq!(
+        token_string(&tokens),
+        r#"
+Tokens([
+    TopLevel([
+        Def,
+        Symbol(start),
+        LeftParen,
+        RightParen,
+        Colon,
+        Int(8),
+        GreaterThanGreaterThan,
+        Int(1),
+    ]),
+])
+"#
+    );
+}
+
+// TODO: SHR_u
 // TODO: ROTL
 // TODO: ROTR
 
@@ -253,7 +348,27 @@ Tokens([
 // ITESTOP //
 //---------//
 
-// TODO: EQZ
+#[test]
+fn test_tokenize_compare_zero() {
+    let tokens = tokenize("def start(): 10 == 0");
+    assert_eq!(
+        token_string(&tokens),
+        r#"
+Tokens([
+    TopLevel([
+        Def,
+        Symbol(start),
+        LeftParen,
+        RightParen,
+        Colon,
+        Int(10),
+        EqualEqual,
+        Int(0),
+    ]),
+])
+"#
+    );
+}
 
 //--------//
 // IRELOP //
@@ -281,11 +396,123 @@ Tokens([
     );
 }
 
-// TODO: NE
-// TODO: LT_sx
-// TODO: GT_sx
-// TODO: LE_sx
-// TODO: GE_sx
+#[test]
+fn test_tokenize_not_equal() {
+    let tokens = tokenize("def start(): 10 != 5");
+    assert_eq!(
+        token_string(&tokens),
+        r#"
+Tokens([
+    TopLevel([
+        Def,
+        Symbol(start),
+        LeftParen,
+        RightParen,
+        Colon,
+        Int(10),
+        ExclamationEqual,
+        Int(5),
+    ]),
+])
+"#
+    );
+}
+
+#[test]
+fn test_tokenize_less_than_signed() {
+    let tokens = tokenize("def start(): 10 < 5");
+    assert_eq!(
+        token_string(&tokens),
+        r#"
+Tokens([
+    TopLevel([
+        Def,
+        Symbol(start),
+        LeftParen,
+        RightParen,
+        Colon,
+        Int(10),
+        LessThan,
+        Int(5),
+    ]),
+])
+"#
+    );
+}
+
+// TODO: LT_u
+
+#[test]
+fn test_tokenize_greater_than_signed() {
+    let tokens = tokenize("def start(): 10 > 5");
+    assert_eq!(
+        token_string(&tokens),
+        r#"
+Tokens([
+    TopLevel([
+        Def,
+        Symbol(start),
+        LeftParen,
+        RightParen,
+        Colon,
+        Int(10),
+        GreaterThan,
+        Int(5),
+    ]),
+])
+"#
+    );
+}
+
+// TODO: GT_u
+
+#[test]
+fn test_tokenize_less_than_or_equal_signed() {
+    let tokens = tokenize("def start(): 10 <= 5");
+    assert_eq!(
+        token_string(&tokens),
+        r#"
+Tokens([
+    TopLevel([
+        Def,
+        Symbol(start),
+        LeftParen,
+        RightParen,
+        Colon,
+        Int(10),
+        LessThanEqual,
+        Int(5),
+    ]),
+])
+"#
+    );
+}
+
+// TODO: LE_u
+
+#[test]
+fn test_tokenize_greater_than_or_equal_signed() {
+    let tokens = tokenize("def start(): 10 >= 5");
+    assert_eq!(
+        token_string(&tokens),
+        r#"
+Tokens([
+    TopLevel([
+        Def,
+        Symbol(start),
+        LeftParen,
+        RightParen,
+        Colon,
+        Int(10),
+        GreaterThanEqual,
+        Int(5),
+    ]),
+])
+"#
+    );
+}
+
+// TODO: GE_u
 
 //-------//
 // OTHER //

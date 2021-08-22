@@ -12,9 +12,18 @@ pub enum Kind {
     Percent,
     Equal,
     EqualEqual,
-    Comma,
+    Exclamation,
+    ExclamationEqual,
+    And,
+    Or,
+    Xor,
     LessThan,
+    LessThanEqual,
     LessThanLessThan,
+    GreaterThan,
+    GreaterThanEqual,
+    GreaterThanGreaterThan,
+    Comma,
     Indent,
     Int,
     If,
@@ -81,10 +90,32 @@ fn tokenize_equal(mut top_level: TopLevel, source: &str) -> (TopLevel, &str) {
     tokenize_top_level(top_level, &source[length..])
 }
 
+fn tokenize_exclamation(mut top_level: TopLevel, source: &str) -> (TopLevel, &str) {
+    let (length, kind) = match source.chars().skip(1).next() {
+        Some('=') => (2, Kind::ExclamationEqual),
+        _ => (1, Kind::Exclamation),
+    };
+    top_level.kinds.push(kind);
+    top_level.indices.push(0);
+    tokenize_top_level(top_level, &source[length..])
+}
+
 fn tokenize_lessthan(mut top_level: TopLevel, source: &str) -> (TopLevel, &str) {
     let (length, kind) = match source.chars().skip(1).next() {
         Some('<') => (2, Kind::LessThanLessThan),
+        Some('=') => (2, Kind::LessThanEqual),
         _ => (1, Kind::LessThan),
+    };
+    top_level.kinds.push(kind);
+    top_level.indices.push(0);
+    tokenize_top_level(top_level, &source[length..])
+}
+
+fn tokenize_greaterthan(mut top_level: TopLevel, source: &str) -> (TopLevel, &str) {
+    let (length, kind) = match source.chars().skip(1).next() {
+        Some('>') => (2, Kind::GreaterThanGreaterThan),
+        Some('=') => (2, Kind::GreaterThanEqual),
+        _ => (1, Kind::GreaterThan),
     };
     top_level.kinds.push(kind);
     top_level.indices.push(0);
@@ -141,7 +172,12 @@ fn tokenize_top_level(top_level: TopLevel, source: &str) -> (TopLevel, &str) {
         Some(':') => tokenize_one(top_level, source, Kind::Colon),
         Some('.') => tokenize_one(top_level, source, Kind::Dot),
         Some('=') => tokenize_equal(top_level, source),
+        Some('&') => tokenize_one(top_level, source, Kind::And),
+        Some('|') => tokenize_one(top_level, source, Kind::Or),
+        Some('^') => tokenize_one(top_level, source, Kind::Xor),
+        Some('!') => tokenize_exclamation(top_level, source),
         Some('<') => tokenize_lessthan(top_level, source),
+        Some('>') => tokenize_greaterthan(top_level, source),
         Some('0'..='9') => tokenize_number(top_level, source),
         Some('\n') => tokenize_indent(top_level, source),
         Some('#') => tokenize_comment(top_level, source),
