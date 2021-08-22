@@ -362,13 +362,20 @@ fn parse_dot_function_call(
     let ParseResult(func, token, name) = parse_primitive(func, top_level, token, Kind::Symbol);
     let token = inc_token(token);
     let parameters = vec![first_parameter];
-    let token = consume(top_level, token, tokenizer::Kind::LeftParen);
-    let (mut func, token, parameters) = if top_level.kinds[token.0] != tokenizer::Kind::RightParen {
-        parse_function_parameters(func, top_level, token, parameters)
-    } else {
-        (func, token, parameters)
+    let (mut func, token, parameters) = match top_level.kinds.get(token.0) {
+        Some(tokenizer::Kind::LeftParen) => {
+            let token = inc_token(token);
+            let (func, token, parameters) =
+                if top_level.kinds[token.0] != tokenizer::Kind::RightParen {
+                    parse_function_parameters(func, top_level, token, parameters)
+                } else {
+                    (func, token, parameters)
+                };
+            let token = consume(top_level, token, tokenizer::Kind::RightParen);
+            (func, token, parameters)
+        }
+        _ => (func, token, parameters),
     };
-    let token = consume(top_level, token, tokenizer::Kind::RightParen);
     let entity = fresh_entity(&func);
     func.kinds.push(Kind::FunctionCall);
     func.indices.push(func.function_calls.names.len());
