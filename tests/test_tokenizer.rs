@@ -349,7 +349,7 @@ Tokens([
 //---------//
 
 #[test]
-fn test_tokenize_compare_zero() {
+fn test_tokenize_equal_zero() {
     let tokens = tokenize("def start(): 10 == 0");
     assert_eq!(
         token_string(&tokens),
@@ -375,7 +375,7 @@ Tokens([
 //--------//
 
 #[test]
-fn test_tokenize_compare() {
+fn test_tokenize_equal() {
     let tokens = tokenize("def start(): 10 == 5");
     assert_eq!(
         token_string(&tokens),

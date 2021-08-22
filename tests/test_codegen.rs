@@ -126,10 +126,95 @@ fn test_codegen_divide() {
     assert_eq!(run(&code), Value::I64(2));
 }
 
-// TODO: REM_sx
-// TODO: AND
-// TODO: OR
-// TODO: XOR
+#[test]
+fn test_codegen_modulo_signed() {
+    let tokens = tokenize("def start(): 7 % 5");
+    let ast = parse(tokens);
+    let wasm = codegen(ast);
+    let code = write(wasm);
+    assert_eq!(
+        code,
+        r#"
+(module
+
+  (func $start (result i64)
+    (i64.const 7)
+    (i64.const 5)
+    i64.rem_s)
+
+  (export "_start" (func $start)))
+"#
+    );
+    assert_eq!(run(&code), Value::I64(2));
+}
+
+// TODO: REM_u
+
+#[test]
+fn test_codegen_and() {
+    let tokens = tokenize("def start(): 7 & 5");
+    let ast = parse(tokens);
+    let wasm = codegen(ast);
+    let code = write(wasm);
+    assert_eq!(
+        code,
+        r#"
+(module
+
+  (func $start (result i64)
+    (i64.const 7)
+    (i64.const 5)
+    i64.and)
+
+  (export "_start" (func $start)))
+"#
+    );
+    assert_eq!(run(&code), Value::I64(5));
+}
+
+#[test]
+fn test_codegen_or() {
+    let tokens = tokenize("def start(): 7 | 5");
+    let ast = parse(tokens);
+    let wasm = codegen(ast);
+    let code = write(wasm);
+    assert_eq!(
+        code,
+        r#"
+(module
+
+  (func $start (result i64)
+    (i64.const 7)
+    (i64.const 5)
+    i64.or)
+
+  (export "_start" (func $start)))
+"#
+    );
+    assert_eq!(run(&code), Value::I64(7));
+}
+
+#[test]
+fn test_codegen_xor() {
+    let tokens = tokenize("def start(): 7 ^ 5");
+    let ast = parse(tokens);
+    let wasm = codegen(ast);
+    let code = write(wasm);
+    assert_eq!(
+        code,
+        r#"
+(module
+
+  (func $start (result i64)
+    (i64.const 7)
+    (i64.const 5)
+    i64.xor)
+
+  (export "_start" (func $start)))
+"#
+    );
+    assert_eq!(run(&code), Value::I64(2));
+}
 
 #[test]
 fn test_codegen_shift_left() {
@@ -153,7 +238,29 @@ fn test_codegen_shift_left() {
     assert_eq!(run(&code), Value::I64(4));
 }
 
-// TODO: SHR_sx
+#[test]
+fn test_codegen_shift_right_signed() {
+    let tokens = tokenize("def start(): 8 >> 1");
+    let ast = parse(tokens);
+    let wasm = codegen(ast);
+    let code = write(wasm);
+    assert_eq!(
+        code,
+        r#"
+(module
+
+  (func $start (result i64)
+    (i64.const 8)
+    (i64.const 1)
+    i64.shr_s)
+
+  (export "_start" (func $start)))
+"#
+    );
+    assert_eq!(run(&code), Value::I64(4));
+}
+
+// TODO: SHR_u
 // TODO: ROTL
 // TODO: ROTR
 

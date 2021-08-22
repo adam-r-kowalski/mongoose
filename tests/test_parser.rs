@@ -42,9 +42,17 @@ fn ast_string_binary_op(
         BinaryOp::Multiply => output.push_str("Multiply"),
         BinaryOp::Divide => output.push_str("Divide"),
         BinaryOp::Modulo => output.push_str("Modulo"),
+        BinaryOp::And => output.push_str("And"),
+        BinaryOp::Or => output.push_str("Or"),
+        BinaryOp::Xor => output.push_str("Xor"),
         BinaryOp::Equal => output.push_str("Equal"),
+        BinaryOp::NotEqual => output.push_str("NotEqual"),
         BinaryOp::ShiftLeft => output.push_str("ShiftLeft"),
+        BinaryOp::ShiftRight => output.push_str("ShiftRight"),
         BinaryOp::LessThan => output.push_str("LessThan"),
+        BinaryOp::LessThanEqual => output.push_str("LessThanEqual"),
+        BinaryOp::GreaterThan => output.push_str("GreaterThan"),
+        BinaryOp::GreaterThanEqual => output.push_str("GreaterThanEqual"),
     };
     output.push_str(",\n");
     let mut output = write_indent(output, indent);
@@ -378,9 +386,80 @@ Ast([
     );
 }
 
-// TODO: AND
-// TODO: OR
-// TODO: XOR
+#[test]
+fn test_parse_bitwise_and() {
+    let tokens = tokenize("def start(): 2 & 1");
+    let ast = parse(tokens);
+    assert_eq!(
+        ast_string(&ast),
+        r#"
+Ast([
+    Function(
+        name=start,
+        arguments=[
+        ],
+        body=[
+            BinaryOp(
+                op=And,
+                left=Int(2),
+                right=Int(1),
+            ),
+        ]
+    ),
+])
+"#
+    );
+}
+
+#[test]
+fn test_parse_bitwise_or() {
+    let tokens = tokenize("def start(): 2 | 1");
+    let ast = parse(tokens);
+    assert_eq!(
+        ast_string(&ast),
+        r#"
+Ast([
+    Function(
+        name=start,
+        arguments=[
+        ],
+        body=[
+            BinaryOp(
+                op=Or,
+                left=Int(2),
+                right=Int(1),
+            ),
+        ]
+    ),
+])
+"#
+    );
+}
+
+#[test]
+fn test_parse_bitwise_xor() {
+    let tokens = tokenize("def start(): 2 ^ 1");
+    let ast = parse(tokens);
+    assert_eq!(
+        ast_string(&ast),
+        r#"
+Ast([
+    Function(
+        name=start,
+        arguments=[
+        ],
+        body=[
+            BinaryOp(
+                op=Xor,
+                left=Int(2),
+                right=Int(1),
+            ),
+        ]
+    ),
+])
+"#
+    );
+}
 
 #[test]
 fn test_parse_shift_left() {
@@ -407,7 +486,31 @@ Ast([
     );
 }
 
-// TODO: SHR_sx
+#[test]
+fn test_parse_shift_right() {
+    let tokens = tokenize("def start(): 8 >> 1");
+    let ast = parse(tokens);
+    assert_eq!(
+        ast_string(&ast),
+        r#"
+Ast([
+    Function(
+        name=start,
+        arguments=[
+        ],
+        body=[
+            BinaryOp(
+                op=ShiftRight,
+                left=Int(8),
+                right=Int(1),
+            ),
+        ]
+    ),
+])
+"#
+    );
+}
+
 // TODO: ROTL
 // TODO: ROTR
 
@@ -415,14 +518,37 @@ Ast([
 // ITESTOP //
 //---------//
 
-// TODO: EQZ
+#[test]
+fn test_parse_equal_zero() {
+    let tokens = tokenize("def start(): 10 == 0");
+    let ast = parse(tokens);
+    assert_eq!(
+        ast_string(&ast),
+        r#"
+Ast([
+    Function(
+        name=start,
+        arguments=[
+        ],
+        body=[
+            BinaryOp(
+                op=Equal,
+                left=Int(10),
+                right=Int(0),
+            ),
+        ]
+    ),
+])
+"#
+    );
+}
 
 //--------//
 // IRELOP //
 //--------//
 
 #[test]
-fn test_parse_compare() {
+fn test_parse_equal() {
     let tokens = tokenize("def start(): 10 == 5");
     let ast = parse(tokens);
     assert_eq!(
@@ -446,10 +572,33 @@ Ast([
     );
 }
 
-// TODO: NE
+#[test]
+fn test_parse_not_equal() {
+    let tokens = tokenize("def start(): 10 != 5");
+    let ast = parse(tokens);
+    assert_eq!(
+        ast_string(&ast),
+        r#"
+Ast([
+    Function(
+        name=start,
+        arguments=[
+        ],
+        body=[
+            BinaryOp(
+                op=NotEqual,
+                left=Int(10),
+                right=Int(5),
+            ),
+        ]
+    ),
+])
+"#
+    );
+}
 
 #[test]
-fn test_parse_less_than() {
+fn test_parse_less_than_signed() {
     let tokens = tokenize("def start(): 10 < 5");
     let ast = parse(tokens);
     assert_eq!(
@@ -473,9 +622,85 @@ Ast([
     );
 }
 
-// TODO: GT_sx
-// TODO: LE_sx
-// TODO: GE_sx
+#[test]
+fn test_parse_greater_than_signed() {
+    let tokens = tokenize("def start(): 10 > 5");
+    let ast = parse(tokens);
+    assert_eq!(
+        ast_string(&ast),
+        r#"
+Ast([
+    Function(
+        name=start,
+        arguments=[
+        ],
+        body=[
+            BinaryOp(
+                op=GreaterThan,
+                left=Int(10),
+                right=Int(5),
+            ),
+        ]
+    ),
+])
+"#
+    );
+}
+
+#[test]
+fn test_parse_less_than_equal_signed() {
+    let tokens = tokenize("def start(): 10 <= 5");
+    let ast = parse(tokens);
+    assert_eq!(
+        ast_string(&ast),
+        r#"
+Ast([
+    Function(
+        name=start,
+        arguments=[
+        ],
+        body=[
+            BinaryOp(
+                op=LessThanEqual,
+                left=Int(10),
+                right=Int(5),
+            ),
+        ]
+    ),
+])
+"#
+    );
+}
+
+#[test]
+fn test_parse_greater_than_equal_signed() {
+    let tokens = tokenize("def start(): 10 >= 5");
+    let ast = parse(tokens);
+    assert_eq!(
+        ast_string(&ast),
+        r#"
+Ast([
+    Function(
+        name=start,
+        arguments=[
+        ],
+        body=[
+            BinaryOp(
+                op=GreaterThanEqual,
+                left=Int(10),
+                right=Int(5),
+            ),
+        ]
+    ),
+])
+"#
+    );
+}
+
+// TODO: LT_u
+// TODO: GT_u
+// TODO: LE_u
+// TODO: GE_u
 
 //-------//
 // OTHER //
