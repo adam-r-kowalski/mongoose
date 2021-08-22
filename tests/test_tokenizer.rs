@@ -61,6 +61,7 @@ fn token_string_impl(top_level: &TopLevel, token: usize, output: String) -> Stri
             token_string_literal(top_level, token, output, "LessThanLessThan")
         }
         Some(Kind::Else) => token_string_literal(top_level, token, output, "Else"),
+        Some(Kind::While) => token_string_literal(top_level, token, output, "While"),
         Some(Kind::Symbol) => token_string_symbol(top_level, token, output),
         Some(Kind::Int) => token_string_int(top_level, token, output),
         Some(Kind::Indent) => token_string_indent(top_level, token, output),
@@ -401,6 +402,49 @@ Tokens([
         Int(2),
         LessThanLessThan,
         Int(1),
+    ]),
+])
+"#
+    );
+}
+
+#[test]
+fn test_tokenize_while() {
+    let source = r#"
+def start():
+    i = 0
+    while i < 10:
+        i = i + 1
+    i"#;
+    let tokens = tokenize(source);
+    assert_eq!(
+        token_string(&tokens),
+        r#"
+Tokens([
+    TopLevel([
+        Def,
+        Symbol(start),
+        LeftParen,
+        RightParen,
+        Colon,
+        Indent(4),
+        Symbol(i),
+        Equal,
+        Int(0),
+        Indent(4),
+        While,
+        Symbol(i),
+        LessThan,
+        Int(10),
+        Colon,
+        Indent(8),
+        Symbol(i),
+        Equal,
+        Symbol(i),
+        Plus,
+        Int(1),
+        Indent(4),
+        Symbol(i),
     ]),
 ])
 "#

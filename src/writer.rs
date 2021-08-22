@@ -63,6 +63,50 @@ fn write_locals(code: String, func: &Function) -> Result<String, Error> {
         })
 }
 
+pub fn write_block(mut code: String, func: &Function, i: usize) -> Result<String, Error> {
+    assert_eq!(func.operand_kinds[i], vec![OperandKind::Label]);
+    let operands = &func.operands[i];
+    assert_eq!(operands.len(), 1);
+    write!(code, "\n    block $.label.{}", operands[0])?;
+    Ok(code)
+}
+
+pub fn write_loop(mut code: String, func: &Function, i: usize) -> Result<String, Error> {
+    assert_eq!(func.operand_kinds[i], vec![OperandKind::Label]);
+    let operands = &func.operands[i];
+    assert_eq!(operands.len(), 1);
+    write!(code, "\n    loop $.label.{}", operands[0])?;
+    Ok(code)
+}
+
+pub fn write_end(mut code: String, func: &Function, i: usize) -> Result<String, Error> {
+    code.push_str("\n    end");
+    let operand_kinds = &func.operand_kinds[i];
+    if operand_kinds.len() > 0 {
+        assert_eq!(operand_kinds, &[OperandKind::Label]);
+        let operands = &func.operands[i];
+        assert_eq!(operands.len(), 1);
+        write!(code, " $.label.{}", operands[0])?;
+    }
+    Ok(code)
+}
+
+pub fn write_br_if(mut code: String, func: &Function, i: usize) -> Result<String, Error> {
+    assert_eq!(func.operand_kinds[i], vec![OperandKind::Label]);
+    let operands = &func.operands[i];
+    assert_eq!(operands.len(), 1);
+    write!(code, "\n    br_if $.label.{}", operands[0])?;
+    Ok(code)
+}
+
+pub fn write_br(mut code: String, func: &Function, i: usize) -> Result<String, Error> {
+    assert_eq!(func.operand_kinds[i], vec![OperandKind::Label]);
+    let operands = &func.operands[i];
+    assert_eq!(operands.len(), 1);
+    write!(code, "\n    br $.label.{}", operands[0])?;
+    Ok(code)
+}
+
 fn write_function(mut code: String, func: &Function) -> Result<String, Error> {
     write!(code, "\n\n  (func ${}", func.symbols[func.name])?;
     let mut code = write_arguments(code, &func)?;
@@ -82,12 +126,17 @@ fn write_function(mut code: String, func: &Function) -> Result<String, Error> {
                 Instruction::I64Eq => write_str(code, "i64.eq"),
                 Instruction::I64Shl => write_str(code, "i64.shl"),
                 Instruction::I64LtS => write_str(code, "i64.lt_s"),
+                Instruction::I32Eqz => write_str(code, "i32.eqz"),
                 Instruction::SetLocal => write_set_local(code, &func, i),
                 Instruction::GetLocal => write_get_local(code, &func, i),
                 Instruction::Call => write_call(code, &func, i),
                 Instruction::If => write_str(code, "if (result i64)"),
+                Instruction::Block => write_block(code, &func, i),
+                Instruction::Loop => write_loop(code, &func, i),
                 Instruction::Else => write_str(code, "else"),
-                Instruction::End => write_str(code, "end"),
+                Instruction::End => write_end(code, &func, i),
+                Instruction::BrIf => write_br_if(code, &func, i),
+                Instruction::Br => write_br(code, &func, i),
             })?;
     code.push(')');
     Ok(code)
@@ -95,7 +144,7 @@ fn write_function(mut code: String, func: &Function) -> Result<String, Error> {
 
 pub fn write(wasm: Wasm) -> String {
     let mut code = String::new();
-    code.push_str("(module");
+    code.push_str("\n(module");
     let mut code = wasm
         .functions
         .par_iter()
@@ -106,6 +155,6 @@ pub fn write(wasm: Wasm) -> String {
             code.push_str(&fragment);
             code
         });
-    code.push_str("\n\n  (export \"_start\" (func $start)))");
+    code.push_str("\n\n  (export \"_start\" (func $start)))\n");
     code
 }

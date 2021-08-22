@@ -16,12 +16,17 @@ pub enum Instruction {
     I64Eq,
     I64Shl,
     I64LtS,
+    I32Eqz,
     SetLocal,
     GetLocal,
     Call,
     If,
     Else,
+    Block,
+    Loop,
     End,
+    BrIf,
+    Br,
 }
 
 #[derive(Debug, PartialEq)]
@@ -29,6 +34,7 @@ pub enum OperandKind {
     IntLiteral,
     Local,
     Symbol,
+    Label,
 }
 
 #[derive(Debug, PartialEq)]
@@ -42,6 +48,7 @@ pub struct Function {
     pub symbols: Vec<String>,
     pub ints: Vec<String>,
     pub arguments: usize,
+    pub next_label: usize,
 }
 
 #[derive(Debug, PartialEq)]
@@ -192,6 +199,51 @@ fn codegen_if(
     wasm_func
 }
 
+fn codegen_while(
+    tx: Sender<Message>,
+    mut wasm_func: Function,
+    ast_func: &parser::Function,
+    entity: usize,
+) -> Function {
+    let index = ast_func.indices[entity];
+    let block_label = wasm_func.next_label;
+    let loop_label = block_label + 1;
+    wasm_func.next_label += 2;
+    wasm_func.instructions.push(Instruction::Block);
+    wasm_func.operand_kinds.push(vec![OperandKind::Label]);
+    wasm_func.operands.push(vec![block_label]);
+    wasm_func.instructions.push(Instruction::Loop);
+    wasm_func.operand_kinds.push(vec![OperandKind::Label]);
+    wasm_func.operands.push(vec![loop_label]);
+    let mut wasm_func = codegen_expression(
+        tx.clone(),
+        wasm_func,
+        ast_func,
+        ast_func.whiles.conditionals[index],
+    );
+    wasm_func.instructions.push(Instruction::I32Eqz);
+    wasm_func.operand_kinds.push(vec![]);
+    wasm_func.operands.push(vec![]);
+    wasm_func.instructions.push(Instruction::BrIf);
+    wasm_func.operand_kinds.push(vec![OperandKind::Label]);
+    wasm_func.operands.push(vec![block_label]);
+    let mut wasm_func = ast_func.whiles.bodies[index]
+        .iter()
+        .fold(wasm_func, |wasm_func, &expression| {
+            codegen_expression(tx.clone(), wasm_func, ast_func, expression)
+        });
+    wasm_func.instructions.push(Instruction::Br);
+    wasm_func.operand_kinds.push(vec![OperandKind::Label]);
+    wasm_func.operands.push(vec![loop_label]);
+    wasm_func.instructions.push(Instruction::End);
+    wasm_func.operand_kinds.push(vec![OperandKind::Label]);
+    wasm_func.operands.push(vec![loop_label]);
+    wasm_func.instructions.push(Instruction::End);
+    wasm_func.operand_kinds.push(vec![OperandKind::Label]);
+    wasm_func.operands.push(vec![block_label]);
+    wasm_func
+}
+
 fn codegen_expression(
     tx: Sender<Message>,
     wasm_func: Function,
@@ -205,6 +257,7 @@ fn codegen_expression(
         parser::Kind::Symbol => codegen_symbol(wasm_func, ast_func, entity),
         parser::Kind::FunctionCall => codegen_function_call(tx, wasm_func, ast_func, entity),
         parser::Kind::If => codegen_if(tx, wasm_func, ast_func, entity),
+        parser::Kind::While => codegen_while(tx, wasm_func, ast_func, entity),
     }
 }
 
@@ -233,6 +286,7 @@ fn codegen_function(tx: Sender<Message>, ast_func: &parser::Function) -> Functio
         symbols: vec![],
         ints: vec![],
         arguments: ast_func.arguments.len(),
+        next_label: 0,
     };
     let mut wasm_func = ast_func
         .expressions
@@ -271,6 +325,7 @@ pub fn codegen(ast: Ast) -> Wasm {
                         symbols: vec![],
                         ints: vec![],
                         arguments: 0,
+                        next_label: 0,
                     });
                     wasm.name_to_function.try_insert(name, i).unwrap();
                     let local_tx = tx.clone();

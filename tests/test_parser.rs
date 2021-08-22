@@ -138,6 +138,33 @@ fn ast_string_if(mut output: String, func: &Function, expression: usize, indent:
     output
 }
 
+fn ast_string_while(
+    mut output: String,
+    func: &Function,
+    expression: usize,
+    indent: usize,
+) -> String {
+    output.push_str("While(\n");
+    let mut output = write_indent(output, indent);
+    output.push_str("condition=");
+    let index = func.indices[expression];
+    let output = ast_string_expression(output, func, func.whiles.conditionals[index], indent);
+    let mut output = write_indent(output, indent);
+    output.push_str("body=[\n");
+    let next_indent = indent + INDENT;
+    let output = func.whiles.bodies[index]
+        .iter()
+        .fold(output, |output, &parameter| {
+            let output = write_indent(output, next_indent);
+            ast_string_expression(output, func, parameter, next_indent)
+        });
+    let mut output = write_indent(output, indent);
+    output.push_str("]\n");
+    let mut output = write_indent(output, indent - INDENT);
+    output.push_str("),\n");
+    output
+}
+
 fn ast_string_expression(
     output: String,
     func: &Function,
@@ -151,6 +178,7 @@ fn ast_string_expression(
         Kind::Assign => ast_string_assignment(output, func, expression, indent + INDENT),
         Kind::FunctionCall => ast_string_function_call(output, func, expression, indent + INDENT),
         Kind::If => ast_string_if(output, func, expression, indent + INDENT),
+        Kind::While => ast_string_while(output, func, expression, indent + INDENT),
     }
 }
 
@@ -835,6 +863,54 @@ Ast([
                 left=Int(2),
                 right=Int(1),
             ),
+        ]
+    ),
+])
+"#
+    );
+}
+
+#[test]
+fn test_parse_while() {
+    let source = r#"
+def start():
+    i = 0
+    while i < 10:
+        i = i + 1
+    i"#;
+    let tokens = tokenize(source);
+    let ast = parse(tokens);
+    assert_eq!(
+        ast_string(&ast),
+        r#"
+Ast([
+    Function(
+        name=start,
+        arguments=[
+        ],
+        body=[
+            Assign(
+                name=i,
+                value=Int(0),
+            ),
+            While(
+                condition=BinaryOp(
+                    op=LessThan,
+                    left=Symbol(i),
+                    right=Int(10),
+                ),
+                body=[
+                    Assign(
+                        name=i,
+                        value=BinaryOp(
+                            op=Add,
+                            left=Symbol(i),
+                            right=Int(1),
+                        ),
+                    ),
+                ]
+            ),
+            Symbol(i),
         ]
     ),
 ])

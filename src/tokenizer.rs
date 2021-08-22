@@ -19,6 +19,7 @@ pub enum Kind {
     Int,
     If,
     Else,
+    While,
 }
 
 #[derive(Debug, PartialEq)]
@@ -57,6 +58,7 @@ fn tokenize_symbol(top_level: TopLevel, source: &str) -> (TopLevel, &str) {
         "def" => insert_keyword(top_level, Kind::Def),
         "if" => insert_keyword(top_level, Kind::If),
         "else" => insert_keyword(top_level, Kind::Else),
+        "while" => insert_keyword(top_level, Kind::While),
         _ => insert_symbol(top_level, source[..length].to_string()),
     };
     tokenize_top_level(top_level, &source[length..])

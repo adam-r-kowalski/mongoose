@@ -14,6 +14,7 @@ pub enum Kind {
     Assign,
     FunctionCall,
     If,
+    While,
 }
 
 #[derive(Debug, PartialEq, Copy, Clone)]
@@ -55,6 +56,12 @@ pub struct Ifs {
 }
 
 #[derive(Debug, PartialEq)]
+pub struct Whiles {
+    pub conditionals: Vec<usize>,
+    pub bodies: Vec<Vec<usize>>,
+}
+
+#[derive(Debug, PartialEq)]
 pub struct Function {
     pub name: usize,
     pub arguments: Vec<usize>,
@@ -67,6 +74,7 @@ pub struct Function {
     pub symbols: Vec<String>,
     pub ints: Vec<String>,
     pub ifs: Ifs,
+    pub whiles: Whiles,
 }
 
 #[derive(Debug, PartialEq)]
@@ -192,6 +200,49 @@ fn parse_if(func: Function, top_level: &tokenizer::TopLevel, token: Token) -> Pa
     ParseResult(func, token, entity)
 }
 
+fn parse_while_body(
+    func: Function,
+    top_level: &tokenizer::TopLevel,
+    token: Token,
+    mut expressions: Vec<usize>,
+    indent: usize,
+) -> (Function, Token, Vec<usize>) {
+    match top_level.kinds.get(token.0) {
+        Some(tokenizer::Kind::Indent) => {
+            let next_indent = top_level.indents[top_level.indices[token.0]];
+            if indent != 0 && indent != next_indent {
+                (func, token, expressions)
+            } else {
+                parse_while_body(func, top_level, inc_token(token), expressions, next_indent)
+            }
+        }
+        Some(_) => {
+            let ParseResult(func, token, expression) =
+                parse_expression(func, top_level, token, LOWEST);
+            expressions.push(expression);
+            if indent > 0 {
+                parse_while_body(func, top_level, token, expressions, indent)
+            } else {
+                (func, token, expressions)
+            }
+        }
+        None => (func, token, expressions),
+    }
+}
+
+fn parse_while(func: Function, top_level: &tokenizer::TopLevel, token: Token) -> ParseResult {
+    let token = consume(top_level, token, tokenizer::Kind::While);
+    let ParseResult(func, token, conditional) = parse_expression(func, top_level, token, LOWEST);
+    let token = consume(top_level, token, tokenizer::Kind::Colon);
+    let (mut func, token, body) = parse_while_body(func, top_level, token, vec![], 0);
+    let entity = fresh_entity(&func);
+    func.kinds.push(Kind::While);
+    func.indices.push(func.whiles.conditionals.len());
+    func.whiles.conditionals.push(conditional);
+    func.whiles.bodies.push(body);
+    ParseResult(func, token, entity)
+}
+
 fn prefix_parser(
     func: Function,
     top_level: &tokenizer::TopLevel,
@@ -202,6 +253,7 @@ fn prefix_parser(
         tokenizer::Kind::Symbol => parse_primitive(func, top_level, token, Kind::Symbol),
         tokenizer::Kind::Int => parse_primitive(func, top_level, token, Kind::Int),
         tokenizer::Kind::If => parse_if(func, top_level, token),
+        tokenizer::Kind::While => parse_while(func, top_level, token),
         token => panic!("no prefix parser for {:?}", token),
     }
 }
@@ -415,6 +467,10 @@ fn parse_function(top_level: &tokenizer::TopLevel, token: Token) -> Function {
             conditionals: vec![],
             then_branches: vec![],
             else_branches: vec![],
+        },
+        whiles: Whiles {
+            conditionals: vec![],
+            bodies: vec![],
         },
     };
     let token = consume(top_level, inc_token(token), tokenizer::Kind::LeftParen);
