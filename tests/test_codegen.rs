@@ -22,12 +22,14 @@ fn test_codegen_int() {
     let code = write(wasm);
     assert_eq!(
         code,
-        r#"(module
+        r#"
+(module
 
   (func $start (result i64)
     (i64.const 0))
 
-  (export "_start" (func $start)))"#
+  (export "_start" (func $start)))
+"#
     );
     assert_eq!(run(&code), Value::I64(0));
 }
@@ -40,14 +42,16 @@ fn test_codegen_add() {
     let code = write(wasm);
     assert_eq!(
         code,
-        r#"(module
+        r#"
+(module
 
   (func $start (result i64)
     (i64.const 5)
     (i64.const 10)
     i64.add)
 
-  (export "_start" (func $start)))"#
+  (export "_start" (func $start)))
+"#
     );
     assert_eq!(run(&code), Value::I64(15));
 }
@@ -60,14 +64,16 @@ fn test_codegen_subtract() {
     let code = write(wasm);
     assert_eq!(
         code,
-        r#"(module
+        r#"
+(module
 
   (func $start (result i64)
     (i64.const 5)
     (i64.const 10)
     i64.sub)
 
-  (export "_start" (func $start)))"#
+  (export "_start" (func $start)))
+"#
     );
     assert_eq!(run(&code), Value::I64(-5));
 }
@@ -80,14 +86,16 @@ fn test_codegen_multiply() {
     let code = write(wasm);
     assert_eq!(
         code,
-        r#"(module
+        r#"
+(module
 
   (func $start (result i64)
     (i64.const 5)
     (i64.const 10)
     i64.mul)
 
-  (export "_start" (func $start)))"#
+  (export "_start" (func $start)))
+"#
     );
     assert_eq!(run(&code), Value::I64(50));
 }
@@ -100,14 +108,16 @@ fn test_codegen_divide() {
     let code = write(wasm);
     assert_eq!(
         code,
-        r#"(module
+        r#"
+(module
 
   (func $start (result i64)
     (i64.const 10)
     (i64.const 5)
     i64.div_s)
 
-  (export "_start" (func $start)))"#
+  (export "_start" (func $start)))
+"#
     );
     assert_eq!(run(&code), Value::I64(2));
 }
@@ -120,7 +130,8 @@ fn test_codegen_add_then_multiply() {
     let code = write(wasm);
     assert_eq!(
         code,
-        r#"(module
+        r#"
+(module
 
   (func $start (result i64)
     (i64.const 3)
@@ -129,7 +140,8 @@ fn test_codegen_add_then_multiply() {
     i64.mul
     i64.add)
 
-  (export "_start" (func $start)))"#
+  (export "_start" (func $start)))
+"#
     );
     assert_eq!(run(&code), Value::I64(53));
 }
@@ -142,7 +154,8 @@ fn test_codegen_multiply_then_add() {
     let code = write(wasm);
     assert_eq!(
         code,
-        r#"(module
+        r#"
+(module
 
   (func $start (result i64)
     (i64.const 3)
@@ -151,7 +164,8 @@ fn test_codegen_multiply_then_add() {
     (i64.const 10)
     i64.add)
 
-  (export "_start" (func $start)))"#
+  (export "_start" (func $start)))
+"#
     );
     assert_eq!(run(&code), Value::I64(25));
 }
@@ -169,7 +183,8 @@ def start():
     let code = write(wasm);
     assert_eq!(
         code,
-        r#"(module
+        r#"
+(module
 
   (func $start (result i64)
     (local $x i64)
@@ -182,7 +197,8 @@ def start():
     (get_local $y)
     i64.add)
 
-  (export "_start" (func $start)))"#
+  (export "_start" (func $start)))
+"#
     );
     assert_eq!(run(&code), Value::I64(25));
 }
@@ -200,7 +216,8 @@ def start():
     let code = write(wasm);
     assert_eq!(
         code,
-        r#"(module
+        r#"
+(module
 
   (func $start (result i64)
     (local $x i64)
@@ -212,7 +229,8 @@ def start():
     (set_local $x)
     (get_local $x))
 
-  (export "_start" (func $start)))"#
+  (export "_start" (func $start)))
+"#
     );
     assert_eq!(run(&code), Value::I64(25));
 }
@@ -234,7 +252,8 @@ def start(): sum_of_squares(5, 3)"#;
     let code = write(wasm);
     assert_eq!(
         code,
-        r#"(module
+        r#"
+(module
 
   (func $start (result i64)
     (i64.const 5)
@@ -259,7 +278,8 @@ def start(): sum_of_squares(5, 3)"#;
     (get_local $x)
     i64.mul)
 
-  (export "_start" (func $start)))"#
+  (export "_start" (func $start)))
+"#
     );
     assert_eq!(run(&code), Value::I64(34));
 }
@@ -277,7 +297,8 @@ def start():
     let code = write(wasm);
     assert_eq!(
         code,
-        r#"(module
+        r#"
+(module
 
   (func $start (result i64)
     (local $x i64)
@@ -295,7 +316,8 @@ def start():
     (get_local $y)
     end)
 
-  (export "_start" (func $start)))"#
+  (export "_start" (func $start)))
+"#
     );
     assert_eq!(run(&code), Value::I64(5));
 }
@@ -308,14 +330,60 @@ fn test_codegen_shift_left() {
     let code = write(wasm);
     assert_eq!(
         code,
-        r#"(module
+        r#"
+(module
 
   (func $start (result i64)
     (i64.const 2)
     (i64.const 1)
     i64.shl)
 
-  (export "_start" (func $start)))"#
+  (export "_start" (func $start)))
+"#
     );
     assert_eq!(run(&code), Value::I64(4));
+}
+
+#[test]
+fn test_codegen_while() {
+    let source = r#"
+def start():
+    i = 0
+    while i < 10:
+        i = i + 1
+    i
+"#;
+    let tokens = tokenize(source);
+    let ast = parse(tokens);
+    let wasm = codegen(ast);
+    let code = write(wasm);
+    assert_eq!(
+        code,
+        r#"
+(module
+
+  (func $start (result i64)
+    (local $i i64)
+    (i64.const 0)
+    (set_local $i)
+    block $.label.0
+    loop $.label.1
+    (get_local $i)
+    (i64.const 10)
+    i64.lt_s
+    i32.eqz
+    br_if $.label.0
+    (get_local $i)
+    (i64.const 1)
+    i64.add
+    (set_local $i)
+    br $.label.1
+    end $.label.1
+    end $.label.0
+    (get_local $i))
+
+  (export "_start" (func $start)))
+"#
+    );
+    assert_eq!(run(&code), Value::I64(10));
 }

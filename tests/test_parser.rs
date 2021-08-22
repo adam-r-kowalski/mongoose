@@ -871,7 +871,7 @@ Ast([
 }
 
 #[test]
-fn test_tokenize_while() {
+fn test_parse_while() {
     let source = r#"
 def start():
     i = 0
