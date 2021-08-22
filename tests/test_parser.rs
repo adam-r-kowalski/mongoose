@@ -249,6 +249,10 @@ Ast([
     );
 }
 
+//-------//
+// IUNOP //
+//-------//
+
 #[test]
 fn test_parse_add() {
     let tokens = tokenize("def start(): 5 + 10");
@@ -374,6 +378,49 @@ Ast([
     );
 }
 
+// TODO: AND
+// TODO: OR
+// TODO: XOR
+
+#[test]
+fn test_parse_shift_left() {
+    let tokens = tokenize("def start(): 2 << 1");
+    let ast = parse(tokens);
+    assert_eq!(
+        ast_string(&ast),
+        r#"
+Ast([
+    Function(
+        name=start,
+        arguments=[
+        ],
+        body=[
+            BinaryOp(
+                op=ShiftLeft,
+                left=Int(2),
+                right=Int(1),
+            ),
+        ]
+    ),
+])
+"#
+    );
+}
+
+// TODO: SHR_sx
+// TODO: ROTL
+// TODO: ROTR
+
+//---------//
+// ITESTOP //
+//---------//
+
+// TODO: EQZ
+
+//--------//
+// IRELOP //
+//--------//
+
 #[test]
 fn test_parse_compare() {
     let tokens = tokenize("def start(): 10 == 5");
@@ -399,6 +446,8 @@ Ast([
     );
 }
 
+// TODO: NE
+
 #[test]
 fn test_parse_less_than() {
     let tokens = tokenize("def start(): 10 < 5");
@@ -423,6 +472,14 @@ Ast([
 "#
     );
 }
+
+// TODO: GT_sx
+// TODO: LE_sx
+// TODO: GE_sx
+
+//-------//
+// OTHER //
+//-------//
 
 #[test]
 fn test_parse_add_then_multiply() {
@@ -884,31 +941,6 @@ Ast([
                 op=Add,
                 left=Symbol(c),
                 right=Symbol(d),
-            ),
-        ]
-    ),
-])
-"#
-    );
-}
-
-#[test]
-fn test_parse_shift_left() {
-    let tokens = tokenize("def start(): 2 << 1");
-    let ast = parse(tokens);
-    assert_eq!(
-        ast_string(&ast),
-        r#"
-Ast([
-    Function(
-        name=start,
-        arguments=[
-        ],
-        body=[
-            BinaryOp(
-                op=ShiftLeft,
-                left=Int(2),
-                right=Int(1),
             ),
         ]
     ),

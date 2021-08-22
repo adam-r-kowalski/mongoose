@@ -105,6 +105,10 @@ Tokens([
     );
 }
 
+//-------//
+// IUNOP //
+//-------//
+
 #[test]
 fn test_tokenize_add() {
     let tokens = tokenize("def start(): 5 + 10");
@@ -215,6 +219,46 @@ Tokens([
     );
 }
 
+// TODO: AND
+// TODO: OR
+// TODO: XOR
+
+#[test]
+fn test_tokenize_shift_left() {
+    let tokens = tokenize("def start(): 2 << 1");
+    assert_eq!(
+        token_string(&tokens),
+        r#"
+Tokens([
+    TopLevel([
+        Def,
+        Symbol(start),
+        LeftParen,
+        RightParen,
+        Colon,
+        Int(2),
+        LessThanLessThan,
+        Int(1),
+    ]),
+])
+"#
+    );
+}
+
+// TODO: SHR_sx
+// TODO: ROTL
+// TODO: ROTR
+
+//---------//
+// ITESTOP //
+//---------//
+
+// TODO: EQZ
+
+//--------//
+// IRELOP //
+//--------//
+
 #[test]
 fn test_tokenize_compare() {
     let tokens = tokenize("def start(): 10 == 5");
@@ -236,6 +280,16 @@ Tokens([
 "#
     );
 }
+
+// TODO: NE
+// TODO: LT_sx
+// TODO: GT_sx
+// TODO: LE_sx
+// TODO: GE_sx
+
+//-------//
+// OTHER //
+//-------//
 
 #[test]
 fn test_tokenize_local_variables() {
@@ -381,28 +435,6 @@ Tokens([
         Colon,
         Indent(4),
         Symbol(y),
-    ]),
-])
-"#
-    );
-}
-
-#[test]
-fn test_tokenize_shift_left() {
-    let tokens = tokenize("def start(): 2 << 1");
-    assert_eq!(
-        token_string(&tokens),
-        r#"
-Tokens([
-    TopLevel([
-        Def,
-        Symbol(start),
-        LeftParen,
-        RightParen,
-        Colon,
-        Int(2),
-        LessThanLessThan,
-        Int(1),
     ]),
 ])
 "#

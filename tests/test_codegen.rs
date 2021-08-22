@@ -34,6 +34,10 @@ fn test_codegen_int() {
     assert_eq!(run(&code), Value::I64(0));
 }
 
+//-------//
+// IUNOP //
+//-------//
+
 #[test]
 fn test_codegen_add() {
     let tokens = tokenize("def start(): 5 + 10");
@@ -121,6 +125,58 @@ fn test_codegen_divide() {
     );
     assert_eq!(run(&code), Value::I64(2));
 }
+
+// TODO: REM_sx
+// TODO: AND
+// TODO: OR
+// TODO: XOR
+
+#[test]
+fn test_codegen_shift_left() {
+    let tokens = tokenize("def start(): 2 << 1");
+    let ast = parse(tokens);
+    let wasm = codegen(ast);
+    let code = write(wasm);
+    assert_eq!(
+        code,
+        r#"
+(module
+
+  (func $start (result i64)
+    (i64.const 2)
+    (i64.const 1)
+    i64.shl)
+
+  (export "_start" (func $start)))
+"#
+    );
+    assert_eq!(run(&code), Value::I64(4));
+}
+
+// TODO: SHR_sx
+// TODO: ROTL
+// TODO: ROTR
+
+//---------//
+// ITESTOP //
+//---------//
+
+// TODO: EQZ
+
+//--------//
+// IRELOP //
+//--------//
+
+// TODO: EQ
+// TODO: NE
+// TODO: LT_sx
+// TODO: GT_sx
+// TODO: LE_sx
+// TODO: GE_sx
+
+//-------//
+// OTHER //
+//-------//
 
 #[test]
 fn test_codegen_add_then_multiply() {
@@ -320,28 +376,6 @@ def start():
 "#
     );
     assert_eq!(run(&code), Value::I64(5));
-}
-
-#[test]
-fn test_codegen_shift_left() {
-    let tokens = tokenize("def start(): 2 << 1");
-    let ast = parse(tokens);
-    let wasm = codegen(ast);
-    let code = write(wasm);
-    assert_eq!(
-        code,
-        r#"
-(module
-
-  (func $start (result i64)
-    (i64.const 2)
-    (i64.const 1)
-    i64.shl)
-
-  (export "_start" (func $start)))
-"#
-    );
-    assert_eq!(run(&code), Value::I64(4));
 }
 
 #[test]
