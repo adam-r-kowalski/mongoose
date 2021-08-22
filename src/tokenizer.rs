@@ -103,14 +103,21 @@ fn tokenize_indent(mut top_level: TopLevel, source: &str) -> (TopLevel, &str) {
         .chars()
         .take_while(|c| ['\t', '\x0C', ' '].contains(c))
         .count();
-    if length > 0 {
-        top_level.kinds.push(Kind::Indent);
-        top_level.indices.push(top_level.indents.len());
-        top_level.indents.push(length);
-        tokenize_top_level(top_level, &source[length + 1..])
-    } else {
-        (top_level, source)
+    match source[length + 1..].chars().next() {
+        Some('#') => tokenize_comment(top_level, &source[length + 1..]),
+        _ if length > 0 => {
+            top_level.kinds.push(Kind::Indent);
+            top_level.indices.push(top_level.indents.len());
+            top_level.indents.push(length);
+            tokenize_top_level(top_level, &source[length + 1..])
+        }
+        _ => (top_level, source),
     }
+}
+
+fn tokenize_comment(top_level: TopLevel, source: &str) -> (TopLevel, &str) {
+    let length = source[1..].chars().take_while(|&c| c != '\n').count() + 1;
+    tokenize_top_level(top_level, &source[length..])
 }
 
 fn trim(source: &str, predicate: fn(&char) -> bool) -> &str {
@@ -135,6 +142,7 @@ fn tokenize_top_level(top_level: TopLevel, source: &str) -> (TopLevel, &str) {
         Some('<') => tokenize_lessthan(top_level, source),
         Some('0'..='9') => tokenize_number(top_level, source),
         Some('\n') => tokenize_indent(top_level, source),
+        Some('#') => tokenize_comment(top_level, source),
         Some(c) => panic!("not implemented for char \"{}\"", c),
         None => (top_level, source),
     }
@@ -153,7 +161,9 @@ fn tokenize_impl(mut tokens: Tokens, source: &str) -> Tokens {
             indents: vec![],
         };
         let (top_level, source) = tokenize_top_level(top_level, source);
-        tokens.top_level.push(top_level);
+        if top_level.indices.len() > 0 {
+            tokens.top_level.push(top_level);
+        }
         tokenize_impl(tokens, source)
     }
 }

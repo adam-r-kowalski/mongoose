@@ -450,3 +450,36 @@ Tokens([
 "#
     );
 }
+
+#[test]
+fn test_tokenize_comment() {
+    let source = r#"
+# comments can appear above top level expressions
+def start():
+    x = 10 # comments can appear to the right of expressions
+    # comments can appear inbetween expressions
+    x
+# comments can appear below top level expressions
+"#;
+    let tokens = tokenize(source);
+    assert_eq!(
+        token_string(&tokens),
+        r#"
+Tokens([
+    TopLevel([
+        Def,
+        Symbol(start),
+        LeftParen,
+        RightParen,
+        Colon,
+        Indent(4),
+        Symbol(x),
+        Equal,
+        Int(10),
+        Indent(4),
+        Symbol(x),
+    ]),
+])
+"#
+    );
+}
