@@ -244,6 +244,16 @@ fn codegen_while(
     wasm_func
 }
 
+fn codegen_grouping(
+    tx: Sender<Message>,
+    wasm_func: Function,
+    ast_func: &parser::Function,
+    entity: usize,
+) -> Function {
+    let index = ast_func.indices[entity];
+    codegen_expression(tx.clone(), wasm_func, ast_func, ast_func.groupings[index])
+}
+
 fn codegen_expression(
     tx: Sender<Message>,
     wasm_func: Function,
@@ -258,6 +268,7 @@ fn codegen_expression(
         parser::Kind::FunctionCall => codegen_function_call(tx, wasm_func, ast_func, entity),
         parser::Kind::If => codegen_if(tx, wasm_func, ast_func, entity),
         parser::Kind::While => codegen_while(tx, wasm_func, ast_func, entity),
+        parser::Kind::Grouping => codegen_grouping(tx, wasm_func, ast_func, entity),
     }
 }
 

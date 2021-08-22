@@ -15,6 +15,7 @@ pub enum Kind {
     FunctionCall,
     If,
     While,
+    Grouping,
 }
 
 #[derive(Debug, PartialEq, Copy, Clone)]
@@ -75,6 +76,7 @@ pub struct Function {
     pub ints: Vec<String>,
     pub ifs: Ifs,
     pub whiles: Whiles,
+    pub groupings: Vec<usize>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -243,6 +245,17 @@ fn parse_while(func: Function, top_level: &tokenizer::TopLevel, token: Token) ->
     ParseResult(func, token, entity)
 }
 
+fn parse_grouping(func: Function, top_level: &tokenizer::TopLevel, token: Token) -> ParseResult {
+    let token = consume(top_level, token, tokenizer::Kind::LeftParen);
+    let ParseResult(mut func, token, expression) = parse_expression(func, top_level, token, LOWEST);
+    let token = consume(top_level, token, tokenizer::Kind::RightParen);
+    let entity = fresh_entity(&func);
+    func.kinds.push(Kind::Grouping);
+    func.indices.push(func.groupings.len());
+    func.groupings.push(expression);
+    ParseResult(func, token, entity)
+}
+
 fn prefix_parser(
     func: Function,
     top_level: &tokenizer::TopLevel,
@@ -254,6 +267,7 @@ fn prefix_parser(
         tokenizer::Kind::Int => parse_primitive(func, top_level, token, Kind::Int),
         tokenizer::Kind::If => parse_if(func, top_level, token),
         tokenizer::Kind::While => parse_while(func, top_level, token),
+        tokenizer::Kind::LeftParen => parse_grouping(func, top_level, token),
         token => panic!("no prefix parser for {:?}", token),
     }
 }
@@ -472,6 +486,7 @@ fn parse_function(top_level: &tokenizer::TopLevel, token: Token) -> Function {
             conditionals: vec![],
             bodies: vec![],
         },
+        groupings: vec![],
     };
     let token = consume(top_level, inc_token(token), tokenizer::Kind::LeftParen);
     let (func, token) = if top_level.kinds[token.0] != tokenizer::Kind::RightParen {
