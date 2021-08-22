@@ -165,6 +165,21 @@ fn ast_string_while(
     output
 }
 
+fn ast_string_grouping(
+    mut output: String,
+    func: &Function,
+    expression: usize,
+    indent: usize,
+) -> String {
+    output.push_str("Grouping(\n");
+    let output = write_indent(output, indent);
+    let index = func.indices[expression];
+    let output = ast_string_expression(output, func, func.groupings[index], indent);
+    let mut output = write_indent(output, indent - INDENT);
+    output.push_str("),\n");
+    output
+}
+
 fn ast_string_expression(
     output: String,
     func: &Function,
@@ -179,6 +194,7 @@ fn ast_string_expression(
         Kind::FunctionCall => ast_string_function_call(output, func, expression, indent + INDENT),
         Kind::If => ast_string_if(output, func, expression, indent + INDENT),
         Kind::While => ast_string_while(output, func, expression, indent + INDENT),
+        Kind::Grouping => ast_string_grouping(output, func, expression, indent + INDENT),
     }
 }
 
@@ -458,6 +474,37 @@ Ast([
                     right=Int(5),
                 ),
                 right=Int(10),
+            ),
+        ]
+    ),
+])
+"#
+    );
+}
+
+#[test]
+fn test_parse_multiply_then_grouped_add() {
+    let tokens = tokenize("def start(): 3 * (5 + 10)");
+    let ast = parse(tokens);
+    assert_eq!(
+        ast_string(&ast),
+        r#"
+Ast([
+    Function(
+        name=start,
+        arguments=[
+        ],
+        body=[
+            BinaryOp(
+                op=Multiply,
+                left=Int(3),
+                right=Grouping(
+                    BinaryOp(
+                        op=Add,
+                        left=Int(5),
+                        right=Int(10),
+                    ),
+                ),
             ),
         ]
     ),
