@@ -20,6 +20,7 @@ pub enum Kind {
     If,
     Else,
     While,
+    Dot,
 }
 
 #[derive(Debug, PartialEq)]
@@ -138,6 +139,7 @@ fn tokenize_top_level(top_level: TopLevel, source: &str) -> (TopLevel, &str) {
         Some('%') => tokenize_one(top_level, source, Kind::Percent),
         Some(',') => tokenize_one(top_level, source, Kind::Comma),
         Some(':') => tokenize_one(top_level, source, Kind::Colon),
+        Some('.') => tokenize_one(top_level, source, Kind::Dot),
         Some('=') => tokenize_equal(top_level, source),
         Some('<') => tokenize_lessthan(top_level, source),
         Some('0'..='9') => tokenize_number(top_level, source),
