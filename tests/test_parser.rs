@@ -236,602 +236,77 @@ fn ast_string(ast: &Ast) -> String {
     output
 }
 
-#[test]
-fn test_parse_int() {
-    let tokens = tokenize("def start(): 0");
-    let ast = parse(tokens);
-    assert_eq!(
-        ast_string(&ast),
-        r#"
-Ast([
-    Function(
-        name=start,
-        arguments=[
-        ],
-        body=[
-            Int(0),
-        ]
-    ),
-])
-"#
-    );
+//-------------------//
+// SIMPLE OPERATIONS //
+//-------------------//
+
+fn remove_whitespace(s: &str) -> String {
+    s.chars().filter(|c| !c.is_whitespace()).collect()
 }
 
-//-------//
-// IUNOP //
-//-------//
-
-#[test]
-fn test_parse_add() {
-    let tokens = tokenize("def start(): 5 + 10");
+fn test_single_function_parsing(function_body: &str, expected_parsing: &str) {
+    let function_string = format!("def start(): {}", function_body);
+    let tokens = tokenize(&function_string);
     let ast = parse(tokens);
-    assert_eq!(
-        ast_string(&ast),
-        r#"
-Ast([
-    Function(
-        name=start,
-        arguments=[
-        ],
-        body=[
-            BinaryOp(
-                op=Add,
-                left=Int(5),
-                right=Int(10),
+    let expected_function_parsing = format!(r#"
+        Ast([
+            Function(
+                name=start,
+                arguments=[
+                ],
+                body=[
+                {}
+                ]
             ),
-        ]
-    ),
-])
-"#
+        ])
+        "#, expected_parsing);
+    assert_eq!(
+        remove_whitespace(&ast_string(&ast)),
+        remove_whitespace(&expected_function_parsing)
     );
 }
 
 #[test]
-fn test_parse_subtract() {
-    let tokens = tokenize("def start(): 5 - 10");
-    let ast = parse(tokens);
-    assert_eq!(
-        ast_string(&ast),
-        r#"
-Ast([
-    Function(
-        name=start,
-        arguments=[
-        ],
-        body=[
-            BinaryOp(
-                op=Subtract,
-                left=Int(5),
-                right=Int(10),
-            ),
-        ]
-    ),
-])
-"#
-    );
-}
-
-#[test]
-fn test_parse_multiply() {
-    let tokens = tokenize("def start(): 5 * 10");
-    let ast = parse(tokens);
-    assert_eq!(
-        ast_string(&ast),
-        r#"
-Ast([
-    Function(
-        name=start,
-        arguments=[
-        ],
-        body=[
-            BinaryOp(
-                op=Multiply,
-                left=Int(5),
-                right=Int(10),
-            ),
-        ]
-    ),
-])
-"#
-    );
-}
-
-#[test]
-fn test_parse_divide() {
-    let tokens = tokenize("def start(): 10 / 5");
-    let ast = parse(tokens);
-    assert_eq!(
-        ast_string(&ast),
-        r#"
-Ast([
-    Function(
-        name=start,
-        arguments=[
-        ],
-        body=[
-            BinaryOp(
-                op=Divide,
-                left=Int(10),
-                right=Int(5),
-            ),
-        ]
-    ),
-])
-"#
-    );
-}
-
-#[test]
-fn test_parse_modulo() {
-    let tokens = tokenize("def start(): 10 % 5");
-    let ast = parse(tokens);
-    assert_eq!(
-        ast_string(&ast),
-        r#"
-Ast([
-    Function(
-        name=start,
-        arguments=[
-        ],
-        body=[
-            BinaryOp(
-                op=Modulo,
-                left=Int(10),
-                right=Int(5),
-            ),
-        ]
-    ),
-])
-"#
-    );
-}
-
-#[test]
-fn test_parse_bitwise_and() {
-    let tokens = tokenize("def start(): 2 & 1");
-    let ast = parse(tokens);
-    assert_eq!(
-        ast_string(&ast),
-        r#"
-Ast([
-    Function(
-        name=start,
-        arguments=[
-        ],
-        body=[
-            BinaryOp(
-                op=And,
-                left=Int(2),
-                right=Int(1),
-            ),
-        ]
-    ),
-])
-"#
-    );
-}
-
-#[test]
-fn test_parse_bitwise_or() {
-    let tokens = tokenize("def start(): 2 | 1");
-    let ast = parse(tokens);
-    assert_eq!(
-        ast_string(&ast),
-        r#"
-Ast([
-    Function(
-        name=start,
-        arguments=[
-        ],
-        body=[
-            BinaryOp(
-                op=Or,
-                left=Int(2),
-                right=Int(1),
-            ),
-        ]
-    ),
-])
-"#
-    );
-}
-
-#[test]
-fn test_parse_bitwise_xor() {
-    let tokens = tokenize("def start(): 2 ^ 1");
-    let ast = parse(tokens);
-    assert_eq!(
-        ast_string(&ast),
-        r#"
-Ast([
-    Function(
-        name=start,
-        arguments=[
-        ],
-        body=[
-            BinaryOp(
-                op=Xor,
-                left=Int(2),
-                right=Int(1),
-            ),
-        ]
-    ),
-])
-"#
-    );
-}
-
-#[test]
-fn test_parse_shift_left() {
-    let tokens = tokenize("def start(): 2 << 1");
-    let ast = parse(tokens);
-    assert_eq!(
-        ast_string(&ast),
-        r#"
-Ast([
-    Function(
-        name=start,
-        arguments=[
-        ],
-        body=[
-            BinaryOp(
-                op=ShiftLeft,
-                left=Int(2),
-                right=Int(1),
-            ),
-        ]
-    ),
-])
-"#
-    );
-}
-
-#[test]
-fn test_parse_shift_right() {
-    let tokens = tokenize("def start(): 8 >> 1");
-    let ast = parse(tokens);
-    assert_eq!(
-        ast_string(&ast),
-        r#"
-Ast([
-    Function(
-        name=start,
-        arguments=[
-        ],
-        body=[
-            BinaryOp(
-                op=ShiftRight,
-                left=Int(8),
-                right=Int(1),
-            ),
-        ]
-    ),
-])
-"#
-    );
+fn test_parse_i64_functions() {
+    test_single_function_parsing("5 + 10", "BinaryOp(op=Add,left=Int(5),right=Int(10),),");
+    test_single_function_parsing("5 - 10", "BinaryOp(op=Subtract,left=Int(5),right=Int(10),),");
+    test_single_function_parsing("5 * 10", "BinaryOp(op=Multiply,left=Int(5),right=Int(10),),");
+    test_single_function_parsing("10 / 5", "BinaryOp(op=Divide,left=Int(10),right=Int(5),),");
+    test_single_function_parsing("10 % 5", "BinaryOp(op=Modulo,left=Int(10),right=Int(5),),");
+    test_single_function_parsing("2 & 1", "BinaryOp(op=And,left=Int(2),right=Int(1),),");
+    test_single_function_parsing("2 | 1", "BinaryOp(op=Or,left=Int(2),right=Int(1),),");
+    test_single_function_parsing("2 ^ 1", "BinaryOp(op=Xor,left=Int(2),right=Int(1),),");
+    test_single_function_parsing("2 << 1", "BinaryOp(op=ShiftLeft,left=Int(2),right=Int(1),),");
+    test_single_function_parsing("2 >> 1", "BinaryOp(op=ShiftRight,left=Int(2),right=Int(1),),");
+    test_single_function_parsing("10 == 0", "BinaryOp(op=Equal,left=Int(10),right=Int(0),),");
+    test_single_function_parsing("10 == 5", "BinaryOp(op=Equal,left=Int(10),right=Int(5),),");
+    test_single_function_parsing("10 != 5", "BinaryOp(op=NotEqual,left=Int(10),right=Int(5),),");
+    test_single_function_parsing("10 < 5", "BinaryOp(op=LessThan,left=Int(10),right=Int(5),),");
+    test_single_function_parsing("10 <= 5", "BinaryOp(op=LessThanEqual,left=Int(10),right=Int(5),),");
+    test_single_function_parsing("10 > 5", "BinaryOp(op=GreaterThan,left=Int(10),right=Int(5),),");
+    test_single_function_parsing("10 >= 5", "BinaryOp(op=GreaterThanEqual,left=Int(10),right=Int(5),),");
 }
 
 // TODO: ROTL
 // TODO: ROTR
 
-//---------//
-// ITESTOP //
-//---------//
-
 #[test]
-fn test_parse_equal_zero() {
-    let tokens = tokenize("def start(): 10 == 0");
-    let ast = parse(tokens);
-    assert_eq!(
-        ast_string(&ast),
-        r#"
-Ast([
-    Function(
-        name=start,
-        arguments=[
-        ],
-        body=[
-            BinaryOp(
-                op=Equal,
-                left=Int(10),
-                right=Int(0),
-            ),
-        ]
-    ),
-])
-"#
-    );
+fn test_parse_simple_functions() {
+    test_single_function_parsing("0", "Int(0),");
+    test_single_function_parsing("3 + 5 * 10","BinaryOp(op=Add,left=Int(3),right=BinaryOp(op=Multiply,left=Int(5),right=Int(10),),),");
+    test_single_function_parsing("3 * 5 + 10","BinaryOp(op=Add,left=BinaryOp(op=Multiply,left=Int(3),right=Int(5),),right=Int(10),),");
+    test_single_function_parsing("3 * (5 + 10)","BinaryOp(op=Multiply,left=Int(3),right=Grouping(BinaryOp(op=Add,left=Int(5),right=Int(10),),),),");
+    test_single_function_parsing(r#"x = 5
+                                    y = 20
+                                    x + y"#,
+                                 r#"Assign( name=x, value=Int(5),),
+                                    Assign( name=y, value=Int(20),),
+                                    BinaryOp( op=Add, left=Symbol(x), right=Symbol(y),),"#)
 }
 
-//--------//
-// IRELOP //
-//--------//
-
-#[test]
-fn test_parse_equal() {
-    let tokens = tokenize("def start(): 10 == 5");
-    let ast = parse(tokens);
-    assert_eq!(
-        ast_string(&ast),
-        r#"
-Ast([
-    Function(
-        name=start,
-        arguments=[
-        ],
-        body=[
-            BinaryOp(
-                op=Equal,
-                left=Int(10),
-                right=Int(5),
-            ),
-        ]
-    ),
-])
-"#
-    );
-}
-
-#[test]
-fn test_parse_not_equal() {
-    let tokens = tokenize("def start(): 10 != 5");
-    let ast = parse(tokens);
-    assert_eq!(
-        ast_string(&ast),
-        r#"
-Ast([
-    Function(
-        name=start,
-        arguments=[
-        ],
-        body=[
-            BinaryOp(
-                op=NotEqual,
-                left=Int(10),
-                right=Int(5),
-            ),
-        ]
-    ),
-])
-"#
-    );
-}
-
-#[test]
-fn test_parse_less_than_signed() {
-    let tokens = tokenize("def start(): 10 < 5");
-    let ast = parse(tokens);
-    assert_eq!(
-        ast_string(&ast),
-        r#"
-Ast([
-    Function(
-        name=start,
-        arguments=[
-        ],
-        body=[
-            BinaryOp(
-                op=LessThan,
-                left=Int(10),
-                right=Int(5),
-            ),
-        ]
-    ),
-])
-"#
-    );
-}
-
-#[test]
-fn test_parse_greater_than_signed() {
-    let tokens = tokenize("def start(): 10 > 5");
-    let ast = parse(tokens);
-    assert_eq!(
-        ast_string(&ast),
-        r#"
-Ast([
-    Function(
-        name=start,
-        arguments=[
-        ],
-        body=[
-            BinaryOp(
-                op=GreaterThan,
-                left=Int(10),
-                right=Int(5),
-            ),
-        ]
-    ),
-])
-"#
-    );
-}
-
-#[test]
-fn test_parse_less_than_equal_signed() {
-    let tokens = tokenize("def start(): 10 <= 5");
-    let ast = parse(tokens);
-    assert_eq!(
-        ast_string(&ast),
-        r#"
-Ast([
-    Function(
-        name=start,
-        arguments=[
-        ],
-        body=[
-            BinaryOp(
-                op=LessThanEqual,
-                left=Int(10),
-                right=Int(5),
-            ),
-        ]
-    ),
-])
-"#
-    );
-}
-
-#[test]
-fn test_parse_greater_than_equal_signed() {
-    let tokens = tokenize("def start(): 10 >= 5");
-    let ast = parse(tokens);
-    assert_eq!(
-        ast_string(&ast),
-        r#"
-Ast([
-    Function(
-        name=start,
-        arguments=[
-        ],
-        body=[
-            BinaryOp(
-                op=GreaterThanEqual,
-                left=Int(10),
-                right=Int(5),
-            ),
-        ]
-    ),
-])
-"#
-    );
-}
-
-// TODO: LT_u
-// TODO: GT_u
-// TODO: LE_u
-// TODO: GE_u
-
-//-------//
-// OTHER //
-//-------//
-
-#[test]
-fn test_parse_add_then_multiply() {
-    let tokens = tokenize("def start(): 3 + 5 * 10");
-    let ast = parse(tokens);
-    assert_eq!(
-        ast_string(&ast),
-        r#"
-Ast([
-    Function(
-        name=start,
-        arguments=[
-        ],
-        body=[
-            BinaryOp(
-                op=Add,
-                left=Int(3),
-                right=BinaryOp(
-                    op=Multiply,
-                    left=Int(5),
-                    right=Int(10),
-                ),
-            ),
-        ]
-    ),
-])
-"#
-    );
-}
-
-#[test]
-fn test_parse_multiply_then_add() {
-    let tokens = tokenize("def start(): 3 * 5 + 10");
-    let ast = parse(tokens);
-    assert_eq!(
-        ast_string(&ast),
-        r#"
-Ast([
-    Function(
-        name=start,
-        arguments=[
-        ],
-        body=[
-            BinaryOp(
-                op=Add,
-                left=BinaryOp(
-                    op=Multiply,
-                    left=Int(3),
-                    right=Int(5),
-                ),
-                right=Int(10),
-            ),
-        ]
-    ),
-])
-"#
-    );
-}
-
-#[test]
-fn test_parse_multiply_then_grouped_add() {
-    let tokens = tokenize("def start(): 3 * (5 + 10)");
-    let ast = parse(tokens);
-    assert_eq!(
-        ast_string(&ast),
-        r#"
-Ast([
-    Function(
-        name=start,
-        arguments=[
-        ],
-        body=[
-            BinaryOp(
-                op=Multiply,
-                left=Int(3),
-                right=Grouping(
-                    BinaryOp(
-                        op=Add,
-                        left=Int(5),
-                        right=Int(10),
-                    ),
-                ),
-            ),
-        ]
-    ),
-])
-"#
-    );
-}
-
-#[test]
-fn test_parse_local_variables() {
-    let source = r#"
- def start():
-     x = 5
-     y = 20
-     x + y"#;
-    let tokens = tokenize(source);
-    let ast = parse(tokens);
-    assert_eq!(
-        ast_string(&ast),
-        r#"
-Ast([
-    Function(
-        name=start,
-        arguments=[
-        ],
-        body=[
-            Assign(
-                name=x,
-                value=Int(5),
-            ),
-            Assign(
-                name=y,
-                value=Int(20),
-            ),
-            BinaryOp(
-                op=Add,
-                left=Symbol(x),
-                right=Symbol(y),
-            ),
-        ]
-    ),
-])
-"#
-    );
-}
+//--------------------//
+// COMPLEX OPERATIONS //
+//--------------------//
 
 #[test]
 fn test_parse_multiple_functions() {
