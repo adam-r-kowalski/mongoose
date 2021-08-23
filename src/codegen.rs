@@ -106,7 +106,7 @@ fn codegen_binary_op(
         parser::BinaryOp::Equal => Instruction::I64Eq,
         parser::BinaryOp::NotEqual => Instruction::I64Neq,
         parser::BinaryOp::LessThan => Instruction::I64LtS,
-        parser::BinaryOp::LessThanEqual => Instruction::I64LtS,
+        parser::BinaryOp::LessThanEqual => Instruction::I64LeS,
         parser::BinaryOp::GreaterThan => Instruction::I64GtS,
         parser::BinaryOp::GreaterThanEqual => Instruction::I64GeS,
     };

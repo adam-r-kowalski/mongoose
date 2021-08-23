@@ -274,12 +274,172 @@ fn test_codegen_shift_right_signed() {
 // IRELOP //
 //--------//
 
-// TODO: EQ
-// TODO: NE
-// TODO: LT_sx
-// TODO: GT_sx
-// TODO: LE_sx
-// TODO: GE_sx
+#[test]
+fn test_codegen_equal() {
+    let tokens = tokenize("def start(): if 8 == 1: 1 else: 0");
+    let ast = parse(tokens);
+    let wasm = codegen(ast);
+    let code = write(wasm);
+    assert_eq!(
+        code,
+        r#"
+(module
+
+  (func $start (result i64)
+    (i64.const 8)
+    (i64.const 1)
+    i64.eq
+    if (result i64)
+    (i64.const 1)
+    else
+    (i64.const 0)
+    end)
+
+  (export "_start" (func $start)))
+"#
+    );
+    assert_eq!(run(&code), Value::I64(0));
+}
+
+#[test]
+fn test_codegen_not_equal() {
+    let tokens = tokenize("def start(): if 8 != 1: 1 else: 0");
+    let ast = parse(tokens);
+    let wasm = codegen(ast);
+    let code = write(wasm);
+    assert_eq!(
+        code,
+        r#"
+(module
+
+  (func $start (result i64)
+    (i64.const 8)
+    (i64.const 1)
+    i64.ne
+    if (result i64)
+    (i64.const 1)
+    else
+    (i64.const 0)
+    end)
+
+  (export "_start" (func $start)))
+"#
+    );
+    assert_eq!(run(&code), Value::I64(1));
+}
+
+#[test]
+fn test_codegen_less_than() {
+    let tokens = tokenize("def start(): if 8 < 1: 1 else: 0");
+    let ast = parse(tokens);
+    let wasm = codegen(ast);
+    let code = write(wasm);
+    assert_eq!(
+        code,
+        r#"
+(module
+
+  (func $start (result i64)
+    (i64.const 8)
+    (i64.const 1)
+    i64.lt_s
+    if (result i64)
+    (i64.const 1)
+    else
+    (i64.const 0)
+    end)
+
+  (export "_start" (func $start)))
+"#
+    );
+    assert_eq!(run(&code), Value::I64(0));
+}
+
+#[test]
+fn test_codegen_less_than_equal() {
+    let tokens = tokenize("def start(): if 8 <= 1: 1 else: 0");
+    let ast = parse(tokens);
+    let wasm = codegen(ast);
+    let code = write(wasm);
+    assert_eq!(
+        code,
+        r#"
+(module
+
+  (func $start (result i64)
+    (i64.const 8)
+    (i64.const 1)
+    i64.le_s
+    if (result i64)
+    (i64.const 1)
+    else
+    (i64.const 0)
+    end)
+
+  (export "_start" (func $start)))
+"#
+    );
+    assert_eq!(run(&code), Value::I64(0));
+}
+
+#[test]
+fn test_codegen_greater_than() {
+    let tokens = tokenize("def start(): if 8 > 1: 1 else: 0");
+    let ast = parse(tokens);
+    let wasm = codegen(ast);
+    let code = write(wasm);
+    assert_eq!(
+        code,
+        r#"
+(module
+
+  (func $start (result i64)
+    (i64.const 8)
+    (i64.const 1)
+    i64.gt_s
+    if (result i64)
+    (i64.const 1)
+    else
+    (i64.const 0)
+    end)
+
+  (export "_start" (func $start)))
+"#
+    );
+    assert_eq!(run(&code), Value::I64(1));
+}
+
+#[test]
+fn test_codegen_greater_than_equal() {
+    let tokens = tokenize("def start(): if 8 >= 1: 1 else: 0");
+    let ast = parse(tokens);
+    let wasm = codegen(ast);
+    let code = write(wasm);
+    assert_eq!(
+        code,
+        r#"
+(module
+
+  (func $start (result i64)
+    (i64.const 8)
+    (i64.const 1)
+    i64.ge_s
+    if (result i64)
+    (i64.const 1)
+    else
+    (i64.const 0)
+    end)
+
+  (export "_start" (func $start)))
+"#
+    );
+    assert_eq!(run(&code), Value::I64(1));
+}
+
+// TODO: LT_u
+// TODO: GT_u
+// TODO: LE_u
+// TODO: GE_u
 
 //-------//
 // OTHER //
