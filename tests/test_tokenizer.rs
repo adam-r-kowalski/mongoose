@@ -48,24 +48,29 @@ fn token_string_impl(top_level: &TopLevel, token: usize, output: String) -> Stri
         Some(Kind::RightParen) => token_string_literal(top_level, token, output, "RightParen"),
         Some(Kind::Plus) => token_string_literal(top_level, token, output, "Plus"),
         Some(Kind::Minus) => token_string_literal(top_level, token, output, "Minus"),
-        Some(Kind::Asterisk) => token_string_literal(top_level, token, output, "Times"),
+        Some(Kind::Asterisk) => token_string_literal(top_level, token, output, "Asterisk"),
         Some(Kind::Slash) => token_string_literal(top_level, token, output, "Slash"),
         Some(Kind::Percent) => token_string_literal(top_level, token, output, "Percent"),
         Some(Kind::Colon) => token_string_literal(top_level, token, output, "Colon"),
         Some(Kind::Equal) => token_string_literal(top_level, token, output, "Equal"),
         Some(Kind::EqualEqual) => token_string_literal(top_level, token, output, "EqualEqual"),
-        Some(Kind::Exclamation) => token_string_literal(top_level, token, output, "Exclamation"),
-        Some(Kind::ExclamationEqual) => token_string_literal(top_level, token, output, "ExclamationEqual"),
-        Some(Kind::And) => token_string_literal(top_level, token, output, "And"),
-        Some(Kind::Or) => token_string_literal(top_level, token, output, "Or"),
-        Some(Kind::Xor) => token_string_literal(top_level, token, output, "Xor"),
+        Some(Kind::ExclamationEqual) => {
+            token_string_literal(top_level, token, output, "ExclamationEqual")
+        }
+        Some(Kind::Ampersand) => token_string_literal(top_level, token, output, "Ampersand"),
+        Some(Kind::VerticalBar) => token_string_literal(top_level, token, output, "VerticalBar"),
+        Some(Kind::Caret) => token_string_literal(top_level, token, output, "Caret"),
         Some(Kind::LessThan) => token_string_literal(top_level, token, output, "LessThan"),
-        Some(Kind::LessThanEqual) => token_string_literal(top_level, token, output, "LessThanEqual"),
+        Some(Kind::LessThanEqual) => {
+            token_string_literal(top_level, token, output, "LessThanEqual")
+        }
         Some(Kind::LessThanLessThan) => {
             token_string_literal(top_level, token, output, "LessThanLessThan")
         }
         Some(Kind::GreaterThan) => token_string_literal(top_level, token, output, "GreaterThan"),
-        Some(Kind::GreaterThanEqual) => token_string_literal(top_level, token, output, "GreaterThanEqual"),
+        Some(Kind::GreaterThanEqual) => {
+            token_string_literal(top_level, token, output, "GreaterThanEqual")
+        }
         Some(Kind::GreaterThanGreaterThan) => {
             token_string_literal(top_level, token, output, "GreaterThanGreaterThan")
         }
@@ -115,10 +120,6 @@ Tokens([
 "#
     );
 }
-
-//-------//
-// IUNOP //
-//-------//
 
 #[test]
 fn test_tokenize_add() {
@@ -178,7 +179,7 @@ Tokens([
         RightParen,
         Colon,
         Int(5),
-        Times,
+        Asterisk,
         Int(10),
     ]),
 ])
@@ -244,7 +245,7 @@ Tokens([
         RightParen,
         Colon,
         Int(2),
-        And,
+        Ampersand,
         Int(1),
     ]),
 ])
@@ -266,7 +267,7 @@ Tokens([
         RightParen,
         Colon,
         Int(2),
-        Or,
+        VerticalBar,
         Int(1),
     ]),
 ])
@@ -288,7 +289,7 @@ Tokens([
         RightParen,
         Colon,
         Int(2),
-        Xor,
+        Caret,
         Int(1),
     ]),
 ])
@@ -339,40 +340,6 @@ Tokens([
 "#
     );
 }
-
-// TODO: SHR_u
-// TODO: ROTL
-// TODO: ROTR
-
-//---------//
-// ITESTOP //
-//---------//
-
-#[test]
-fn test_tokenize_equal_zero() {
-    let tokens = tokenize("def start(): 10 == 0");
-    assert_eq!(
-        token_string(&tokens),
-        r#"
-Tokens([
-    TopLevel([
-        Def,
-        Symbol(start),
-        LeftParen,
-        RightParen,
-        Colon,
-        Int(10),
-        EqualEqual,
-        Int(0),
-    ]),
-])
-"#
-    );
-}
-
-//--------//
-// IRELOP //
-//--------//
 
 #[test]
 fn test_tokenize_equal() {
@@ -440,8 +407,6 @@ Tokens([
     );
 }
 
-// TODO: LT_u
-
 #[test]
 fn test_tokenize_greater_than_signed() {
     let tokens = tokenize("def start(): 10 > 5");
@@ -463,8 +428,6 @@ Tokens([
 "#
     );
 }
-
-// TODO: GT_u
 
 #[test]
 fn test_tokenize_less_than_or_equal_signed() {
@@ -488,8 +451,6 @@ Tokens([
     );
 }
 
-// TODO: LE_u
-
 #[test]
 fn test_tokenize_greater_than_or_equal_signed() {
     let tokens = tokenize("def start(): 10 >= 5");
@@ -511,12 +472,6 @@ Tokens([
 "#
     );
 }
-
-// TODO: GE_u
-
-//-------//
-// OTHER //
-//-------//
 
 #[test]
 fn test_tokenize_local_variables() {
@@ -578,7 +533,7 @@ Tokens([
         RightParen,
         Colon,
         Symbol(x),
-        Times,
+        Asterisk,
         Symbol(x),
     ]),
     TopLevel([
@@ -764,7 +719,7 @@ Tokens([
         RightParen,
         Colon,
         Symbol(x),
-        Times,
+        Asterisk,
         Symbol(x),
     ]),
     TopLevel([
