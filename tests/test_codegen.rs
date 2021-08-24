@@ -123,6 +123,300 @@ fn test_codegen_divide() {
 }
 
 #[test]
+fn test_codegen_modulo_signed() {
+    let tokens = tokenize("def start(): 7 % 5");
+    let ast = parse(tokens);
+    let wasm = codegen(ast);
+    let code = write(wasm);
+    assert_eq!(
+        code,
+        r#"
+(module
+
+  (func $start (result i64)
+    (i64.const 7)
+    (i64.const 5)
+    i64.rem_s)
+
+  (export "_start" (func $start)))
+"#
+    );
+    assert_eq!(run(&code), Value::I64(2));
+}
+
+#[test]
+fn test_codegen_and() {
+    let tokens = tokenize("def start(): 7 & 5");
+    let ast = parse(tokens);
+    let wasm = codegen(ast);
+    let code = write(wasm);
+    assert_eq!(
+        code,
+        r#"
+(module
+
+  (func $start (result i64)
+    (i64.const 7)
+    (i64.const 5)
+    i64.and)
+
+  (export "_start" (func $start)))
+"#
+    );
+    assert_eq!(run(&code), Value::I64(5));
+}
+
+#[test]
+fn test_codegen_or() {
+    let tokens = tokenize("def start(): 7 | 5");
+    let ast = parse(tokens);
+    let wasm = codegen(ast);
+    let code = write(wasm);
+    assert_eq!(
+        code,
+        r#"
+(module
+
+  (func $start (result i64)
+    (i64.const 7)
+    (i64.const 5)
+    i64.or)
+
+  (export "_start" (func $start)))
+"#
+    );
+    assert_eq!(run(&code), Value::I64(7));
+}
+
+#[test]
+fn test_codegen_xor() {
+    let tokens = tokenize("def start(): 7 ^ 5");
+    let ast = parse(tokens);
+    let wasm = codegen(ast);
+    let code = write(wasm);
+    assert_eq!(
+        code,
+        r#"
+(module
+
+  (func $start (result i64)
+    (i64.const 7)
+    (i64.const 5)
+    i64.xor)
+
+  (export "_start" (func $start)))
+"#
+    );
+    assert_eq!(run(&code), Value::I64(2));
+}
+
+#[test]
+fn test_codegen_shift_left() {
+    let tokens = tokenize("def start(): 2 << 1");
+    let ast = parse(tokens);
+    let wasm = codegen(ast);
+    let code = write(wasm);
+    assert_eq!(
+        code,
+        r#"
+(module
+
+  (func $start (result i64)
+    (i64.const 2)
+    (i64.const 1)
+    i64.shl)
+
+  (export "_start" (func $start)))
+"#
+    );
+    assert_eq!(run(&code), Value::I64(4));
+}
+
+#[test]
+fn test_codegen_shift_right_signed() {
+    let tokens = tokenize("def start(): 8 >> 1");
+    let ast = parse(tokens);
+    let wasm = codegen(ast);
+    let code = write(wasm);
+    assert_eq!(
+        code,
+        r#"
+(module
+
+  (func $start (result i64)
+    (i64.const 8)
+    (i64.const 1)
+    i64.shr_s)
+
+  (export "_start" (func $start)))
+"#
+    );
+    assert_eq!(run(&code), Value::I64(4));
+}
+
+#[test]
+fn test_codegen_equal() {
+    let tokens = tokenize("def start(): if 8 == 1: 1 else: 0");
+    let ast = parse(tokens);
+    let wasm = codegen(ast);
+    let code = write(wasm);
+    assert_eq!(
+        code,
+        r#"
+(module
+
+  (func $start (result i64)
+    (i64.const 8)
+    (i64.const 1)
+    i64.eq
+    if (result i64)
+    (i64.const 1)
+    else
+    (i64.const 0)
+    end)
+
+  (export "_start" (func $start)))
+"#
+    );
+    assert_eq!(run(&code), Value::I64(0));
+}
+
+#[test]
+fn test_codegen_not_equal() {
+    let tokens = tokenize("def start(): if 8 != 1: 1 else: 0");
+    let ast = parse(tokens);
+    let wasm = codegen(ast);
+    let code = write(wasm);
+    assert_eq!(
+        code,
+        r#"
+(module
+
+  (func $start (result i64)
+    (i64.const 8)
+    (i64.const 1)
+    i64.ne
+    if (result i64)
+    (i64.const 1)
+    else
+    (i64.const 0)
+    end)
+
+  (export "_start" (func $start)))
+"#
+    );
+    assert_eq!(run(&code), Value::I64(1));
+}
+
+#[test]
+fn test_codegen_less_than() {
+    let tokens = tokenize("def start(): if 8 < 1: 1 else: 0");
+    let ast = parse(tokens);
+    let wasm = codegen(ast);
+    let code = write(wasm);
+    assert_eq!(
+        code,
+        r#"
+(module
+
+  (func $start (result i64)
+    (i64.const 8)
+    (i64.const 1)
+    i64.lt_s
+    if (result i64)
+    (i64.const 1)
+    else
+    (i64.const 0)
+    end)
+
+  (export "_start" (func $start)))
+"#
+    );
+    assert_eq!(run(&code), Value::I64(0));
+}
+
+#[test]
+fn test_codegen_less_than_equal() {
+    let tokens = tokenize("def start(): if 8 <= 1: 1 else: 0");
+    let ast = parse(tokens);
+    let wasm = codegen(ast);
+    let code = write(wasm);
+    assert_eq!(
+        code,
+        r#"
+(module
+
+  (func $start (result i64)
+    (i64.const 8)
+    (i64.const 1)
+    i64.le_s
+    if (result i64)
+    (i64.const 1)
+    else
+    (i64.const 0)
+    end)
+
+  (export "_start" (func $start)))
+"#
+    );
+    assert_eq!(run(&code), Value::I64(0));
+}
+
+#[test]
+fn test_codegen_greater_than() {
+    let tokens = tokenize("def start(): if 8 > 1: 1 else: 0");
+    let ast = parse(tokens);
+    let wasm = codegen(ast);
+    let code = write(wasm);
+    assert_eq!(
+        code,
+        r#"
+(module
+
+  (func $start (result i64)
+    (i64.const 8)
+    (i64.const 1)
+    i64.gt_s
+    if (result i64)
+    (i64.const 1)
+    else
+    (i64.const 0)
+    end)
+
+  (export "_start" (func $start)))
+"#
+    );
+    assert_eq!(run(&code), Value::I64(1));
+}
+
+#[test]
+fn test_codegen_greater_than_equal() {
+    let tokens = tokenize("def start(): if 8 >= 1: 1 else: 0");
+    let ast = parse(tokens);
+    let wasm = codegen(ast);
+    let code = write(wasm);
+    assert_eq!(
+        code,
+        r#"
+(module
+
+  (func $start (result i64)
+    (i64.const 8)
+    (i64.const 1)
+    i64.ge_s
+    if (result i64)
+    (i64.const 1)
+    else
+    (i64.const 0)
+    end)
+
+  (export "_start" (func $start)))
+"#
+    );
+    assert_eq!(run(&code), Value::I64(1));
+}
+
+#[test]
 fn test_codegen_add_then_multiply() {
     let tokens = tokenize("def start(): 3 + 5 * 10");
     let ast = parse(tokens);
@@ -320,28 +614,6 @@ def start():
 "#
     );
     assert_eq!(run(&code), Value::I64(5));
-}
-
-#[test]
-fn test_codegen_shift_left() {
-    let tokens = tokenize("def start(): 2 << 1");
-    let ast = parse(tokens);
-    let wasm = codegen(ast);
-    let code = write(wasm);
-    assert_eq!(
-        code,
-        r#"
-(module
-
-  (func $start (result i64)
-    (i64.const 2)
-    (i64.const 1)
-    i64.shl)
-
-  (export "_start" (func $start)))
-"#
-    );
-    assert_eq!(run(&code), Value::I64(4));
 }
 
 #[test]

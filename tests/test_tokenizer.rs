@@ -48,18 +48,34 @@ fn token_string_impl(top_level: &TopLevel, token: usize, output: String) -> Stri
         Some(Kind::RightParen) => token_string_literal(top_level, token, output, "RightParen"),
         Some(Kind::Plus) => token_string_literal(top_level, token, output, "Plus"),
         Some(Kind::Minus) => token_string_literal(top_level, token, output, "Minus"),
-        Some(Kind::Asterisk) => token_string_literal(top_level, token, output, "Times"),
+        Some(Kind::Asterisk) => token_string_literal(top_level, token, output, "Asterisk"),
         Some(Kind::Slash) => token_string_literal(top_level, token, output, "Slash"),
         Some(Kind::Percent) => token_string_literal(top_level, token, output, "Percent"),
         Some(Kind::Colon) => token_string_literal(top_level, token, output, "Colon"),
         Some(Kind::Equal) => token_string_literal(top_level, token, output, "Equal"),
         Some(Kind::EqualEqual) => token_string_literal(top_level, token, output, "EqualEqual"),
-        Some(Kind::Comma) => token_string_literal(top_level, token, output, "Comma"),
-        Some(Kind::If) => token_string_literal(top_level, token, output, "If"),
+        Some(Kind::ExclamationEqual) => {
+            token_string_literal(top_level, token, output, "ExclamationEqual")
+        }
+        Some(Kind::Ampersand) => token_string_literal(top_level, token, output, "Ampersand"),
+        Some(Kind::VerticalBar) => token_string_literal(top_level, token, output, "VerticalBar"),
+        Some(Kind::Caret) => token_string_literal(top_level, token, output, "Caret"),
         Some(Kind::LessThan) => token_string_literal(top_level, token, output, "LessThan"),
+        Some(Kind::LessThanEqual) => {
+            token_string_literal(top_level, token, output, "LessThanEqual")
+        }
         Some(Kind::LessThanLessThan) => {
             token_string_literal(top_level, token, output, "LessThanLessThan")
         }
+        Some(Kind::GreaterThan) => token_string_literal(top_level, token, output, "GreaterThan"),
+        Some(Kind::GreaterThanEqual) => {
+            token_string_literal(top_level, token, output, "GreaterThanEqual")
+        }
+        Some(Kind::GreaterThanGreaterThan) => {
+            token_string_literal(top_level, token, output, "GreaterThanGreaterThan")
+        }
+        Some(Kind::Comma) => token_string_literal(top_level, token, output, "Comma"),
+        Some(Kind::If) => token_string_literal(top_level, token, output, "If"),
         Some(Kind::Else) => token_string_literal(top_level, token, output, "Else"),
         Some(Kind::While) => token_string_literal(top_level, token, output, "While"),
         Some(Kind::Dot) => token_string_literal(top_level, token, output, "Dot"),
@@ -163,7 +179,7 @@ Tokens([
         RightParen,
         Colon,
         Int(5),
-        Times,
+        Asterisk,
         Int(10),
     ]),
 ])
@@ -216,7 +232,117 @@ Tokens([
 }
 
 #[test]
-fn test_tokenize_compare() {
+fn test_tokenize_bitwise_and() {
+    let tokens = tokenize("def start(): 2 & 1");
+    assert_eq!(
+        token_string(&tokens),
+        r#"
+Tokens([
+    TopLevel([
+        Def,
+        Symbol(start),
+        LeftParen,
+        RightParen,
+        Colon,
+        Int(2),
+        Ampersand,
+        Int(1),
+    ]),
+])
+"#
+    );
+}
+
+#[test]
+fn test_tokenize_bitwise_or() {
+    let tokens = tokenize("def start(): 2 | 1");
+    assert_eq!(
+        token_string(&tokens),
+        r#"
+Tokens([
+    TopLevel([
+        Def,
+        Symbol(start),
+        LeftParen,
+        RightParen,
+        Colon,
+        Int(2),
+        VerticalBar,
+        Int(1),
+    ]),
+])
+"#
+    );
+}
+
+#[test]
+fn test_tokenize_bitwise_xor() {
+    let tokens = tokenize("def start(): 2 ^ 1");
+    assert_eq!(
+        token_string(&tokens),
+        r#"
+Tokens([
+    TopLevel([
+        Def,
+        Symbol(start),
+        LeftParen,
+        RightParen,
+        Colon,
+        Int(2),
+        Caret,
+        Int(1),
+    ]),
+])
+"#
+    );
+}
+
+#[test]
+fn test_tokenize_shift_left() {
+    let tokens = tokenize("def start(): 2 << 1");
+    assert_eq!(
+        token_string(&tokens),
+        r#"
+Tokens([
+    TopLevel([
+        Def,
+        Symbol(start),
+        LeftParen,
+        RightParen,
+        Colon,
+        Int(2),
+        LessThanLessThan,
+        Int(1),
+    ]),
+])
+"#
+    );
+}
+
+#[test]
+fn test_tokenize_shift_right_signed() {
+    let tokens = tokenize("def start(): 8 >> 1");
+    assert_eq!(
+        token_string(&tokens),
+        r#"
+Tokens([
+    TopLevel([
+        Def,
+        Symbol(start),
+        LeftParen,
+        RightParen,
+        Colon,
+        Int(8),
+        GreaterThanGreaterThan,
+        Int(1),
+    ]),
+])
+"#
+    );
+}
+
+#[test]
+fn test_tokenize_equal() {
     let tokens = tokenize("def start(): 10 == 5");
     assert_eq!(
         token_string(&tokens),
@@ -230,6 +356,116 @@ Tokens([
         Colon,
         Int(10),
         EqualEqual,
+        Int(5),
+    ]),
+])
+"#
+    );
+}
+
+#[test]
+fn test_tokenize_not_equal() {
+    let tokens = tokenize("def start(): 10 != 5");
+    assert_eq!(
+        token_string(&tokens),
+        r#"
+Tokens([
+    TopLevel([
+        Def,
+        Symbol(start),
+        LeftParen,
+        RightParen,
+        Colon,
+        Int(10),
+        ExclamationEqual,
+        Int(5),
+    ]),
+])
+"#
+    );
+}
+
+#[test]
+fn test_tokenize_less_than_signed() {
+    let tokens = tokenize("def start(): 10 < 5");
+    assert_eq!(
+        token_string(&tokens),
+        r#"
+Tokens([
+    TopLevel([
+        Def,
+        Symbol(start),
+        LeftParen,
+        RightParen,
+        Colon,
+        Int(10),
+        LessThan,
+        Int(5),
+    ]),
+])
+"#
+    );
+}
+
+#[test]
+fn test_tokenize_greater_than_signed() {
+    let tokens = tokenize("def start(): 10 > 5");
+    assert_eq!(
+        token_string(&tokens),
+        r#"
+Tokens([
+    TopLevel([
+        Def,
+        Symbol(start),
+        LeftParen,
+        RightParen,
+        Colon,
+        Int(10),
+        GreaterThan,
+        Int(5),
+    ]),
+])
+"#
+    );
+}
+
+#[test]
+fn test_tokenize_less_than_or_equal_signed() {
+    let tokens = tokenize("def start(): 10 <= 5");
+    assert_eq!(
+        token_string(&tokens),
+        r#"
+Tokens([
+    TopLevel([
+        Def,
+        Symbol(start),
+        LeftParen,
+        RightParen,
+        Colon,
+        Int(10),
+        LessThanEqual,
+        Int(5),
+    ]),
+])
+"#
+    );
+}
+
+#[test]
+fn test_tokenize_greater_than_or_equal_signed() {
+    let tokens = tokenize("def start(): 10 >= 5");
+    assert_eq!(
+        token_string(&tokens),
+        r#"
+Tokens([
+    TopLevel([
+        Def,
+        Symbol(start),
+        LeftParen,
+        RightParen,
+        Colon,
+        Int(10),
+        GreaterThanEqual,
         Int(5),
     ]),
 ])
@@ -297,7 +533,7 @@ Tokens([
         RightParen,
         Colon,
         Symbol(x),
-        Times,
+        Asterisk,
         Symbol(x),
     ]),
     TopLevel([
@@ -381,28 +617,6 @@ Tokens([
         Colon,
         Indent(4),
         Symbol(y),
-    ]),
-])
-"#
-    );
-}
-
-#[test]
-fn test_tokenize_shift_left() {
-    let tokens = tokenize("def start(): 2 << 1");
-    assert_eq!(
-        token_string(&tokens),
-        r#"
-Tokens([
-    TopLevel([
-        Def,
-        Symbol(start),
-        LeftParen,
-        RightParen,
-        Colon,
-        Int(2),
-        LessThanLessThan,
-        Int(1),
     ]),
 ])
 "#
@@ -505,7 +719,7 @@ Tokens([
         RightParen,
         Colon,
         Symbol(x),
-        Times,
+        Asterisk,
         Symbol(x),
     ]),
     TopLevel([
