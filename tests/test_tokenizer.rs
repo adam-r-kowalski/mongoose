@@ -59,6 +59,9 @@ fn token_string_impl(top_level: &TopLevel, token: usize, output: String) -> Stri
         }
         Some(Kind::Ampersand) => token_string_literal(top_level, token, output, "Ampersand"),
         Some(Kind::VerticalBar) => token_string_literal(top_level, token, output, "VerticalBar"),
+        Some(Kind::VerticalBarGreaterThan) => {
+            token_string_literal(top_level, token, output, "VerticalBarGreaterThan")
+        }
         Some(Kind::Caret) => token_string_literal(top_level, token, output, "Caret"),
         Some(Kind::LessThan) => token_string_literal(top_level, token, output, "LessThan"),
         Some(Kind::LessThanEqual) => {
@@ -78,7 +81,6 @@ fn token_string_impl(top_level: &TopLevel, token: usize, output: String) -> Stri
         Some(Kind::If) => token_string_literal(top_level, token, output, "If"),
         Some(Kind::Else) => token_string_literal(top_level, token, output, "Else"),
         Some(Kind::While) => token_string_literal(top_level, token, output, "While"),
-        Some(Kind::Dot) => token_string_literal(top_level, token, output, "Dot"),
         Some(Kind::Symbol) => token_string_symbol(top_level, token, output),
         Some(Kind::Int) => token_string_int(top_level, token, output),
         Some(Kind::Indent) => token_string_indent(top_level, token, output),
@@ -700,11 +702,11 @@ Tokens([
 }
 
 #[test]
-fn test_parse_universal_function_call_syntax() {
+fn test_tokenize_pipeline() {
     let source = r#"
 def square(x): x * x
 
-def start(): 5.square().square()
+def start(): 5 |> square() |> square()
 "#;
     let tokens = tokenize(source);
     assert_eq!(
@@ -729,11 +731,11 @@ Tokens([
         RightParen,
         Colon,
         Int(5),
-        Dot,
+        VerticalBarGreaterThan,
         Symbol(square),
         LeftParen,
         RightParen,
-        Dot,
+        VerticalBarGreaterThan,
         Symbol(square),
         LeftParen,
         RightParen,

@@ -100,7 +100,7 @@ enum InfixParser {
     BinaryOp(Precedence, BinaryOp),
     Definition,
     FunctionCall,
-    DotFunctionCall,
+    Pipeline,
 }
 
 struct ParseResult(Function, Token, usize);
@@ -129,7 +129,7 @@ fn precedence_of(parser: &InfixParser) -> Precedence {
         InfixParser::BinaryOp(precedence, _) => *precedence,
         InfixParser::Definition => LOWEST,
         InfixParser::FunctionCall => HIGHEST,
-        InfixParser::DotFunctionCall => HIGHEST,
+        InfixParser::Pipeline => HIGHEST,
     }
 }
 
@@ -369,7 +369,7 @@ fn parse_function_call(
     ParseResult(func, token, entity)
 }
 
-fn parse_dot_function_call(
+fn parse_pipeline(
     func: Function,
     top_level: &tokenizer::TopLevel,
     token: Token,
@@ -438,7 +438,7 @@ fn infix_parser(kind: tokenizer::Kind) -> Option<InfixParser> {
         }
         tokenizer::Kind::Caret => Some(InfixParser::BinaryOp(BITWISE_XOR, BinaryOp::BitwiseXor)),
         tokenizer::Kind::LeftParen => Some(InfixParser::FunctionCall),
-        tokenizer::Kind::Dot => Some(InfixParser::DotFunctionCall),
+        tokenizer::Kind::VerticalBarGreaterThan => Some(InfixParser::Pipeline),
         _ => None,
     }
 }
@@ -456,7 +456,7 @@ fn run_infix_parser(
         }
         InfixParser::Definition => parse_assignment(func, top_level, token, left),
         InfixParser::FunctionCall => parse_function_call(func, top_level, token, left),
-        InfixParser::DotFunctionCall => parse_dot_function_call(func, top_level, token, left),
+        InfixParser::Pipeline => parse_pipeline(func, top_level, token, left),
     }
 }
 

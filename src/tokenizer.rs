@@ -15,6 +15,7 @@ pub enum Kind {
     ExclamationEqual,
     Ampersand,
     VerticalBar,
+    VerticalBarGreaterThan,
     Caret,
     LessThan,
     LessThanEqual,
@@ -28,7 +29,6 @@ pub enum Kind {
     If,
     Else,
     While,
-    Dot,
 }
 
 #[derive(Debug, PartialEq)]
@@ -83,6 +83,16 @@ fn tokenize_equal(mut top_level: TopLevel, source: &str) -> (TopLevel, &str) {
     let (length, kind) = match source.chars().skip(1).next() {
         Some('=') => (2, Kind::EqualEqual),
         _ => (1, Kind::Equal),
+    };
+    top_level.kinds.push(kind);
+    top_level.indices.push(0);
+    tokenize_top_level(top_level, &source[length..])
+}
+
+fn tokenize_vertical_bar(mut top_level: TopLevel, source: &str) -> (TopLevel, &str) {
+    let (length, kind) = match source.chars().skip(1).next() {
+        Some('>') => (2, Kind::VerticalBarGreaterThan),
+        _ => (1, Kind::VerticalBar),
     };
     top_level.kinds.push(kind);
     top_level.indices.push(0);
@@ -166,11 +176,10 @@ fn tokenize_top_level(top_level: TopLevel, source: &str) -> (TopLevel, &str) {
         Some('%') => tokenize_one(top_level, source, Kind::Percent),
         Some(',') => tokenize_one(top_level, source, Kind::Comma),
         Some(':') => tokenize_one(top_level, source, Kind::Colon),
-        Some('.') => tokenize_one(top_level, source, Kind::Dot),
         Some('=') => tokenize_equal(top_level, source),
         Some('&') => tokenize_one(top_level, source, Kind::Ampersand),
-        Some('|') => tokenize_one(top_level, source, Kind::VerticalBar),
         Some('^') => tokenize_one(top_level, source, Kind::Caret),
+        Some('|') => tokenize_vertical_bar(top_level, source),
         Some('!') => tokenize_exclamation(top_level, source),
         Some('<') => tokenize_less_than(top_level, source),
         Some('>') => tokenize_greater_than(top_level, source),
