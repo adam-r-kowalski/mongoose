@@ -101,6 +101,7 @@ enum InfixParser {
     Definition,
     FunctionCall,
     Pipeline,
+    NewLinePipeline,
 }
 
 struct ParseResult(Function, Token, usize);
@@ -130,6 +131,7 @@ fn precedence_of(parser: &InfixParser) -> Precedence {
         InfixParser::Definition => LOWEST,
         InfixParser::FunctionCall => HIGHEST,
         InfixParser::Pipeline => HIGHEST,
+        InfixParser::NewLinePipeline => HIGHEST,
     }
 }
 
@@ -400,47 +402,71 @@ fn parse_pipeline(
     ParseResult(func, token, entity)
 }
 
-fn infix_parser(kind: tokenizer::Kind) -> Option<InfixParser> {
-    match kind {
-        tokenizer::Kind::Plus => Some(InfixParser::BinaryOp(ADD, BinaryOp::Add)),
-        tokenizer::Kind::Minus => Some(InfixParser::BinaryOp(SUBTRACT, BinaryOp::Subtract)),
-        tokenizer::Kind::Asterisk => Some(InfixParser::BinaryOp(MULTIPLY, BinaryOp::Multiply)),
-        tokenizer::Kind::Slash => Some(InfixParser::BinaryOp(DIVIDE, BinaryOp::Divide)),
-        tokenizer::Kind::Percent => Some(InfixParser::BinaryOp(MODULO, BinaryOp::Modulo)),
-        tokenizer::Kind::LessThan => Some(InfixParser::BinaryOp(LESS_THAN, BinaryOp::LessThan)),
-        tokenizer::Kind::LessThanEqual => Some(InfixParser::BinaryOp(
-            LESS_THAN_EQUAL,
-            BinaryOp::LessThanEqual,
-        )),
-        tokenizer::Kind::LessThanLessThan => {
-            Some(InfixParser::BinaryOp(SHIFT_LEFT, BinaryOp::ShiftLeft))
-        }
-        tokenizer::Kind::GreaterThan => {
-            Some(InfixParser::BinaryOp(GREATER_THAN, BinaryOp::GreaterThan))
-        }
-        tokenizer::Kind::GreaterThanEqual => Some(InfixParser::BinaryOp(
-            GREATER_THAN_EQUAL,
-            BinaryOp::GreaterThanEqual,
-        )),
-        tokenizer::Kind::GreaterThanGreaterThan => {
-            Some(InfixParser::BinaryOp(SHIFT_RIGHT, BinaryOp::ShiftRight))
-        }
-        tokenizer::Kind::ExclamationEqual => {
-            Some(InfixParser::BinaryOp(NOT_EQUAL, BinaryOp::NotEqual))
-        }
-        tokenizer::Kind::EqualEqual => Some(InfixParser::BinaryOp(IS_EQUAL, BinaryOp::Equal)),
-        tokenizer::Kind::Equal => Some(InfixParser::Definition),
-        tokenizer::Kind::Ampersand => {
-            Some(InfixParser::BinaryOp(BITWISE_AND, BinaryOp::BitwiseAnd))
-        }
-        tokenizer::Kind::VerticalBar => {
-            Some(InfixParser::BinaryOp(BITWISE_OR, BinaryOp::BitwiseOr))
-        }
-        tokenizer::Kind::Caret => Some(InfixParser::BinaryOp(BITWISE_XOR, BinaryOp::BitwiseXor)),
-        tokenizer::Kind::LeftParen => Some(InfixParser::FunctionCall),
-        tokenizer::Kind::VerticalBarGreaterThan => Some(InfixParser::Pipeline),
-        _ => None,
-    }
+fn parse_new_line_pipeline(
+    func: Function,
+    top_level: &tokenizer::TopLevel,
+    token: Token,
+    first_parameter: usize,
+) -> ParseResult {
+    let token = consume(top_level, token, tokenizer::Kind::VerticalBarGreaterThan);
+    parse_pipeline(func, top_level, token, first_parameter)
+}
+
+fn infix_parser(top_level: &tokenizer::TopLevel, token: Token) -> Option<InfixParser> {
+    top_level
+        .kinds
+        .get(token.0)
+        .map(|kind| match kind {
+            tokenizer::Kind::Plus => Some(InfixParser::BinaryOp(ADD, BinaryOp::Add)),
+            tokenizer::Kind::Minus => Some(InfixParser::BinaryOp(SUBTRACT, BinaryOp::Subtract)),
+            tokenizer::Kind::Asterisk => Some(InfixParser::BinaryOp(MULTIPLY, BinaryOp::Multiply)),
+            tokenizer::Kind::Slash => Some(InfixParser::BinaryOp(DIVIDE, BinaryOp::Divide)),
+            tokenizer::Kind::Percent => Some(InfixParser::BinaryOp(MODULO, BinaryOp::Modulo)),
+            tokenizer::Kind::LessThan => Some(InfixParser::BinaryOp(LESS_THAN, BinaryOp::LessThan)),
+            tokenizer::Kind::LessThanEqual => Some(InfixParser::BinaryOp(
+                LESS_THAN_EQUAL,
+                BinaryOp::LessThanEqual,
+            )),
+            tokenizer::Kind::LessThanLessThan => {
+                Some(InfixParser::BinaryOp(SHIFT_LEFT, BinaryOp::ShiftLeft))
+            }
+            tokenizer::Kind::GreaterThan => {
+                Some(InfixParser::BinaryOp(GREATER_THAN, BinaryOp::GreaterThan))
+            }
+            tokenizer::Kind::GreaterThanEqual => Some(InfixParser::BinaryOp(
+                GREATER_THAN_EQUAL,
+                BinaryOp::GreaterThanEqual,
+            )),
+            tokenizer::Kind::GreaterThanGreaterThan => {
+                Some(InfixParser::BinaryOp(SHIFT_RIGHT, BinaryOp::ShiftRight))
+            }
+            tokenizer::Kind::ExclamationEqual => {
+                Some(InfixParser::BinaryOp(NOT_EQUAL, BinaryOp::NotEqual))
+            }
+            tokenizer::Kind::EqualEqual => Some(InfixParser::BinaryOp(IS_EQUAL, BinaryOp::Equal)),
+            tokenizer::Kind::Equal => Some(InfixParser::Definition),
+            tokenizer::Kind::Ampersand => {
+                Some(InfixParser::BinaryOp(BITWISE_AND, BinaryOp::BitwiseAnd))
+            }
+            tokenizer::Kind::VerticalBar => {
+                Some(InfixParser::BinaryOp(BITWISE_OR, BinaryOp::BitwiseOr))
+            }
+            tokenizer::Kind::Caret => {
+                Some(InfixParser::BinaryOp(BITWISE_XOR, BinaryOp::BitwiseXor))
+            }
+            tokenizer::Kind::LeftParen => Some(InfixParser::FunctionCall),
+            tokenizer::Kind::VerticalBarGreaterThan => Some(InfixParser::Pipeline),
+            tokenizer::Kind::Indent => top_level
+                .kinds
+                .get(token.0 + 1)
+                .map(|kind| match kind {
+                    tokenizer::Kind::VerticalBarGreaterThan => Some(InfixParser::NewLinePipeline),
+                    _ => None,
+                })
+                .flatten(),
+            _ => None,
+        })
+        .flatten()
 }
 
 fn run_infix_parser(
@@ -457,6 +483,7 @@ fn run_infix_parser(
         InfixParser::Definition => parse_assignment(func, top_level, token, left),
         InfixParser::FunctionCall => parse_function_call(func, top_level, token, left),
         InfixParser::Pipeline => parse_pipeline(func, top_level, token, left),
+        InfixParser::NewLinePipeline => parse_new_line_pipeline(func, top_level, token, left),
     }
 }
 
@@ -467,12 +494,7 @@ fn parse_right(
     left: usize,
     precedence: Precedence,
 ) -> ParseResult {
-    let parser = top_level
-        .kinds
-        .get(token.0)
-        .map(|&kind| infix_parser(kind))
-        .flatten();
-    match parser {
+    match infix_parser(top_level, token) {
         Some(parser) if precedence <= precedence_of(&parser) => {
             let ParseResult(func, token, left) =
                 run_infix_parser(parser, func, top_level, inc_token(token), left);
