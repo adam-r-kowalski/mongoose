@@ -6,3 +6,4 @@ def start():
     5 |> square
       |> min(20)
       |> square
+      |> square
