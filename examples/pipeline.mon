@@ -2,4 +2,7 @@ def square(x): x * x
 
 def min(x, y): if x < y: x else: y
 
-def start(): 5 |> square |> min(20) |> square
+def start():
+    5 |> square
+      |> min(20)
+      |> square
