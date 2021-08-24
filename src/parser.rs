@@ -27,9 +27,9 @@ pub enum BinaryOp {
     Modulo,
     Equal,
     NotEqual,
-    And,
-    Or,
-    Xor,
+    BitwiseAnd,
+    BitwiseOr,
+    BitwiseXor,
     LessThan,
     LessThanEqual,
     GreaterThan,
@@ -112,10 +112,10 @@ const LESS_THAN: Precedence = IS_EQUAL;
 const LESS_THAN_EQUAL: Precedence = IS_EQUAL;
 const GREATER_THAN: Precedence = IS_EQUAL;
 const GREATER_THAN_EQUAL: Precedence = IS_EQUAL;
-const OR: Precedence = LESS_THAN + 10;
-const XOR: Precedence = OR + 10;
-const AND: Precedence = XOR + 10;
-const SHIFT_LEFT: Precedence = IS_EQUAL + 10;
+const BITWISE_OR: Precedence = LESS_THAN + 10;
+const BITWISE_XOR: Precedence = BITWISE_OR + 10;
+const BITWISE_AND: Precedence = BITWISE_XOR + 10;
+const SHIFT_LEFT: Precedence = BITWISE_AND + 10;
 const SHIFT_RIGHT: Precedence = SHIFT_LEFT;
 const ADD: Precedence = SHIFT_LEFT + 10;
 const SUBTRACT: Precedence = ADD;
@@ -408,25 +408,35 @@ fn infix_parser(kind: tokenizer::Kind) -> Option<InfixParser> {
         tokenizer::Kind::Slash => Some(InfixParser::BinaryOp(DIVIDE, BinaryOp::Divide)),
         tokenizer::Kind::Percent => Some(InfixParser::BinaryOp(MODULO, BinaryOp::Modulo)),
         tokenizer::Kind::LessThan => Some(InfixParser::BinaryOp(LESS_THAN, BinaryOp::LessThan)),
-        tokenizer::Kind::LessThanEqual => {
-            Some(InfixParser::BinaryOp(LESS_THAN_EQUAL, BinaryOp::LessThanEqual))
-        }
+        tokenizer::Kind::LessThanEqual => Some(InfixParser::BinaryOp(
+            LESS_THAN_EQUAL,
+            BinaryOp::LessThanEqual,
+        )),
         tokenizer::Kind::LessThanLessThan => {
             Some(InfixParser::BinaryOp(SHIFT_LEFT, BinaryOp::ShiftLeft))
         }
-        tokenizer::Kind::GreaterThan => Some(InfixParser::BinaryOp(GREATER_THAN, BinaryOp::GreaterThan)),
-        tokenizer::Kind::GreaterThanEqual => {
-            Some(InfixParser::BinaryOp(GREATER_THAN_EQUAL, BinaryOp::GreaterThanEqual))
+        tokenizer::Kind::GreaterThan => {
+            Some(InfixParser::BinaryOp(GREATER_THAN, BinaryOp::GreaterThan))
         }
+        tokenizer::Kind::GreaterThanEqual => Some(InfixParser::BinaryOp(
+            GREATER_THAN_EQUAL,
+            BinaryOp::GreaterThanEqual,
+        )),
         tokenizer::Kind::GreaterThanGreaterThan => {
             Some(InfixParser::BinaryOp(SHIFT_RIGHT, BinaryOp::ShiftRight))
         }
-        tokenizer::Kind::ExclamationEqual => Some(InfixParser::BinaryOp(NOT_EQUAL, BinaryOp::NotEqual)),
+        tokenizer::Kind::ExclamationEqual => {
+            Some(InfixParser::BinaryOp(NOT_EQUAL, BinaryOp::NotEqual))
+        }
         tokenizer::Kind::EqualEqual => Some(InfixParser::BinaryOp(IS_EQUAL, BinaryOp::Equal)),
         tokenizer::Kind::Equal => Some(InfixParser::Definition),
-        tokenizer::Kind::Ampersand => Some(InfixParser::BinaryOp(AND, BinaryOp::And)),
-        tokenizer::Kind::VerticalBar => Some(InfixParser::BinaryOp(OR, BinaryOp::Or)),
-        tokenizer::Kind::Caret => Some(InfixParser::BinaryOp(XOR, BinaryOp::Xor)),
+        tokenizer::Kind::Ampersand => {
+            Some(InfixParser::BinaryOp(BITWISE_AND, BinaryOp::BitwiseAnd))
+        }
+        tokenizer::Kind::VerticalBar => {
+            Some(InfixParser::BinaryOp(BITWISE_OR, BinaryOp::BitwiseOr))
+        }
+        tokenizer::Kind::Caret => Some(InfixParser::BinaryOp(BITWISE_XOR, BinaryOp::BitwiseXor)),
         tokenizer::Kind::LeftParen => Some(InfixParser::FunctionCall),
         tokenizer::Kind::Dot => Some(InfixParser::DotFunctionCall),
         _ => None,

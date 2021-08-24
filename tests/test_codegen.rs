@@ -34,10 +34,6 @@ fn test_codegen_int() {
     assert_eq!(run(&code), Value::I64(0));
 }
 
-//-------//
-// IUNOP //
-//-------//
-
 #[test]
 fn test_codegen_add() {
     let tokens = tokenize("def start(): 5 + 10");
@@ -148,8 +144,6 @@ fn test_codegen_modulo_signed() {
     assert_eq!(run(&code), Value::I64(2));
 }
 
-// TODO: REM_u
-
 #[test]
 fn test_codegen_and() {
     let tokens = tokenize("def start(): 7 & 5");
@@ -259,20 +253,6 @@ fn test_codegen_shift_right_signed() {
     );
     assert_eq!(run(&code), Value::I64(4));
 }
-
-// TODO: SHR_u
-// TODO: ROTL
-// TODO: ROTR
-
-//---------//
-// ITESTOP //
-//---------//
-
-// TODO: EQZ
-
-//--------//
-// IRELOP //
-//--------//
 
 #[test]
 fn test_codegen_equal() {
@@ -435,15 +415,6 @@ fn test_codegen_greater_than_equal() {
     );
     assert_eq!(run(&code), Value::I64(1));
 }
-
-// TODO: LT_u
-// TODO: GT_u
-// TODO: LE_u
-// TODO: GE_u
-
-//-------//
-// OTHER //
-//-------//
 
 #[test]
 fn test_codegen_add_then_multiply() {

@@ -42,9 +42,9 @@ fn ast_string_binary_op(
         BinaryOp::Multiply => output.push_str("Multiply"),
         BinaryOp::Divide => output.push_str("Divide"),
         BinaryOp::Modulo => output.push_str("Modulo"),
-        BinaryOp::And => output.push_str("And"),
-        BinaryOp::Or => output.push_str("Or"),
-        BinaryOp::Xor => output.push_str("Xor"),
+        BinaryOp::BitwiseAnd => output.push_str("BitwiseAnd"),
+        BinaryOp::BitwiseOr => output.push_str("BitwiseOr"),
+        BinaryOp::BitwiseXor => output.push_str("BitwiseXor"),
         BinaryOp::Equal => output.push_str("Equal"),
         BinaryOp::NotEqual => output.push_str("NotEqual"),
         BinaryOp::ShiftLeft => output.push_str("ShiftLeft"),
@@ -236,10 +236,6 @@ fn ast_string(ast: &Ast) -> String {
     output
 }
 
-//-------------------//
-// SIMPLE OPERATIONS //
-//-------------------//
-
 fn remove_whitespace(s: &str) -> String {
     s.chars().filter(|c| !c.is_whitespace()).collect()
 }
@@ -248,18 +244,10 @@ fn test_single_function_parsing(function_body: &str, expected_parsing: &str) {
     let function_string = format!("def start(): {}", function_body);
     let tokens = tokenize(&function_string);
     let ast = parse(tokens);
-    let expected_function_parsing = format!(r#"
-        Ast([
-            Function(
-                name=start,
-                arguments=[
-                ],
-                body=[
-                {}
-                ]
-            ),
-        ])
-        "#, expected_parsing);
+    let expected_function_parsing = format!(
+        "Ast([Function(name=start, arguments=[], body=[{}]),])",
+        expected_parsing
+    );
     assert_eq!(
         remove_whitespace(&ast_string(&ast)),
         remove_whitespace(&expected_function_parsing)
@@ -269,44 +257,78 @@ fn test_single_function_parsing(function_body: &str, expected_parsing: &str) {
 #[test]
 fn test_parse_i64_functions() {
     test_single_function_parsing("5 + 10", "BinaryOp(op=Add,left=Int(5),right=Int(10),),");
-    test_single_function_parsing("5 - 10", "BinaryOp(op=Subtract,left=Int(5),right=Int(10),),");
-    test_single_function_parsing("5 * 10", "BinaryOp(op=Multiply,left=Int(5),right=Int(10),),");
+    test_single_function_parsing(
+        "5 - 10",
+        "BinaryOp(op=Subtract,left=Int(5),right=Int(10),),",
+    );
+    test_single_function_parsing(
+        "5 * 10",
+        "BinaryOp(op=Multiply,left=Int(5),right=Int(10),),",
+    );
     test_single_function_parsing("10 / 5", "BinaryOp(op=Divide,left=Int(10),right=Int(5),),");
     test_single_function_parsing("10 % 5", "BinaryOp(op=Modulo,left=Int(10),right=Int(5),),");
-    test_single_function_parsing("2 & 1", "BinaryOp(op=And,left=Int(2),right=Int(1),),");
-    test_single_function_parsing("2 | 1", "BinaryOp(op=Or,left=Int(2),right=Int(1),),");
-    test_single_function_parsing("2 ^ 1", "BinaryOp(op=Xor,left=Int(2),right=Int(1),),");
-    test_single_function_parsing("2 << 1", "BinaryOp(op=ShiftLeft,left=Int(2),right=Int(1),),");
-    test_single_function_parsing("2 >> 1", "BinaryOp(op=ShiftRight,left=Int(2),right=Int(1),),");
+    test_single_function_parsing(
+        "2 & 1",
+        "BinaryOp(op=BitwiseAnd,left=Int(2),right=Int(1),),",
+    );
+    test_single_function_parsing("2 | 1", "BinaryOp(op=BitwiseOr,left=Int(2),right=Int(1),),");
+    test_single_function_parsing(
+        "2 ^ 1",
+        "BinaryOp(op=BitwiseXor,left=Int(2),right=Int(1),),",
+    );
+    test_single_function_parsing(
+        "2 << 1",
+        "BinaryOp(op=ShiftLeft,left=Int(2),right=Int(1),),",
+    );
+    test_single_function_parsing(
+        "2 >> 1",
+        "BinaryOp(op=ShiftRight,left=Int(2),right=Int(1),),",
+    );
     test_single_function_parsing("10 == 0", "BinaryOp(op=Equal,left=Int(10),right=Int(0),),");
     test_single_function_parsing("10 == 5", "BinaryOp(op=Equal,left=Int(10),right=Int(5),),");
-    test_single_function_parsing("10 != 5", "BinaryOp(op=NotEqual,left=Int(10),right=Int(5),),");
-    test_single_function_parsing("10 < 5", "BinaryOp(op=LessThan,left=Int(10),right=Int(5),),");
-    test_single_function_parsing("10 <= 5", "BinaryOp(op=LessThanEqual,left=Int(10),right=Int(5),),");
-    test_single_function_parsing("10 > 5", "BinaryOp(op=GreaterThan,left=Int(10),right=Int(5),),");
-    test_single_function_parsing("10 >= 5", "BinaryOp(op=GreaterThanEqual,left=Int(10),right=Int(5),),");
+    test_single_function_parsing(
+        "10 != 5",
+        "BinaryOp(op=NotEqual,left=Int(10),right=Int(5),),",
+    );
+    test_single_function_parsing(
+        "10 < 5",
+        "BinaryOp(op=LessThan,left=Int(10),right=Int(5),),",
+    );
+    test_single_function_parsing(
+        "10 <= 5",
+        "BinaryOp(op=LessThanEqual,left=Int(10),right=Int(5),),",
+    );
+    test_single_function_parsing(
+        "10 > 5",
+        "BinaryOp(op=GreaterThan,left=Int(10),right=Int(5),),",
+    );
+    test_single_function_parsing(
+        "10 >= 5",
+        "BinaryOp(op=GreaterThanEqual,left=Int(10),right=Int(5),),",
+    );
 }
-
-// TODO: ROTL
-// TODO: ROTR
 
 #[test]
 fn test_parse_simple_functions() {
     test_single_function_parsing("0", "Int(0),");
-    test_single_function_parsing("3 + 5 * 10","BinaryOp(op=Add,left=Int(3),right=BinaryOp(op=Multiply,left=Int(5),right=Int(10),),),");
-    test_single_function_parsing("3 * 5 + 10","BinaryOp(op=Add,left=BinaryOp(op=Multiply,left=Int(3),right=Int(5),),right=Int(10),),");
+    test_single_function_parsing(
+        "3 + 5 * 10",
+        "BinaryOp(op=Add,left=Int(3),right=BinaryOp(op=Multiply,left=Int(5),right=Int(10),),),",
+    );
+    test_single_function_parsing(
+        "3 * 5 + 10",
+        "BinaryOp(op=Add,left=BinaryOp(op=Multiply,left=Int(3),right=Int(5),),right=Int(10),),",
+    );
     test_single_function_parsing("3 * (5 + 10)","BinaryOp(op=Multiply,left=Int(3),right=Grouping(BinaryOp(op=Add,left=Int(5),right=Int(10),),),),");
-    test_single_function_parsing(r#"x = 5
+    test_single_function_parsing(
+        r#"x = 5
                                     y = 20
                                     x + y"#,
-                                 r#"Assign( name=x, value=Int(5),),
+        r#"Assign( name=x, value=Int(5),),
                                     Assign( name=y, value=Int(20),),
-                                    BinaryOp( op=Add, left=Symbol(x), right=Symbol(y),),"#)
+                                    BinaryOp( op=Add, left=Symbol(x), right=Symbol(y),),"#,
+    )
 }
-
-//--------------------//
-// COMPLEX OPERATIONS //
-//--------------------//
 
 #[test]
 fn test_parse_multiple_functions() {
