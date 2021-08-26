@@ -268,7 +268,7 @@ fn parse_while(func: Function, top_level: &tokenizer::TopLevel, token: Token) ->
 fn parse_grouping(func: Function, top_level: &tokenizer::TopLevel, token: Token) -> ParseResult {
     let token = consume(top_level, token, tokenizer::Kind::LeftParen);
     let ParseResult(mut func, token, expression) = parse_expression(func, top_level, token, LOWEST);
-    let token = consume(top_level, token, tokenizer::Kind::RightParen);
+    // let token = consume(top_level, token, tokenizer::Kind::RightParen);
     let entity = fresh_entity(&func);
     func.kinds.push(Kind::Grouping);
     func.indices.push(func.groupings.len());

@@ -921,52 +921,52 @@ Ast([
     );
 }
 
-// #[test]
-// fn test_parse_pipeline_with_grouped_expression() {
-//     let source = r#"
-// def square(x): x * x
+#[test]
+fn test_parse_pipeline_with_grouped_expression() {
+    let source = r#"
+def square(x): x * x
 
-// def start(): (3 + 10) |> square
-// "#;
-//     let tokens = tokenize(source);
-//     let ast = parse(tokens);
-//     assert_eq!(
-//         ast_string(&ast),
-//         r#"
-// Ast([
-//     Function(
-//         name=square,
-//         arguments=[
-//             x,
-//         ],
-//         body=[
-//             BinaryOp(
-//                 op=Multiply,
-//                 left=Symbol(x),
-//                 right=Symbol(x),
-//             ),
-//         ]
-//     ),
-//     Function(
-//         name=start,
-//         arguments=[
-//         ],
-//         body=[
-//             FunctionCall(
-//                 name=square,
-//                 parameters=[
-//                     Grouping(
-//                         BinaryOp(
-//                             op=Add,
-//                             left=Int(3),
-//                             right=Int(10),
-//                         ),
-//                     ),
-//                 ]
-//             ),
-//         ]
-//     ),
-// ])
-// "#
-//     );
-// }
+def start(): (3 + 10) |> square
+"#;
+    let tokens = tokenize(source);
+    let ast = parse(tokens);
+    assert_eq!(
+        ast_string(&ast),
+        r#"
+Ast([
+    Function(
+        name=square,
+        arguments=[
+            x,
+        ],
+        body=[
+            BinaryOp(
+                op=Multiply,
+                left=Symbol(x),
+                right=Symbol(x),
+            ),
+        ]
+    ),
+    Function(
+        name=start,
+        arguments=[
+        ],
+        body=[
+            FunctionCall(
+                name=square,
+                parameters=[
+                    Grouping(
+                        BinaryOp(
+                            op=Add,
+                            left=Int(3),
+                            right=Int(10),
+                        ),
+                    ),
+                ]
+            ),
+        ]
+    ),
+])
+"#
+    );
+}
