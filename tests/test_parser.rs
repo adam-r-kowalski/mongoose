@@ -322,11 +322,11 @@ fn test_parse_simple_functions() {
     test_single_function_parsing("3 * (5 + 10)","BinaryOp(op=Multiply,left=Int(3),right=Grouping(BinaryOp(op=Add,left=Int(5),right=Int(10),),),),");
     test_single_function_parsing(
         r#"x = 5
-                                    y = 20
-                                    x + y"#,
-        r#"Assign( name=x, value=Int(5),),
-                                    Assign( name=y, value=Int(20),),
-                                    BinaryOp( op=Add, left=Symbol(x), right=Symbol(y),),"#,
+           y = 20
+           x + y"#,
+        r#"Assign(name=x, value=Int(5),),
+           Assign(name=y, value=Int(20),),
+           BinaryOp(op=Add, left=Symbol(x), right=Symbol(y),),"#,
     )
 }
 
@@ -720,7 +720,7 @@ Ast([
 }
 
 #[test]
-fn test_parse_pipeline() {
+fn test_parse_pipeline_simplest() {
     let source = r#"
 def square(x): x * x
 
@@ -859,6 +859,108 @@ Ast([
                         parameters=[
                             Int(5),
                         ]
+                    ),
+                ]
+            ),
+        ]
+    ),
+])
+"#
+    );
+}
+
+#[test]
+fn test_parse_pipeline_specify_location() {
+    let source = r#"
+def f(x, y, z): x * y / z
+
+def start(): 10 |> f(5, _, 3)
+"#;
+    let tokens = tokenize(source);
+    let ast = parse(tokens);
+    assert_eq!(
+        ast_string(&ast),
+        r#"
+Ast([
+    Function(
+        name=f,
+        arguments=[
+            x,
+            y,
+            z,
+        ],
+        body=[
+            BinaryOp(
+                op=Multiply,
+                left=Symbol(x),
+                right=BinaryOp(
+                    op=Divide,
+                    left=Symbol(y),
+                    right=Symbol(z),
+                ),
+            ),
+        ]
+    ),
+    Function(
+        name=start,
+        arguments=[
+        ],
+        body=[
+            FunctionCall(
+                name=f,
+                parameters=[
+                    Int(5),
+                    Int(10),
+                    Int(3),
+                ]
+            ),
+        ]
+    ),
+])
+"#
+    );
+}
+
+#[test]
+fn test_parse_pipeline_with_grouped_expression() {
+    let source = r#"
+def square(x): x * x
+
+def start(): (3 + 10) |> square
+"#;
+    let tokens = tokenize(source);
+    let ast = parse(tokens);
+    assert_eq!(
+        ast_string(&ast),
+        r#"
+Ast([
+    Function(
+        name=square,
+        arguments=[
+            x,
+        ],
+        body=[
+            BinaryOp(
+                op=Multiply,
+                left=Symbol(x),
+                right=Symbol(x),
+            ),
+        ]
+    ),
+    Function(
+        name=start,
+        arguments=[
+        ],
+        body=[
+            FunctionCall(
+                name=square,
+                parameters=[
+                    Grouping(
+                        BinaryOp(
+                            op=Add,
+                            left=Int(3),
+                            right=Int(10),
+                        ),
                     ),
                 ]
             ),

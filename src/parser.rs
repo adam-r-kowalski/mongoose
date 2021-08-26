@@ -268,7 +268,7 @@ fn parse_while(func: Function, top_level: &tokenizer::TopLevel, token: Token) ->
 fn parse_grouping(func: Function, top_level: &tokenizer::TopLevel, token: Token) -> ParseResult {
     let token = consume(top_level, token, tokenizer::Kind::LeftParen);
     let ParseResult(mut func, token, expression) = parse_expression(func, top_level, token, LOWEST);
-    let token = consume(top_level, token, tokenizer::Kind::RightParen);
+    // let token = consume(top_level, token, tokenizer::Kind::RightParen);
     let entity = fresh_entity(&func);
     func.kinds.push(Kind::Grouping);
     func.indices.push(func.groupings.len());
@@ -371,6 +371,41 @@ fn parse_function_call(
     ParseResult(func, token, entity)
 }
 
+fn parse_pipeline_parameters(
+    func: Function,
+    top_level: &tokenizer::TopLevel,
+    token: Token,
+    mut parameters: Vec<usize>,
+    seen_underscore: bool,
+) -> (Function, Token, Vec<usize>) {
+    let ParseResult(func, token, parameter) = parse_expression(func, top_level, token, 0);
+    let is_symbol = func.kinds[parameter] == Kind::Symbol;
+    let is_underscore = top_level.symbols[func.indices[parameter]] == "_";
+    let (parameters, seen_underscore) = if is_symbol && is_underscore {
+        assert!(!seen_underscore);
+        let parameter = parameters.remove(0);
+        parameters.push(parameter);
+        (parameters, true)
+    } else {
+        parameters.push(parameter);
+        (parameters, seen_underscore)
+    };
+    match top_level.kinds[token.0] {
+        tokenizer::Kind::Comma => parse_pipeline_parameters(
+            func,
+            top_level,
+            inc_token(token),
+            parameters,
+            seen_underscore,
+        ),
+        tokenizer::Kind::RightParen => (func, token, parameters),
+        kind => panic!(
+            "Parsing function parameters, expected comma or right paren, found {:?}",
+            kind
+        ),
+    }
+}
+
 fn parse_pipeline(
     func: Function,
     top_level: &tokenizer::TopLevel,
@@ -385,7 +420,7 @@ fn parse_pipeline(
             let token = inc_token(token);
             let (func, token, parameters) =
                 if top_level.kinds[token.0] != tokenizer::Kind::RightParen {
-                    parse_function_parameters(func, top_level, token, parameters)
+                    parse_pipeline_parameters(func, top_level, token, parameters, false)
                 } else {
                     (func, token, parameters)
                 };
