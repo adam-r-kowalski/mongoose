@@ -63,6 +63,7 @@ fn token_string_impl(top_level: &TopLevel, token: usize, output: String) -> Stri
             token_string_literal(top_level, token, output, "VerticalBarGreaterThan")
         }
         Some(Kind::Caret) => token_string_literal(top_level, token, output, "Caret"),
+        Some(Kind::Dot) => token_string_literal(top_level, token, output, "Dot"),
         Some(Kind::LessThan) => token_string_literal(top_level, token, output, "LessThan"),
         Some(Kind::LessThanEqual) => {
             token_string_literal(top_level, token, output, "LessThanEqual")
@@ -81,6 +82,8 @@ fn token_string_impl(top_level: &TopLevel, token: usize, output: String) -> Stri
         Some(Kind::If) => token_string_literal(top_level, token, output, "If"),
         Some(Kind::Else) => token_string_literal(top_level, token, output, "Else"),
         Some(Kind::While) => token_string_literal(top_level, token, output, "While"),
+        Some(Kind::From) => token_string_literal(top_level, token, output, "From"),
+        Some(Kind::Import) => token_string_literal(top_level, token, output, "Import"),
         Some(Kind::Symbol) => token_string_symbol(top_level, token, output),
         Some(Kind::Int) => token_string_int(top_level, token, output),
         Some(Kind::Indent) => token_string_indent(top_level, token, output),
@@ -738,6 +741,61 @@ Tokens([
         VerticalBarGreaterThan,
         Symbol(square),
         LeftParen,
+        RightParen,
+    ]),
+])
+"#
+    );
+}
+
+#[test]
+fn test_tokenize_import() {
+    let source = r#"
+import builtin
+from builtin import i64_sub
+
+def start():
+    x = builtin.i64_add(7, 5)
+    i64_sub(x, 3)
+"#;
+    let tokens = tokenize(source);
+    assert_eq!(
+        token_string(&tokens),
+        r#"
+Tokens([
+    TopLevel([
+        Import,
+        Symbol(builtin),
+    ]),
+    TopLevel([
+        From,
+        Symbol(builtin),
+        Import,
+        Symbol(i64_sub),
+    ]),
+    TopLevel([
+        Def,
+        Symbol(start),
+        LeftParen,
+        RightParen,
+        Colon,
+        Indent(4),
+        Symbol(x),
+        Equal,
+        Symbol(builtin),
+        Dot,
+        Symbol(i64_add),
+        LeftParen,
+        Int(7),
+        Comma,
+        Int(5),
+        RightParen,
+        Indent(4),
+        Symbol(i64_sub),
+        LeftParen,
+        Symbol(x),
+        Comma,
+        Int(3),
         RightParen,
     ]),
 ])

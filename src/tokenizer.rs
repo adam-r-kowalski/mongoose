@@ -17,6 +17,7 @@ pub enum Kind {
     VerticalBar,
     VerticalBarGreaterThan,
     Caret,
+    Dot,
     LessThan,
     LessThanEqual,
     LessThanLessThan,
@@ -29,6 +30,8 @@ pub enum Kind {
     If,
     Else,
     While,
+    Import,
+    From,
 }
 
 #[derive(Debug, PartialEq)]
@@ -68,6 +71,8 @@ fn tokenize_symbol(top_level: TopLevel, source: &str) -> (TopLevel, &str) {
         "if" => insert_keyword(top_level, Kind::If),
         "else" => insert_keyword(top_level, Kind::Else),
         "while" => insert_keyword(top_level, Kind::While),
+        "from" => insert_keyword(top_level, Kind::From),
+        "import" => insert_keyword(top_level, Kind::Import),
         _ => insert_symbol(top_level, source[..length].to_string()),
     };
     tokenize_top_level(top_level, &source[length..])
@@ -176,9 +181,10 @@ fn tokenize_top_level(top_level: TopLevel, source: &str) -> (TopLevel, &str) {
         Some('%') => tokenize_one(top_level, source, Kind::Percent),
         Some(',') => tokenize_one(top_level, source, Kind::Comma),
         Some(':') => tokenize_one(top_level, source, Kind::Colon),
-        Some('=') => tokenize_equal(top_level, source),
         Some('&') => tokenize_one(top_level, source, Kind::Ampersand),
         Some('^') => tokenize_one(top_level, source, Kind::Caret),
+        Some('.') => tokenize_one(top_level, source, Kind::Dot),
+        Some('=') => tokenize_equal(top_level, source),
         Some('|') => tokenize_vertical_bar(top_level, source),
         Some('!') => tokenize_exclamation(top_level, source),
         Some('<') => tokenize_less_than(top_level, source),
