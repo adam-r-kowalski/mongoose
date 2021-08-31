@@ -1,10 +1,10 @@
-def square(x): x * x
+fn square(x): x * x
 
-def min(x, y): if x < y: x else: y
+fn min(x, y): if x < y: x else: y
 
-def line(m, x, b): m * x + b
+fn line(m, x, b): m * x + b
 
-def start():
+fn start():
     5
     |> square
     |> min(20)

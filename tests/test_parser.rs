@@ -241,7 +241,7 @@ fn remove_whitespace(s: &str) -> String {
 }
 
 fn test_single_function_parsing(function_body: &str, expected_parsing: &str) {
-    let function_string = format!("def start(): {}", function_body);
+    let function_string = format!("fn start(): {}", function_body);
     let tokens = tokenize(&function_string);
     let ast = parse(tokens);
     let expected_function_parsing = format!(
@@ -333,14 +333,14 @@ fn test_parse_simple_functions() {
 #[test]
 fn test_parse_multiple_functions() {
     let source = r#"
-def square(x): x * x
+fn square(x): x * x
 
-def sum_of_squares(x, y):
+fn sum_of_squares(x, y):
     x2 = square(x)
     y2 = square(y)
     x2 + y2
 
-def start(): sum_of_squares(5, 3)"#;
+fn start(): sum_of_squares(5, 3)"#;
     let tokens = tokenize(source);
     let ast = parse(tokens);
     assert_eq!(
@@ -414,7 +414,7 @@ Ast([
 #[test]
 fn test_parse_single_line_if() {
     let source = r#"
-def min(x, y):
+fn min(x, y):
   if x < y: x else: y"#;
     let tokens = tokenize(source);
     let ast = parse(tokens);
@@ -452,7 +452,7 @@ Ast([
 #[test]
 fn test_parse_multi_line_if() {
     let source = r#"
-def main():
+fn main():
   a = 5
   b = 10
   if a < b:
@@ -527,7 +527,7 @@ Ast([
 #[test]
 fn test_parse_multiple_single_line_ifs() {
     let source = r#"
-def main():
+fn main():
   a = 5
   b = 10
   c = if a < b: 15 else: 20
@@ -599,7 +599,7 @@ Ast([
 #[test]
 fn test_parse_multi_line_if_returns_value() {
     let source = r#"
-def main():
+fn main():
   a = 5
   b = 10
   c = if a < b:
@@ -674,7 +674,7 @@ Ast([
 #[test]
 fn test_parse_while() {
     let source = r#"
-def start():
+fn start():
     i = 0
     while i < 10:
         i = i + 1
@@ -722,9 +722,9 @@ Ast([
 #[test]
 fn test_parse_pipeline_simplest() {
     let source = r#"
-def square(x): x * x
+fn square(x): x * x
 
-def start(): 5 |> square() |> square()
+fn start(): 5 |> square() |> square()
 "#;
     let tokens = tokenize(source);
     let ast = parse(tokens);
@@ -771,9 +771,9 @@ Ast([
 #[test]
 fn test_parse_pipeline_no_paren_if_no_arguments() {
     let source = r#"
-def square(x): x * x
+fn square(x): x * x
 
-def start(): 5 |> square |> square
+fn start(): 5 |> square |> square
 "#;
     let tokens = tokenize(source);
     let ast = parse(tokens);
@@ -820,9 +820,9 @@ Ast([
 #[test]
 fn test_parse_pipeline_across_new_line() {
     let source = r#"
-def square(x): x * x
+fn square(x): x * x
 
-def start():
+fn start():
     5
     |> square
     |> square
@@ -872,9 +872,9 @@ Ast([
 #[test]
 fn test_parse_pipeline_specify_location() {
     let source = r#"
-def f(x, y, z): x * y / z
+fn f(x, y, z): x * y / z
 
-def start(): 10 |> f(5, _, 3)
+fn start(): 10 |> f(5, _, 3)
 "#;
     let tokens = tokenize(source);
     let ast = parse(tokens);
@@ -924,9 +924,9 @@ Ast([
 #[test]
 fn test_parse_pipeline_with_grouped_expression() {
     let source = r#"
-def square(x): x * x
+fn square(x): x * x
 
-def start(): (3 + 10) |> square
+fn start(): (3 + 10) |> square
 "#;
     let tokens = tokenize(source);
     let ast = parse(tokens);
@@ -976,7 +976,7 @@ Ast([
 //     let source = r#"
 // import builtin: i64_sub
 
-// def start():
+// fn start():
 //     x = builtin.i64_add(7, 5)
 //     i64_sub(x, 3)
 // "#;

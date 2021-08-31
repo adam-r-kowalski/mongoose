@@ -16,7 +16,7 @@ fn run(code: &str) -> Value {
 
 #[test]
 fn test_codegen_int() {
-    let tokens = tokenize("def start(): 0");
+    let tokens = tokenize("fn start(): 0");
     let ast = parse(tokens);
     let wasm = codegen(ast);
     let code = write(wasm);
@@ -36,7 +36,7 @@ fn test_codegen_int() {
 
 #[test]
 fn test_codegen_add() {
-    let tokens = tokenize("def start(): 5 + 10");
+    let tokens = tokenize("fn start(): 5 + 10");
     let ast = parse(tokens);
     let wasm = codegen(ast);
     let code = write(wasm);
@@ -58,7 +58,7 @@ fn test_codegen_add() {
 
 #[test]
 fn test_codegen_subtract() {
-    let tokens = tokenize("def start(): 5 - 10");
+    let tokens = tokenize("fn start(): 5 - 10");
     let ast = parse(tokens);
     let wasm = codegen(ast);
     let code = write(wasm);
@@ -80,7 +80,7 @@ fn test_codegen_subtract() {
 
 #[test]
 fn test_codegen_multiply() {
-    let tokens = tokenize("def start(): 5 * 10");
+    let tokens = tokenize("fn start(): 5 * 10");
     let ast = parse(tokens);
     let wasm = codegen(ast);
     let code = write(wasm);
@@ -102,7 +102,7 @@ fn test_codegen_multiply() {
 
 #[test]
 fn test_codegen_divide() {
-    let tokens = tokenize("def start(): 10 / 5");
+    let tokens = tokenize("fn start(): 10 / 5");
     let ast = parse(tokens);
     let wasm = codegen(ast);
     let code = write(wasm);
@@ -124,7 +124,7 @@ fn test_codegen_divide() {
 
 #[test]
 fn test_codegen_modulo_signed() {
-    let tokens = tokenize("def start(): 7 % 5");
+    let tokens = tokenize("fn start(): 7 % 5");
     let ast = parse(tokens);
     let wasm = codegen(ast);
     let code = write(wasm);
@@ -146,7 +146,7 @@ fn test_codegen_modulo_signed() {
 
 #[test]
 fn test_codegen_and() {
-    let tokens = tokenize("def start(): 7 & 5");
+    let tokens = tokenize("fn start(): 7 & 5");
     let ast = parse(tokens);
     let wasm = codegen(ast);
     let code = write(wasm);
@@ -168,7 +168,7 @@ fn test_codegen_and() {
 
 #[test]
 fn test_codegen_or() {
-    let tokens = tokenize("def start(): 7 | 5");
+    let tokens = tokenize("fn start(): 7 | 5");
     let ast = parse(tokens);
     let wasm = codegen(ast);
     let code = write(wasm);
@@ -190,7 +190,7 @@ fn test_codegen_or() {
 
 #[test]
 fn test_codegen_xor() {
-    let tokens = tokenize("def start(): 7 ^ 5");
+    let tokens = tokenize("fn start(): 7 ^ 5");
     let ast = parse(tokens);
     let wasm = codegen(ast);
     let code = write(wasm);
@@ -212,7 +212,7 @@ fn test_codegen_xor() {
 
 #[test]
 fn test_codegen_shift_left() {
-    let tokens = tokenize("def start(): 2 << 1");
+    let tokens = tokenize("fn start(): 2 << 1");
     let ast = parse(tokens);
     let wasm = codegen(ast);
     let code = write(wasm);
@@ -234,7 +234,7 @@ fn test_codegen_shift_left() {
 
 #[test]
 fn test_codegen_shift_right_signed() {
-    let tokens = tokenize("def start(): 8 >> 1");
+    let tokens = tokenize("fn start(): 8 >> 1");
     let ast = parse(tokens);
     let wasm = codegen(ast);
     let code = write(wasm);
@@ -256,7 +256,7 @@ fn test_codegen_shift_right_signed() {
 
 #[test]
 fn test_codegen_equal() {
-    let tokens = tokenize("def start(): if 8 == 1: 1 else: 0");
+    let tokens = tokenize("fn start(): if 8 == 1: 1 else: 0");
     let ast = parse(tokens);
     let wasm = codegen(ast);
     let code = write(wasm);
@@ -283,7 +283,7 @@ fn test_codegen_equal() {
 
 #[test]
 fn test_codegen_not_equal() {
-    let tokens = tokenize("def start(): if 8 != 1: 1 else: 0");
+    let tokens = tokenize("fn start(): if 8 != 1: 1 else: 0");
     let ast = parse(tokens);
     let wasm = codegen(ast);
     let code = write(wasm);
@@ -310,7 +310,7 @@ fn test_codegen_not_equal() {
 
 #[test]
 fn test_codegen_less_than() {
-    let tokens = tokenize("def start(): if 8 < 1: 1 else: 0");
+    let tokens = tokenize("fn start(): if 8 < 1: 1 else: 0");
     let ast = parse(tokens);
     let wasm = codegen(ast);
     let code = write(wasm);
@@ -337,7 +337,7 @@ fn test_codegen_less_than() {
 
 #[test]
 fn test_codegen_less_than_equal() {
-    let tokens = tokenize("def start(): if 8 <= 1: 1 else: 0");
+    let tokens = tokenize("fn start(): if 8 <= 1: 1 else: 0");
     let ast = parse(tokens);
     let wasm = codegen(ast);
     let code = write(wasm);
@@ -364,7 +364,7 @@ fn test_codegen_less_than_equal() {
 
 #[test]
 fn test_codegen_greater_than() {
-    let tokens = tokenize("def start(): if 8 > 1: 1 else: 0");
+    let tokens = tokenize("fn start(): if 8 > 1: 1 else: 0");
     let ast = parse(tokens);
     let wasm = codegen(ast);
     let code = write(wasm);
@@ -391,7 +391,7 @@ fn test_codegen_greater_than() {
 
 #[test]
 fn test_codegen_greater_than_equal() {
-    let tokens = tokenize("def start(): if 8 >= 1: 1 else: 0");
+    let tokens = tokenize("fn start(): if 8 >= 1: 1 else: 0");
     let ast = parse(tokens);
     let wasm = codegen(ast);
     let code = write(wasm);
@@ -418,7 +418,7 @@ fn test_codegen_greater_than_equal() {
 
 #[test]
 fn test_codegen_add_then_multiply() {
-    let tokens = tokenize("def start(): 3 + 5 * 10");
+    let tokens = tokenize("fn start(): 3 + 5 * 10");
     let ast = parse(tokens);
     let wasm = codegen(ast);
     let code = write(wasm);
@@ -442,7 +442,7 @@ fn test_codegen_add_then_multiply() {
 
 #[test]
 fn test_codegen_multiply_then_add() {
-    let tokens = tokenize("def start(): 3 * 5 + 10");
+    let tokens = tokenize("fn start(): 3 * 5 + 10");
     let ast = parse(tokens);
     let wasm = codegen(ast);
     let code = write(wasm);
@@ -467,7 +467,7 @@ fn test_codegen_multiply_then_add() {
 #[test]
 fn test_codegen_local_variables() {
     let source = r#"
-def start():
+fn start():
     x = 5
     y = 20
     x + y"#;
@@ -500,7 +500,7 @@ def start():
 #[test]
 fn test_codegen_assignment() {
     let source = r#"
-def start():
+fn start():
     x = 5
     x = x + 20
     x"#;
@@ -532,14 +532,14 @@ def start():
 #[test]
 fn test_codegen_multiple_functions() {
     let source = r#"
-def square(x): x * x
+fn square(x): x * x
 
-def sum_of_squares(x, y):
+fn sum_of_squares(x, y):
     x2 = square(x)
     y2 = square(y)
     x2 + y2
 
-def start(): sum_of_squares(5, 3)"#;
+fn start(): sum_of_squares(5, 3)"#;
     let tokens = tokenize(source);
     let ast = parse(tokens);
     let wasm = codegen(ast);
@@ -581,7 +581,7 @@ def start(): sum_of_squares(5, 3)"#;
 #[test]
 fn test_codegen_single_line_if() {
     let source = r#"
-def start():
+fn start():
   x = 5
   y = 10
   if x < y: x else: y"#;
@@ -619,7 +619,7 @@ def start():
 #[test]
 fn test_codegen_while() {
     let source = r#"
-def start():
+fn start():
     i = 0
     while i < 10:
         i = i + 1

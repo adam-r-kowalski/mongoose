@@ -1,6 +1,6 @@
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum Kind {
-    Def,
+    Fn,
     Symbol,
     LeftParen,
     RightParen,
@@ -66,7 +66,7 @@ fn tokenize_symbol(top_level: TopLevel, source: &str) -> (TopLevel, &str) {
         .take_while(|&c| c.is_alphanumeric() || c == '_')
         .count();
     let top_level = match &source[..length] {
-        "def" => insert_keyword(top_level, Kind::Def),
+        "fn" => insert_keyword(top_level, Kind::Fn),
         "if" => insert_keyword(top_level, Kind::If),
         "else" => insert_keyword(top_level, Kind::Else),
         "while" => insert_keyword(top_level, Kind::While),

@@ -1,4 +1,4 @@
-def fib(n):
+fn fib(n):
     i = 0
     prev = 0
     curr = 1
@@ -10,4 +10,4 @@ def fib(n):
     curr
 
 
-def start(): fib(100)
+fn start(): fib(100)

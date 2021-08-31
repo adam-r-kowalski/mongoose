@@ -43,7 +43,7 @@ fn token_string_indent(top_level: &TopLevel, token: usize, mut output: String) -
 
 fn token_string_impl(top_level: &TopLevel, token: usize, output: String) -> String {
     match top_level.kinds.get(token) {
-        Some(Kind::Def) => token_string_literal(top_level, token, output, "Def"),
+        Some(Kind::Fn) => token_string_literal(top_level, token, output, "Fn"),
         Some(Kind::LeftParen) => token_string_literal(top_level, token, output, "LeftParen"),
         Some(Kind::RightParen) => token_string_literal(top_level, token, output, "RightParen"),
         Some(Kind::Plus) => token_string_literal(top_level, token, output, "Plus"),
@@ -107,13 +107,13 @@ fn token_string(tokens: &Tokens) -> String {
 
 #[test]
 fn test_tokenize_int() {
-    let tokens = tokenize("def start(): 0");
+    let tokens = tokenize("fn start(): 0");
     assert_eq!(
         token_string(&tokens),
         r#"
 Tokens([
     TopLevel([
-        Def,
+        Fn,
         Symbol(start),
         LeftParen,
         RightParen,
@@ -127,13 +127,13 @@ Tokens([
 
 #[test]
 fn test_tokenize_add() {
-    let tokens = tokenize("def start(): 5 + 10");
+    let tokens = tokenize("fn start(): 5 + 10");
     assert_eq!(
         token_string(&tokens),
         r#"
 Tokens([
     TopLevel([
-        Def,
+        Fn,
         Symbol(start),
         LeftParen,
         RightParen,
@@ -149,13 +149,13 @@ Tokens([
 
 #[test]
 fn test_tokenize_subtract() {
-    let tokens = tokenize("def start(): 5 - 10");
+    let tokens = tokenize("fn start(): 5 - 10");
     assert_eq!(
         token_string(&tokens),
         r#"
 Tokens([
     TopLevel([
-        Def,
+        Fn,
         Symbol(start),
         LeftParen,
         RightParen,
@@ -171,13 +171,13 @@ Tokens([
 
 #[test]
 fn test_tokenize_multiply() {
-    let tokens = tokenize("def start(): 5 * 10");
+    let tokens = tokenize("fn start(): 5 * 10");
     assert_eq!(
         token_string(&tokens),
         r#"
 Tokens([
     TopLevel([
-        Def,
+        Fn,
         Symbol(start),
         LeftParen,
         RightParen,
@@ -193,13 +193,13 @@ Tokens([
 
 #[test]
 fn test_tokenize_divide() {
-    let tokens = tokenize("def start(): 10 / 5");
+    let tokens = tokenize("fn start(): 10 / 5");
     assert_eq!(
         token_string(&tokens),
         r#"
 Tokens([
     TopLevel([
-        Def,
+        Fn,
         Symbol(start),
         LeftParen,
         RightParen,
@@ -215,13 +215,13 @@ Tokens([
 
 #[test]
 fn test_tokenize_modulo() {
-    let tokens = tokenize("def start(): 10 % 5");
+    let tokens = tokenize("fn start(): 10 % 5");
     assert_eq!(
         token_string(&tokens),
         r#"
 Tokens([
     TopLevel([
-        Def,
+        Fn,
         Symbol(start),
         LeftParen,
         RightParen,
@@ -237,13 +237,13 @@ Tokens([
 
 #[test]
 fn test_tokenize_bitwise_and() {
-    let tokens = tokenize("def start(): 2 & 1");
+    let tokens = tokenize("fn start(): 2 & 1");
     assert_eq!(
         token_string(&tokens),
         r#"
 Tokens([
     TopLevel([
-        Def,
+        Fn,
         Symbol(start),
         LeftParen,
         RightParen,
@@ -259,13 +259,13 @@ Tokens([
 
 #[test]
 fn test_tokenize_bitwise_or() {
-    let tokens = tokenize("def start(): 2 | 1");
+    let tokens = tokenize("fn start(): 2 | 1");
     assert_eq!(
         token_string(&tokens),
         r#"
 Tokens([
     TopLevel([
-        Def,
+        Fn,
         Symbol(start),
         LeftParen,
         RightParen,
@@ -281,13 +281,13 @@ Tokens([
 
 #[test]
 fn test_tokenize_bitwise_xor() {
-    let tokens = tokenize("def start(): 2 ^ 1");
+    let tokens = tokenize("fn start(): 2 ^ 1");
     assert_eq!(
         token_string(&tokens),
         r#"
 Tokens([
     TopLevel([
-        Def,
+        Fn,
         Symbol(start),
         LeftParen,
         RightParen,
@@ -303,13 +303,13 @@ Tokens([
 
 #[test]
 fn test_tokenize_shift_left() {
-    let tokens = tokenize("def start(): 2 << 1");
+    let tokens = tokenize("fn start(): 2 << 1");
     assert_eq!(
         token_string(&tokens),
         r#"
 Tokens([
     TopLevel([
-        Def,
+        Fn,
         Symbol(start),
         LeftParen,
         RightParen,
@@ -325,13 +325,13 @@ Tokens([
 
 #[test]
 fn test_tokenize_shift_right_signed() {
-    let tokens = tokenize("def start(): 8 >> 1");
+    let tokens = tokenize("fn start(): 8 >> 1");
     assert_eq!(
         token_string(&tokens),
         r#"
 Tokens([
     TopLevel([
-        Def,
+        Fn,
         Symbol(start),
         LeftParen,
         RightParen,
@@ -347,13 +347,13 @@ Tokens([
 
 #[test]
 fn test_tokenize_equal() {
-    let tokens = tokenize("def start(): 10 == 5");
+    let tokens = tokenize("fn start(): 10 == 5");
     assert_eq!(
         token_string(&tokens),
         r#"
 Tokens([
     TopLevel([
-        Def,
+        Fn,
         Symbol(start),
         LeftParen,
         RightParen,
@@ -369,13 +369,13 @@ Tokens([
 
 #[test]
 fn test_tokenize_not_equal() {
-    let tokens = tokenize("def start(): 10 != 5");
+    let tokens = tokenize("fn start(): 10 != 5");
     assert_eq!(
         token_string(&tokens),
         r#"
 Tokens([
     TopLevel([
-        Def,
+        Fn,
         Symbol(start),
         LeftParen,
         RightParen,
@@ -391,13 +391,13 @@ Tokens([
 
 #[test]
 fn test_tokenize_less_than_signed() {
-    let tokens = tokenize("def start(): 10 < 5");
+    let tokens = tokenize("fn start(): 10 < 5");
     assert_eq!(
         token_string(&tokens),
         r#"
 Tokens([
     TopLevel([
-        Def,
+        Fn,
         Symbol(start),
         LeftParen,
         RightParen,
@@ -413,13 +413,13 @@ Tokens([
 
 #[test]
 fn test_tokenize_greater_than_signed() {
-    let tokens = tokenize("def start(): 10 > 5");
+    let tokens = tokenize("fn start(): 10 > 5");
     assert_eq!(
         token_string(&tokens),
         r#"
 Tokens([
     TopLevel([
-        Def,
+        Fn,
         Symbol(start),
         LeftParen,
         RightParen,
@@ -435,13 +435,13 @@ Tokens([
 
 #[test]
 fn test_tokenize_less_than_or_equal_signed() {
-    let tokens = tokenize("def start(): 10 <= 5");
+    let tokens = tokenize("fn start(): 10 <= 5");
     assert_eq!(
         token_string(&tokens),
         r#"
 Tokens([
     TopLevel([
-        Def,
+        Fn,
         Symbol(start),
         LeftParen,
         RightParen,
@@ -457,13 +457,13 @@ Tokens([
 
 #[test]
 fn test_tokenize_greater_than_or_equal_signed() {
-    let tokens = tokenize("def start(): 10 >= 5");
+    let tokens = tokenize("fn start(): 10 >= 5");
     assert_eq!(
         token_string(&tokens),
         r#"
 Tokens([
     TopLevel([
-        Def,
+        Fn,
         Symbol(start),
         LeftParen,
         RightParen,
@@ -480,7 +480,7 @@ Tokens([
 #[test]
 fn test_tokenize_local_variables() {
     let source = r#"
-def start():
+fn start():
     x = 5
     y = 20
     x + y"#;
@@ -490,7 +490,7 @@ def start():
         r#"
 Tokens([
     TopLevel([
-        Def,
+        Fn,
         Symbol(start),
         LeftParen,
         RightParen,
@@ -516,21 +516,21 @@ Tokens([
 #[test]
 fn test_tokenize_multiple_functions() {
     let source = r#"
-def square(x): x * x
+fn square(x): x * x
 
-def sum_of_squares(x, y):
+fn sum_of_squares(x, y):
     x2 = square(x)
     y2 = square(y)
     x2 + y2
 
-def start(): sum_of_squares(5, 3)"#;
+fn start(): sum_of_squares(5, 3)"#;
     let tokens = tokenize(source);
     assert_eq!(
         token_string(&tokens),
         r#"
 Tokens([
     TopLevel([
-        Def,
+        Fn,
         Symbol(square),
         LeftParen,
         Symbol(x),
@@ -541,7 +541,7 @@ Tokens([
         Symbol(x),
     ]),
     TopLevel([
-        Def,
+        Fn,
         Symbol(sum_of_squares),
         LeftParen,
         Symbol(x),
@@ -569,7 +569,7 @@ Tokens([
         Symbol(y2),
     ]),
     TopLevel([
-        Def,
+        Fn,
         Symbol(start),
         LeftParen,
         RightParen,
@@ -589,7 +589,7 @@ Tokens([
 #[test]
 fn test_tokenize_if() {
     let source = r#"
-def min(x, y):
+fn min(x, y):
   if x < y:
     x
   else:
@@ -600,7 +600,7 @@ def min(x, y):
         r#"
 Tokens([
     TopLevel([
-        Def,
+        Fn,
         Symbol(min),
         LeftParen,
         Symbol(x),
@@ -630,7 +630,7 @@ Tokens([
 #[test]
 fn test_tokenize_while() {
     let source = r#"
-def start():
+fn start():
     i = 0
     while i < 10:
         i = i + 1
@@ -641,7 +641,7 @@ def start():
         r#"
 Tokens([
     TopLevel([
-        Def,
+        Fn,
         Symbol(start),
         LeftParen,
         RightParen,
@@ -674,7 +674,7 @@ Tokens([
 fn test_tokenize_comment() {
     let source = r#"
 # comments can appear above top level expressions
-def start():
+fn start():
     x = 10 # comments can appear to the right of expressions
     # comments can appear inbetween expressions
     x
@@ -686,7 +686,7 @@ def start():
         r#"
 Tokens([
     TopLevel([
-        Def,
+        Fn,
         Symbol(start),
         LeftParen,
         RightParen,
@@ -706,9 +706,9 @@ Tokens([
 #[test]
 fn test_tokenize_pipeline() {
     let source = r#"
-def square(x): x * x
+fn square(x): x * x
 
-def start(): 5 |> square() |> square()
+fn start(): 5 |> square() |> square()
 "#;
     let tokens = tokenize(source);
     assert_eq!(
@@ -716,7 +716,7 @@ def start(): 5 |> square() |> square()
         r#"
 Tokens([
     TopLevel([
-        Def,
+        Fn,
         Symbol(square),
         LeftParen,
         Symbol(x),
@@ -727,7 +727,7 @@ Tokens([
         Symbol(x),
     ]),
     TopLevel([
-        Def,
+        Fn,
         Symbol(start),
         LeftParen,
         RightParen,
@@ -752,7 +752,7 @@ fn test_tokenize_import() {
     let source = r#"
 import builtin: i64_sub
 
-def start():
+fn start():
     x = builtin.i64_add(7, 5)
     i64_sub(x, 3)
 "#;
@@ -768,7 +768,7 @@ Tokens([
         Symbol(i64_sub),
     ]),
     TopLevel([
-        Def,
+        Fn,
         Symbol(start),
         LeftParen,
         RightParen,

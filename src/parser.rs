@@ -586,7 +586,7 @@ fn parse_function_arguments(
 }
 
 fn parse_function(top_level: &tokenizer::TopLevel, token: Token) -> Function {
-    let token = consume(top_level, token, tokenizer::Kind::Def);
+    let token = consume(top_level, token, tokenizer::Kind::Fn);
     assert_eq!(top_level.kinds[token.0], tokenizer::Kind::Symbol);
     let func = Function {
         name: top_level.indices[token.0],
