@@ -1,8 +1,8 @@
 fn fib_impl(n, prev, curr):
-    if n == 0:
-        curr
-    else:
-        fib_impl(n - 1, curr, prev + curr)
+  if n == 0:
+    curr
+  else:
+    fib_impl(n - 1, curr, prev + curr)
 
 
 fn fib(n): fib_impl(n, 0, 1)

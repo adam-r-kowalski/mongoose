@@ -5,7 +5,7 @@ fn min(x, y): if x < y: x else: y
 fn line(m, x, b): m * x + b
 
 fn start():
-    5
-    |> square
-    |> min(20)
-    |> line(10, _, 3)
+  5
+  |> square
+  |> min(20)
+  |> line(10, _, 3)
