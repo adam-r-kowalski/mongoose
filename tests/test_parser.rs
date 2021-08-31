@@ -970,3 +970,45 @@ Ast([
 "#
     );
 }
+
+// #[test]
+// fn test_parse_import() {
+//     let source = r#"
+// import builtin: i64_sub
+
+// def start():
+//     x = builtin.i64_add(7, 5)
+//     i64_sub(x, 3)
+// "#;
+//     let tokens = tokenize(source);
+//     let ast = parse(tokens);
+//     assert_eq!(
+//         ast_string(&ast),
+//         r#"
+// Ast([
+//     Import(
+//         path=builtin,
+//     ),
+//     Function(
+//         name=start,
+//         arguments=[
+//         ],
+//         body=[
+//             FunctionCall(
+//                 name=square,
+//                 parameters=[
+//                     Grouping(
+//                         BinaryOp(
+//                             op=Add,
+//                             left=Int(3),
+//                             right=Int(10),
+//                         ),
+//                     ),
+//                 ]
+//             ),
+//         ]
+//     ),
+// ])
+// "#
+//     );
+// }

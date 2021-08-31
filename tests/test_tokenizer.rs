@@ -82,7 +82,6 @@ fn token_string_impl(top_level: &TopLevel, token: usize, output: String) -> Stri
         Some(Kind::If) => token_string_literal(top_level, token, output, "If"),
         Some(Kind::Else) => token_string_literal(top_level, token, output, "Else"),
         Some(Kind::While) => token_string_literal(top_level, token, output, "While"),
-        Some(Kind::From) => token_string_literal(top_level, token, output, "From"),
         Some(Kind::Import) => token_string_literal(top_level, token, output, "Import"),
         Some(Kind::Symbol) => token_string_symbol(top_level, token, output),
         Some(Kind::Int) => token_string_int(top_level, token, output),
@@ -751,8 +750,7 @@ Tokens([
 #[test]
 fn test_tokenize_import() {
     let source = r#"
-import builtin
-from builtin import i64_sub
+import builtin: i64_sub
 
 def start():
     x = builtin.i64_add(7, 5)
@@ -766,11 +764,7 @@ Tokens([
     TopLevel([
         Import,
         Symbol(builtin),
-    ]),
-    TopLevel([
-        From,
-        Symbol(builtin),
-        Import,
+        Colon,
         Symbol(i64_sub),
     ]),
     TopLevel([
