@@ -6,7 +6,7 @@ use std::{
 
 use wasmer::{imports, Instance, Module, Store};
 
-use mongoose::{codegen::codegen, parser::parse, tokenizer::tokenize, writer::write};
+use compiler::{codegen::codegen, parser::parse, tokenizer::tokenize, writer::write};
 
 fn main() {
     let args: Vec<String> = env::args().collect();

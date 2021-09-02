@@ -66,6 +66,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
+name = "compiler"
+version = "0.1.0"
+dependencies = [
+ "pretty_assertions",
+ "rayon",
+ "wasmer",
+]
+
+[[package]]
 name = "cranelift-bforest"
 version = "0.74.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -427,15 +436,6 @@ checksum = "a92518e98c078586bc6c934028adcca4c92a53d6a958196de835170a01d84e4b"
 dependencies = [
  "adler",
  "autocfg",
-]
-
-[[package]]
-name = "mongoose"
-version = "0.1.0"
-dependencies = [
- "pretty_assertions",
- "rayon",
- "wasmer",
 ]
 
 [[package]]

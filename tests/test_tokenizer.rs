@@ -1,6 +1,6 @@
 use pretty_assertions::assert_eq;
 
-use mongoose::tokenizer::{tokenize, Kind, Tokens, TopLevel};
+use compiler::tokenizer::{tokenize, Kind, Tokens, TopLevel};
 
 fn token_string_literal(
     top_level: &TopLevel,
@@ -91,16 +91,22 @@ fn token_string_impl(top_level: &TopLevel, token: usize, output: String) -> Stri
 }
 
 fn token_string(tokens: &Tokens) -> String {
-    let mut output =
-        tokens
-            .top_level
-            .iter()
-            .fold(String::from("\nTokens([\n"), |mut output, top_level| {
-                output.push_str("    TopLevel([\n");
-                let mut output = token_string_impl(top_level, 0, output);
-                output.push_str("    ]),\n");
-                output
-            });
+    let output = String::from("\nTokens([\n");
+    let output = tokens.imports.iter().fold(output, |mut output, top_level| {
+        output.push_str("    TopLevel([\n");
+        let mut output = token_string_impl(top_level, 0, output);
+        output.push_str("    ]),\n");
+        output
+    });
+    let mut output = tokens
+        .functions
+        .iter()
+        .fold(output, |mut output, top_level| {
+            output.push_str("    TopLevel([\n");
+            let mut output = token_string_impl(top_level, 0, output);
+            output.push_str("    ]),\n");
+            output
+        });
     output.push_str("])\n");
     output
 }

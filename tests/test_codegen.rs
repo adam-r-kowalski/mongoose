@@ -3,7 +3,7 @@ use std::str;
 use pretty_assertions::assert_eq;
 use wasmer::{imports, Instance, Module, Store, Value};
 
-use mongoose::{codegen::codegen, parser::parse, tokenizer::tokenize, writer::write};
+use compiler::{codegen::codegen, parser::parse, tokenizer::tokenize, writer::write};
 
 fn run(code: &str) -> Value {
     let store = Store::default();

@@ -44,7 +44,8 @@ pub struct TopLevel {
 
 #[derive(Debug, PartialEq)]
 pub struct Tokens {
-    pub top_level: Vec<TopLevel>,
+    pub functions: Vec<TopLevel>,
+    pub imports: Vec<TopLevel>,
 }
 
 fn insert_keyword(mut top_level: TopLevel, kind: Kind) -> TopLevel {
@@ -209,13 +210,20 @@ fn tokenize_impl(mut tokens: Tokens, source: &str) -> Tokens {
         };
         let (top_level, source) = tokenize_top_level(top_level, source);
         if top_level.indices.len() > 0 {
-            tokens.top_level.push(top_level);
+            match top_level.kinds[0] {
+                Kind::Fn => tokens.functions.push(top_level),
+                Kind::Import => tokens.imports.push(top_level),
+                kind => panic!("top level expression is invalid kind {:?}", kind),
+            }
         }
         tokenize_impl(tokens, source)
     }
 }
 
 pub fn tokenize(source: &str) -> Tokens {
-    let tokens = Tokens { top_level: vec![] };
+    let tokens = Tokens {
+        functions: vec![],
+        imports: vec![],
+    };
     tokenize_impl(tokens, source)
 }

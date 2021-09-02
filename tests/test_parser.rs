@@ -1,6 +1,6 @@
 use pretty_assertions::assert_eq;
 
-use mongoose::{
+use compiler::{
     parser::{parse, Ast, BinaryOp, Function, Kind},
     tokenizer::tokenize,
 };
@@ -53,6 +53,7 @@ fn ast_string_binary_op(
         BinaryOp::LessThanEqual => output.push_str("LessThanEqual"),
         BinaryOp::GreaterThan => output.push_str("GreaterThan"),
         BinaryOp::GreaterThanEqual => output.push_str("GreaterThanEqual"),
+        BinaryOp::Dot => output.push_str("Dot"),
     };
     output.push_str(",\n");
     let mut output = write_indent(output, indent);
@@ -977,8 +978,8 @@ fn test_parse_import() {
 import builtin: i64_sub
 
 fn start():
-    x = builtin.i64_add(7, 5)
-    i64_sub(x, 3)
+  x = builtin.i64_add(7, 5)
+  i64_sub(x, 3)
 "#;
     let tokens = tokenize(source);
     let ast = parse(tokens);
@@ -986,24 +987,30 @@ fn start():
         ast_string(&ast),
         r#"
 Ast([
-    Import(
-        path=builtin,
-    ),
     Function(
         name=start,
         arguments=[
         ],
         body=[
-            FunctionCall(
-                name=square,
-                parameters=[
-                    Grouping(
-                        BinaryOp(
-                            op=Add,
-                            left=Int(3),
-                            right=Int(10),
-                        ),
+            Assign(
+                name=x,
+                value=BinaryOp(
+                    op=Dot,
+                    left=Symbol(builtin),
+                    right=FunctionCall(
+                        name=i64_add,
+                        parameters=[
+                            Int(7),
+                            Int(5),
+                        ]
                     ),
+                ),
+            ),
+            FunctionCall(
+                name=i64_sub,
+                parameters=[
+                    Symbol(x),
+                    Int(3),
                 ]
             ),
         ]

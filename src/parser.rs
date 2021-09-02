@@ -36,6 +36,7 @@ pub enum BinaryOp {
     GreaterThanEqual,
     ShiftLeft,
     ShiftRight,
+    Dot,
 }
 
 #[derive(Debug, PartialEq)]
@@ -68,6 +69,13 @@ pub struct Ifs {
 pub struct Whiles {
     pub conditionals: Vec<usize>,
     pub bodies: Vec<Vec<usize>>,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct Import {
+    pub path: Vec<usize>,
+    pub unqualified: Vec<usize>,
+    pub symbols: Vec<String>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -123,7 +131,8 @@ const SUBTRACT: Precedence = ADD;
 const MULTIPLY: Precedence = ADD + 10;
 const DIVIDE: Precedence = MULTIPLY;
 const MODULO: Precedence = MULTIPLY;
-const HIGHEST: Precedence = DIVIDE + 10;
+const DOT: Precedence = DIVIDE + 10;
+const HIGHEST: Precedence = DOT + 10;
 
 fn precedence_of(parser: &InfixParser) -> Precedence {
     match parser {
@@ -491,6 +500,7 @@ fn infix_parser(top_level: &tokenizer::TopLevel, token: Token) -> Option<InfixPa
             }
             tokenizer::Kind::LeftParen => Some(InfixParser::FunctionCall),
             tokenizer::Kind::VerticalBarGreaterThan => Some(InfixParser::Pipeline),
+            tokenizer::Kind::Dot => Some(InfixParser::BinaryOp(DOT, BinaryOp::Dot)),
             tokenizer::Kind::Indent => top_level
                 .kinds
                 .get(token.0 + 1)
@@ -585,6 +595,15 @@ fn parse_function_arguments(
     }
 }
 
+fn parse_import(top_level: &tokenizer::TopLevel, token: Token) -> Import {
+    let token = consume(top_level, token, tokenizer::Kind::Import);
+    Import {
+        path: vec![],
+        unqualified: vec![],
+        symbols: vec![],
+    }
+}
+
 fn parse_function(top_level: &tokenizer::TopLevel, token: Token) -> Function {
     let token = consume(top_level, token, tokenizer::Kind::Fn);
     assert_eq!(top_level.kinds[token.0], tokenizer::Kind::Symbol);
@@ -632,8 +651,17 @@ fn parse_function(top_level: &tokenizer::TopLevel, token: Token) -> Function {
 }
 
 pub fn parse(tokens: Tokens) -> Ast {
+    let imports: Vec<Import> = tokens
+        .imports
+        .into_par_iter()
+        .map(|top_level| {
+            let mut import = parse_import(&top_level, Token(0));
+            import.symbols = top_level.symbols;
+            import
+        })
+        .collect();
     let functions: Vec<Function> = tokens
-        .top_level
+        .functions
         .into_par_iter()
         .map(|top_level| {
             let mut func = parse_function(&top_level, Token(0));

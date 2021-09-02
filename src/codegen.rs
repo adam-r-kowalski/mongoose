@@ -109,6 +109,7 @@ fn codegen_binary_op(
         parser::BinaryOp::LessThanEqual => Instruction::I64LeS,
         parser::BinaryOp::GreaterThan => Instruction::I64GtS,
         parser::BinaryOp::GreaterThanEqual => Instruction::I64GeS,
+        op => panic!("Binary op {:?} not supported", op),
     };
     wasm_func.instructions.push(instruction);
     wasm_func.operand_kinds.push(vec![]);
