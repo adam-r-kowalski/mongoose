@@ -975,11 +975,10 @@ Ast([
 #[test]
 fn test_parse_import() {
     let source = r#"
-import builtin: i64_sub
+import foo.bar: baz
 
 fn start():
-  x = builtin.i64_add(7, 5)
-  i64_sub(x, 3)
+    baz(5, 3) == foo.bar.baz(5, 3)
 "#;
     let tokens = tokenize(source);
     let ast = parse(tokens);
@@ -992,26 +991,30 @@ Ast([
         arguments=[
         ],
         body=[
-            Assign(
-                name=x,
-                value=BinaryOp(
+            BinaryOp(
+                op=Equal,
+                left=FunctionCall(
+                    name=baz,
+                    parameters=[
+                        Int(5),
+                        Int(3),
+                    ]
+                ),
+                right=BinaryOp(
                     op=Dot,
-                    left=Symbol(builtin),
-                    right=FunctionCall(
-                        name=i64_add,
-                        parameters=[
-                            Int(7),
-                            Int(5),
-                        ]
+                    left=Symbol(foo),
+                    right=BinaryOp(
+                        op=Dot,
+                        left=Symbol(bar),
+                        right=FunctionCall(
+                            name=baz,
+                            parameters=[
+                                Int(5),
+                                Int(3),
+                            ]
+                        ),
                     ),
                 ),
-            ),
-            FunctionCall(
-                name=i64_sub,
-                parameters=[
-                    Symbol(x),
-                    Int(3),
-                ]
             ),
         ]
     ),

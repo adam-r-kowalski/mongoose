@@ -97,6 +97,7 @@ pub struct Function {
 
 #[derive(Debug, PartialEq)]
 pub struct Ast {
+    pub imports: Vec<Import>,
     pub functions: Vec<Function>,
     pub top_level: HashMap<String, usize>,
 }
@@ -595,11 +596,45 @@ fn parse_function_arguments(
     }
 }
 
+fn parse_import_unqualified(
+    top_level: &tokenizer::TopLevel,
+    token: Token,
+    path: Vec<usize>,
+    mut unqualified: Vec<usize>,
+) -> (Vec<usize>, Vec<usize>) {
+    assert_eq!(top_level.kinds[token.0], tokenizer::Kind::Symbol);
+    unqualified.push(top_level.indices[token.0]);
+    match top_level.kinds.get(token.0) {
+        Some(tokenizer::Kind::Comma) => {
+            parse_import_unqualified(top_level, inc_token(token), path, unqualified)
+        }
+        _ => (path, unqualified),
+    }
+}
+
+fn parse_import_path(
+    top_level: &tokenizer::TopLevel,
+    token: Token,
+    mut path: Vec<usize>,
+) -> (Vec<usize>, Vec<usize>) {
+    assert_eq!(top_level.kinds[token.0], tokenizer::Kind::Symbol);
+    path.push(top_level.indices[token.0]);
+    let token = inc_token(token);
+    match top_level.kinds.get(token.0) {
+        Some(tokenizer::Kind::Dot) => parse_import_path(top_level, inc_token(token), path),
+        Some(tokenizer::Kind::Colon) => {
+            parse_import_unqualified(top_level, inc_token(token), path, vec![])
+        }
+        _ => (path, vec![]),
+    }
+}
+
 fn parse_import(top_level: &tokenizer::TopLevel, token: Token) -> Import {
     let token = consume(top_level, token, tokenizer::Kind::Import);
+    let (path, unqualified) = parse_import_path(top_level, token, vec![]);
     Import {
-        path: vec![],
-        unqualified: vec![],
+        path,
+        unqualified,
         symbols: vec![],
     }
 }
@@ -681,6 +716,7 @@ pub fn parse(tokens: Tokens) -> Ast {
                 top_level
             });
     Ast {
+        imports,
         functions,
         top_level,
     }
