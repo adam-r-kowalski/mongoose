@@ -18,8 +18,8 @@ fn run(code: &str) -> Value {
 fn test_codegen_int() {
     let tokens = tokenize("fn start(): 0");
     let ast = parse(tokens);
-    let wasm = codegen(ast);
-    let code = write(wasm);
+    let wasm = codegen(&ast);
+    let code = write(&wasm);
     assert_eq!(
         code,
         r#"
@@ -38,8 +38,8 @@ fn test_codegen_int() {
 fn test_codegen_add() {
     let tokens = tokenize("fn start(): 5 + 10");
     let ast = parse(tokens);
-    let wasm = codegen(ast);
-    let code = write(wasm);
+    let wasm = codegen(&ast);
+    let code = write(&wasm);
     assert_eq!(
         code,
         r#"
@@ -60,8 +60,8 @@ fn test_codegen_add() {
 fn test_codegen_subtract() {
     let tokens = tokenize("fn start(): 5 - 10");
     let ast = parse(tokens);
-    let wasm = codegen(ast);
-    let code = write(wasm);
+    let wasm = codegen(&ast);
+    let code = write(&wasm);
     assert_eq!(
         code,
         r#"
@@ -82,8 +82,8 @@ fn test_codegen_subtract() {
 fn test_codegen_multiply() {
     let tokens = tokenize("fn start(): 5 * 10");
     let ast = parse(tokens);
-    let wasm = codegen(ast);
-    let code = write(wasm);
+    let wasm = codegen(&ast);
+    let code = write(&wasm);
     assert_eq!(
         code,
         r#"
@@ -104,8 +104,8 @@ fn test_codegen_multiply() {
 fn test_codegen_divide() {
     let tokens = tokenize("fn start(): 10 / 5");
     let ast = parse(tokens);
-    let wasm = codegen(ast);
-    let code = write(wasm);
+    let wasm = codegen(&ast);
+    let code = write(&wasm);
     assert_eq!(
         code,
         r#"
@@ -126,8 +126,8 @@ fn test_codegen_divide() {
 fn test_codegen_modulo_signed() {
     let tokens = tokenize("fn start(): 7 % 5");
     let ast = parse(tokens);
-    let wasm = codegen(ast);
-    let code = write(wasm);
+    let wasm = codegen(&ast);
+    let code = write(&wasm);
     assert_eq!(
         code,
         r#"
@@ -148,8 +148,8 @@ fn test_codegen_modulo_signed() {
 fn test_codegen_and() {
     let tokens = tokenize("fn start(): 7 & 5");
     let ast = parse(tokens);
-    let wasm = codegen(ast);
-    let code = write(wasm);
+    let wasm = codegen(&ast);
+    let code = write(&wasm);
     assert_eq!(
         code,
         r#"
@@ -170,8 +170,8 @@ fn test_codegen_and() {
 fn test_codegen_or() {
     let tokens = tokenize("fn start(): 7 | 5");
     let ast = parse(tokens);
-    let wasm = codegen(ast);
-    let code = write(wasm);
+    let wasm = codegen(&ast);
+    let code = write(&wasm);
     assert_eq!(
         code,
         r#"
@@ -192,8 +192,8 @@ fn test_codegen_or() {
 fn test_codegen_xor() {
     let tokens = tokenize("fn start(): 7 ^ 5");
     let ast = parse(tokens);
-    let wasm = codegen(ast);
-    let code = write(wasm);
+    let wasm = codegen(&ast);
+    let code = write(&wasm);
     assert_eq!(
         code,
         r#"
@@ -214,8 +214,8 @@ fn test_codegen_xor() {
 fn test_codegen_shift_left() {
     let tokens = tokenize("fn start(): 2 << 1");
     let ast = parse(tokens);
-    let wasm = codegen(ast);
-    let code = write(wasm);
+    let wasm = codegen(&ast);
+    let code = write(&wasm);
     assert_eq!(
         code,
         r#"
@@ -236,8 +236,8 @@ fn test_codegen_shift_left() {
 fn test_codegen_shift_right_signed() {
     let tokens = tokenize("fn start(): 8 >> 1");
     let ast = parse(tokens);
-    let wasm = codegen(ast);
-    let code = write(wasm);
+    let wasm = codegen(&ast);
+    let code = write(&wasm);
     assert_eq!(
         code,
         r#"
@@ -258,8 +258,8 @@ fn test_codegen_shift_right_signed() {
 fn test_codegen_equal() {
     let tokens = tokenize("fn start(): if 8 == 1: 1 else: 0");
     let ast = parse(tokens);
-    let wasm = codegen(ast);
-    let code = write(wasm);
+    let wasm = codegen(&ast);
+    let code = write(&wasm);
     assert_eq!(
         code,
         r#"
@@ -285,8 +285,8 @@ fn test_codegen_equal() {
 fn test_codegen_not_equal() {
     let tokens = tokenize("fn start(): if 8 != 1: 1 else: 0");
     let ast = parse(tokens);
-    let wasm = codegen(ast);
-    let code = write(wasm);
+    let wasm = codegen(&ast);
+    let code = write(&wasm);
     assert_eq!(
         code,
         r#"
@@ -312,8 +312,8 @@ fn test_codegen_not_equal() {
 fn test_codegen_less_than() {
     let tokens = tokenize("fn start(): if 8 < 1: 1 else: 0");
     let ast = parse(tokens);
-    let wasm = codegen(ast);
-    let code = write(wasm);
+    let wasm = codegen(&ast);
+    let code = write(&wasm);
     assert_eq!(
         code,
         r#"
@@ -339,8 +339,8 @@ fn test_codegen_less_than() {
 fn test_codegen_less_than_equal() {
     let tokens = tokenize("fn start(): if 8 <= 1: 1 else: 0");
     let ast = parse(tokens);
-    let wasm = codegen(ast);
-    let code = write(wasm);
+    let wasm = codegen(&ast);
+    let code = write(&wasm);
     assert_eq!(
         code,
         r#"
@@ -366,8 +366,8 @@ fn test_codegen_less_than_equal() {
 fn test_codegen_greater_than() {
     let tokens = tokenize("fn start(): if 8 > 1: 1 else: 0");
     let ast = parse(tokens);
-    let wasm = codegen(ast);
-    let code = write(wasm);
+    let wasm = codegen(&ast);
+    let code = write(&wasm);
     assert_eq!(
         code,
         r#"
@@ -393,8 +393,8 @@ fn test_codegen_greater_than() {
 fn test_codegen_greater_than_equal() {
     let tokens = tokenize("fn start(): if 8 >= 1: 1 else: 0");
     let ast = parse(tokens);
-    let wasm = codegen(ast);
-    let code = write(wasm);
+    let wasm = codegen(&ast);
+    let code = write(&wasm);
     assert_eq!(
         code,
         r#"
@@ -420,8 +420,8 @@ fn test_codegen_greater_than_equal() {
 fn test_codegen_add_then_multiply() {
     let tokens = tokenize("fn start(): 3 + 5 * 10");
     let ast = parse(tokens);
-    let wasm = codegen(ast);
-    let code = write(wasm);
+    let wasm = codegen(&ast);
+    let code = write(&wasm);
     assert_eq!(
         code,
         r#"
@@ -444,8 +444,8 @@ fn test_codegen_add_then_multiply() {
 fn test_codegen_multiply_then_add() {
     let tokens = tokenize("fn start(): 3 * 5 + 10");
     let ast = parse(tokens);
-    let wasm = codegen(ast);
-    let code = write(wasm);
+    let wasm = codegen(&ast);
+    let code = write(&wasm);
     assert_eq!(
         code,
         r#"
@@ -473,8 +473,8 @@ fn start():
     x + y"#;
     let tokens = tokenize(source);
     let ast = parse(tokens);
-    let wasm = codegen(ast);
-    let code = write(wasm);
+    let wasm = codegen(&ast);
+    let code = write(&wasm);
     assert_eq!(
         code,
         r#"
@@ -506,8 +506,8 @@ fn start():
     x"#;
     let tokens = tokenize(source);
     let ast = parse(tokens);
-    let wasm = codegen(ast);
-    let code = write(wasm);
+    let wasm = codegen(&ast);
+    let code = write(&wasm);
     assert_eq!(
         code,
         r#"
@@ -542,8 +542,8 @@ fn sum_of_squares(x, y):
 fn start(): sum_of_squares(5, 3)"#;
     let tokens = tokenize(source);
     let ast = parse(tokens);
-    let wasm = codegen(ast);
-    let code = write(wasm);
+    let wasm = codegen(&ast);
+    let code = write(&wasm);
     assert_eq!(
         code,
         r#"
@@ -587,8 +587,8 @@ fn start():
   if x < y: x else: y"#;
     let tokens = tokenize(source);
     let ast = parse(tokens);
-    let wasm = codegen(ast);
-    let code = write(wasm);
+    let wasm = codegen(&ast);
+    let code = write(&wasm);
     assert_eq!(
         code,
         r#"
@@ -627,8 +627,8 @@ fn start():
 "#;
     let tokens = tokenize(source);
     let ast = parse(tokens);
-    let wasm = codegen(ast);
-    let code = write(wasm);
+    let wasm = codegen(&ast);
+    let code = write(&wasm);
     assert_eq!(
         code,
         r#"
@@ -658,4 +658,17 @@ fn start():
 "#
     );
     assert_eq!(run(&code), Value::I64(10));
+}
+
+#[test]
+fn test_codegen_import() {
+    let source = r#"
+import foo.bar: baz
+
+fn start():
+    baz(5, 3) == foo.bar.baz(5, 3)
+"#;
+    let tokens = tokenize(source);
+    let ast = parse(tokens);
+    let wasm = codegen(&ast);
 }

@@ -327,7 +327,7 @@ fn codegen_function(tx: Sender<Message>, ast_func: &parser::Function) -> Functio
     wasm_func
 }
 
-pub fn codegen(ast: Ast) -> Wasm {
+pub fn codegen(ast: &Ast) -> Wasm {
     let mut in_flight = 0;
     let mut wasm = Wasm {
         functions: vec![],

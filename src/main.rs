@@ -15,15 +15,15 @@ fn main() {
     file.read_to_string(&mut contents).unwrap();
     let tokens = tokenize(&contents);
     let ast = parse(tokens);
-    let wasm = codegen(ast);
+    let wasm = codegen(&ast);
     match args.get(2) {
         Some(s) if s == "--emit-wasm" => {
             let mut file = File::create(&args[3]).unwrap();
-            let code = write(wasm);
+            let code = write(&wasm);
             write!(file, "{}", code).unwrap();
         }
         _ => {
-            let code = write(wasm);
+            let code = write(&wasm);
             let store = Store::default();
             let module = Module::new(&store, &code).unwrap();
             let import_object = imports! {};

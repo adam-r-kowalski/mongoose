@@ -150,7 +150,7 @@ fn write_function(mut code: String, func: &Function) -> Result<String, Error> {
     Ok(code)
 }
 
-pub fn write(wasm: Wasm) -> String {
+pub fn write(wasm: &Wasm) -> String {
     let mut code = String::new();
     code.push_str("\n(module");
     let mut code = wasm
