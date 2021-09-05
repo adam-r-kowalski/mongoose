@@ -1,12 +1,30 @@
 use pretty_assertions::assert_eq;
 
 use compiler::{
-    parser::{parse, Ast, BinaryOp, Function, Kind},
+    parser::{parse, Ast, BinaryOp, Function, Import, Kind},
     tokenizer::tokenize,
 };
 
 fn write_indent(mut output: String, indent: usize) -> String {
     output.push_str(&String::from_utf8(vec![b' '; indent]).unwrap());
+    output
+}
+
+fn ast_string_import(mut output: String, import: &Import) -> String {
+    output.push_str("    Import(\n");
+    output.push_str("        path=[");
+    let mut output = import.path.iter().fold(output, |mut output, &part| {
+        output.push_str(&import.symbols[part]);
+        output.push_str(", ");
+        output
+    });
+    output.push_str("],\n        unqualified=[");
+    let mut output = import.unqualified.iter().fold(output, |mut output, &name| {
+        output.push_str(&import.symbols[name]);
+        output.push_str(", ");
+        output
+    });
+    output.push_str("]\n    ),\n");
     output
 }
 
@@ -229,10 +247,9 @@ fn ast_string_function(mut output: String, func: &Function) -> String {
 }
 
 fn ast_string(ast: &Ast) -> String {
-    let mut output = ast
-        .functions
-        .iter()
-        .fold(String::from("\nAst([\n"), ast_string_function);
+    let output = String::from("\nAst([\n");
+    let output = ast.imports.iter().fold(output, ast_string_import);
+    let mut output = ast.functions.iter().fold(output, ast_string_function);
     output.push_str("])\n");
     output
 }
@@ -986,6 +1003,10 @@ fn start():
         ast_string(&ast),
         r#"
 Ast([
+    Import(
+        path=[foo, bar, ],
+        unqualified=[baz, ]
+    ),
     Function(
         name=start,
         arguments=[
