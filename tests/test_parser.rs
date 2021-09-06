@@ -230,18 +230,25 @@ fn ast_string_function(mut output: String, func: &Function) -> String {
     output.push_str("        name=");
     output.push_str(&func.symbols[func.name]);
     output.push_str(",\n        arguments=[\n");
-    let mut output = func.arguments.iter().fold(output, |mut output, &argument| {
-        output.push_str("            ");
+    let indent = 12;
+    let mut output = func.arguments.iter().fold(output, |output, &argument| {
+        let mut output = write_indent(output, indent);
         output.push_str(&func.symbols[argument]);
         output.push_str(",\n");
         output
     });
     output.push_str("        ],\n        argument_types=[\n");
+    let mut output = func
+        .argument_types
+        .iter()
+        .fold(output, |output, &expression| {
+            let output = write_indent(output, indent);
+            ast_string_expression(output, func, expression, indent)
+        });
     output.push_str("        ],\n        return_type=");
     let mut output = ast_string_expression(output, func, func.return_type, 0);
     output.push_str("        body=[\n");
     let mut output = func.expressions.iter().fold(output, |output, &expression| {
-        let indent = 12;
         let output = write_indent(output, indent);
         ast_string_expression(output, func, expression, indent)
     });
@@ -366,7 +373,7 @@ fn sum_of_squares(x: i64, y: i64) -> i64:
     y2 = square(y)
     x2 + y2
 
-fn start(): sum_of_squares(5, 3)"#;
+fn start() -> i64: sum_of_squares(5, 3)"#;
     let tokens = tokenize(source);
     let ast = parse(tokens);
     assert_eq!(
@@ -378,6 +385,10 @@ Ast([
         arguments=[
             x,
         ],
+        argument_types=[
+            Symbol(i64),
+        ],
+        return_type=Symbol(i64),
         body=[
             BinaryOp(
                 op=Multiply,
@@ -392,6 +403,11 @@ Ast([
             x,
             y,
         ],
+        argument_types=[
+            Symbol(i64),
+            Symbol(i64),
+        ],
+        return_type=Symbol(i64),
         body=[
             Assign(
                 name=x2,
@@ -422,6 +438,9 @@ Ast([
         name=start,
         arguments=[
         ],
+        argument_types=[
+        ],
+        return_type=Symbol(i64),
         body=[
             FunctionCall(
                 name=sum_of_squares,
@@ -440,7 +459,7 @@ Ast([
 #[test]
 fn test_parse_single_line_if() {
     let source = r#"
-fn min(x, y):
+fn min(x: i64, y: i64) -> i64:
   if x < y: x else: y"#;
     let tokens = tokenize(source);
     let ast = parse(tokens);
@@ -454,6 +473,11 @@ Ast([
             x,
             y,
         ],
+        argument_types=[
+            Symbol(i64),
+            Symbol(i64),
+        ],
+        return_type=Symbol(i64),
         body=[
             If(
                 condition=BinaryOp(
@@ -478,7 +502,7 @@ Ast([
 #[test]
 fn test_parse_multi_line_if() {
     let source = r#"
-fn main():
+fn main() -> i64:
   a = 5
   b = 10
   if a < b:
@@ -497,6 +521,9 @@ Ast([
         name=main,
         arguments=[
         ],
+        argument_types=[
+        ],
+        return_type=Symbol(i64),
         body=[
             Assign(
                 name=a,
@@ -553,7 +580,7 @@ Ast([
 #[test]
 fn test_parse_multiple_single_line_ifs() {
     let source = r#"
-fn main():
+fn main() -> i64:
   a = 5
   b = 10
   c = if a < b: 15 else: 20
@@ -569,6 +596,9 @@ Ast([
         name=main,
         arguments=[
         ],
+        argument_types=[
+        ],
+        return_type=Symbol(i64),
         body=[
             Assign(
                 name=a,
@@ -625,7 +655,7 @@ Ast([
 #[test]
 fn test_parse_multi_line_if_returns_value() {
     let source = r#"
-fn main():
+fn main() -> i64:
   a = 5
   b = 10
   c = if a < b:
@@ -644,6 +674,9 @@ Ast([
         name=main,
         arguments=[
         ],
+        argument_types=[
+        ],
+        return_type=Symbol(i64),
         body=[
             Assign(
                 name=a,
@@ -700,7 +733,7 @@ Ast([
 #[test]
 fn test_parse_while() {
     let source = r#"
-fn start():
+fn start() -> i64:
     i = 0
     while i < 10:
         i = i + 1
@@ -715,6 +748,9 @@ Ast([
         name=start,
         arguments=[
         ],
+        argument_types=[
+        ],
+        return_type=Symbol(i64),
         body=[
             Assign(
                 name=i,
@@ -748,9 +784,9 @@ Ast([
 #[test]
 fn test_parse_pipeline_simplest() {
     let source = r#"
-fn square(x): x * x
+fn square(x: i64) -> i64: x * x
 
-fn start(): 5 |> square() |> square()
+fn start() -> i64: 5 |> square() |> square()
 "#;
     let tokens = tokenize(source);
     let ast = parse(tokens);
@@ -763,6 +799,10 @@ Ast([
         arguments=[
             x,
         ],
+        argument_types=[
+            Symbol(i64),
+        ],
+        return_type=Symbol(i64),
         body=[
             BinaryOp(
                 op=Multiply,
@@ -775,6 +815,9 @@ Ast([
         name=start,
         arguments=[
         ],
+        argument_types=[
+        ],
+        return_type=Symbol(i64),
         body=[
             FunctionCall(
                 name=square,
@@ -797,9 +840,9 @@ Ast([
 #[test]
 fn test_parse_pipeline_no_paren_if_no_arguments() {
     let source = r#"
-fn square(x): x * x
+fn square(x: i64) -> i64: x * x
 
-fn start(): 5 |> square |> square
+fn start() -> i64: 5 |> square |> square
 "#;
     let tokens = tokenize(source);
     let ast = parse(tokens);
@@ -812,6 +855,10 @@ Ast([
         arguments=[
             x,
         ],
+        argument_types=[
+            Symbol(i64),
+        ],
+        return_type=Symbol(i64),
         body=[
             BinaryOp(
                 op=Multiply,
@@ -824,6 +871,9 @@ Ast([
         name=start,
         arguments=[
         ],
+        argument_types=[
+        ],
+        return_type=Symbol(i64),
         body=[
             FunctionCall(
                 name=square,
@@ -846,9 +896,9 @@ Ast([
 #[test]
 fn test_parse_pipeline_across_new_line() {
     let source = r#"
-fn square(x): x * x
+fn square(x: i64) -> i64: x * x
 
-fn start():
+fn start() -> i64:
     5
     |> square
     |> square
@@ -864,6 +914,10 @@ Ast([
         arguments=[
             x,
         ],
+        argument_types=[
+            Symbol(i64),
+        ],
+        return_type=Symbol(i64),
         body=[
             BinaryOp(
                 op=Multiply,
@@ -876,6 +930,9 @@ Ast([
         name=start,
         arguments=[
         ],
+        argument_types=[
+        ],
+        return_type=Symbol(i64),
         body=[
             FunctionCall(
                 name=square,
@@ -898,9 +955,9 @@ Ast([
 #[test]
 fn test_parse_pipeline_specify_location() {
     let source = r#"
-fn f(x, y, z): x * y / z
+fn f(x: i64, y: i64, z: i64) -> i64: x * y / z
 
-fn start(): 10 |> f(5, _, 3)
+fn start() -> i64: 10 |> f(5, _, 3)
 "#;
     let tokens = tokenize(source);
     let ast = parse(tokens);
@@ -915,6 +972,12 @@ Ast([
             y,
             z,
         ],
+        argument_types=[
+            Symbol(i64),
+            Symbol(i64),
+            Symbol(i64),
+        ],
+        return_type=Symbol(i64),
         body=[
             BinaryOp(
                 op=Multiply,
@@ -931,6 +994,9 @@ Ast([
         name=start,
         arguments=[
         ],
+        argument_types=[
+        ],
+        return_type=Symbol(i64),
         body=[
             FunctionCall(
                 name=f,
@@ -950,9 +1016,9 @@ Ast([
 #[test]
 fn test_parse_pipeline_with_grouped_expression() {
     let source = r#"
-fn square(x): x * x
+fn square(x: i64) -> i64: x * x
 
-fn start(): (3 + 10) |> square
+fn start() -> i64: (3 + 10) |> square
 "#;
     let tokens = tokenize(source);
     let ast = parse(tokens);
@@ -965,6 +1031,10 @@ Ast([
         arguments=[
             x,
         ],
+        argument_types=[
+            Symbol(i64),
+        ],
+        return_type=Symbol(i64),
         body=[
             BinaryOp(
                 op=Multiply,
@@ -977,6 +1047,9 @@ Ast([
         name=start,
         arguments=[
         ],
+        argument_types=[
+        ],
+        return_type=Symbol(i64),
         body=[
             FunctionCall(
                 name=square,
@@ -1002,8 +1075,8 @@ fn test_parse_import() {
     let source = r#"
 import foo.bar: baz
 
-fn start():
-    baz(5, 3) == foo.bar.baz(5, 3)
+fn start() -> i64:
+    baz(5, 3) + foo.bar.baz(5, 3)
 "#;
     let tokens = tokenize(source);
     let ast = parse(tokens);
@@ -1019,9 +1092,12 @@ Ast([
         name=start,
         arguments=[
         ],
+        argument_types=[
+        ],
+        return_type=Symbol(i64),
         body=[
             BinaryOp(
-                op=Equal,
+                op=Add,
                 left=FunctionCall(
                     name=baz,
                     parameters=[

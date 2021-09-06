@@ -588,6 +588,10 @@ fn parse_function_arguments(
     assert_eq!(top_level.kinds[token.0], tokenizer::Kind::Symbol);
     func.arguments.push(top_level.indices[token.0]);
     let token = inc_token(token);
+    let token = consume(top_level, token, tokenizer::Kind::Colon);
+    let ParseResult(mut func, token, argument_type) =
+        parse_expression(func, top_level, token, LOWEST);
+    func.argument_types.push(argument_type);
     match top_level.kinds[token.0] {
         tokenizer::Kind::Comma => parse_function_arguments(func, top_level, inc_token(token)),
         tokenizer::Kind::RightParen => (func, token),
