@@ -82,6 +82,8 @@ pub struct Import {
 pub struct Function {
     pub name: usize,
     pub arguments: Vec<usize>,
+    pub argument_types: Vec<usize>,
+    pub return_type: usize,
     pub kinds: Vec<Kind>,
     pub indices: Vec<usize>,
     pub binary_ops: BinaryOps,
@@ -596,6 +598,58 @@ fn parse_function_arguments(
     }
 }
 
+fn parse_function(top_level: &tokenizer::TopLevel, token: Token) -> Function {
+    let token = consume(top_level, token, tokenizer::Kind::Fn);
+    assert_eq!(top_level.kinds[token.0], tokenizer::Kind::Symbol);
+    let func = Function {
+        name: top_level.indices[token.0],
+        arguments: vec![],
+        argument_types: vec![],
+        return_type: 0,
+        kinds: vec![],
+        indices: vec![],
+        binary_ops: BinaryOps {
+            ops: vec![],
+            lefts: vec![],
+            rights: vec![],
+        },
+        assignments: Assignments {
+            names: vec![],
+            values: vec![],
+        },
+        function_calls: FunctionCalls {
+            names: vec![],
+            parameters: vec![],
+        },
+        expressions: vec![],
+        symbols: vec![],
+        ints: vec![],
+        ifs: Ifs {
+            conditionals: vec![],
+            then_branches: vec![],
+            else_branches: vec![],
+        },
+        whiles: Whiles {
+            conditionals: vec![],
+            bodies: vec![],
+        },
+        groupings: vec![],
+    };
+    let token = consume(top_level, inc_token(token), tokenizer::Kind::LeftParen);
+    let (func, token) = if top_level.kinds[token.0] != tokenizer::Kind::RightParen {
+        parse_function_arguments(func, top_level, token)
+    } else {
+        (func, token)
+    };
+    let token = consume(top_level, token, tokenizer::Kind::RightParen);
+    let token = consume(top_level, token, tokenizer::Kind::DashGreaterThan);
+    let ParseResult(mut func, token, return_type) =
+        parse_expression(func, top_level, token, LOWEST);
+    func.return_type = return_type;
+    let token = consume(top_level, token, tokenizer::Kind::Colon);
+    parse_function_body(func, top_level, token)
+}
+
 fn parse_import_unqualified(
     top_level: &tokenizer::TopLevel,
     token: Token,
@@ -637,52 +691,6 @@ fn parse_import(top_level: &tokenizer::TopLevel, token: Token) -> Import {
         unqualified,
         symbols: vec![],
     }
-}
-
-fn parse_function(top_level: &tokenizer::TopLevel, token: Token) -> Function {
-    let token = consume(top_level, token, tokenizer::Kind::Fn);
-    assert_eq!(top_level.kinds[token.0], tokenizer::Kind::Symbol);
-    let func = Function {
-        name: top_level.indices[token.0],
-        arguments: vec![],
-        kinds: vec![],
-        indices: vec![],
-        binary_ops: BinaryOps {
-            ops: vec![],
-            lefts: vec![],
-            rights: vec![],
-        },
-        assignments: Assignments {
-            names: vec![],
-            values: vec![],
-        },
-        function_calls: FunctionCalls {
-            names: vec![],
-            parameters: vec![],
-        },
-        expressions: vec![],
-        symbols: vec![],
-        ints: vec![],
-        ifs: Ifs {
-            conditionals: vec![],
-            then_branches: vec![],
-            else_branches: vec![],
-        },
-        whiles: Whiles {
-            conditionals: vec![],
-            bodies: vec![],
-        },
-        groupings: vec![],
-    };
-    let token = consume(top_level, inc_token(token), tokenizer::Kind::LeftParen);
-    let (func, token) = if top_level.kinds[token.0] != tokenizer::Kind::RightParen {
-        parse_function_arguments(func, top_level, token)
-    } else {
-        (func, token)
-    };
-    let token = consume(top_level, token, tokenizer::Kind::RightParen);
-    let token = consume(top_level, token, tokenizer::Kind::Colon);
-    parse_function_body(func, top_level, token)
 }
 
 pub fn parse(tokens: Tokens) -> Ast {
