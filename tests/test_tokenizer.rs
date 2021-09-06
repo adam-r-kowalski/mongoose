@@ -46,8 +46,11 @@ fn token_string_impl(top_level: &TopLevel, token: usize, output: String) -> Stri
         Some(Kind::Fn) => token_string_literal(top_level, token, output, "Fn"),
         Some(Kind::LeftParen) => token_string_literal(top_level, token, output, "LeftParen"),
         Some(Kind::RightParen) => token_string_literal(top_level, token, output, "RightParen"),
-        Some(Kind::Plus) => token_string_literal(top_level, token, output, "Plus"),
-        Some(Kind::Minus) => token_string_literal(top_level, token, output, "Minus"),
+        Some(Kind::Cross) => token_string_literal(top_level, token, output, "Cross"),
+        Some(Kind::Dash) => token_string_literal(top_level, token, output, "Dash"),
+        Some(Kind::DashGreaterThan) => {
+            token_string_literal(top_level, token, output, "DashGreaterThan")
+        }
         Some(Kind::Asterisk) => token_string_literal(top_level, token, output, "Asterisk"),
         Some(Kind::Slash) => token_string_literal(top_level, token, output, "Slash"),
         Some(Kind::Percent) => token_string_literal(top_level, token, output, "Percent"),
@@ -113,7 +116,7 @@ fn token_string(tokens: &Tokens) -> String {
 
 #[test]
 fn test_tokenize_int() {
-    let tokens = tokenize("fn start(): 0");
+    let tokens = tokenize("fn start() -> i64: 0");
     assert_eq!(
         token_string(&tokens),
         r#"
@@ -123,6 +126,8 @@ Tokens([
         Symbol(start),
         LeftParen,
         RightParen,
+        DashGreaterThan,
+        Symbol(i64),
         Colon,
         Int(0),
     ]),
@@ -133,7 +138,7 @@ Tokens([
 
 #[test]
 fn test_tokenize_add() {
-    let tokens = tokenize("fn start(): 5 + 10");
+    let tokens = tokenize("fn start() -> i64: 5 + 10");
     assert_eq!(
         token_string(&tokens),
         r#"
@@ -143,9 +148,11 @@ Tokens([
         Symbol(start),
         LeftParen,
         RightParen,
+        DashGreaterThan,
+        Symbol(i64),
         Colon,
         Int(5),
-        Plus,
+        Cross,
         Int(10),
     ]),
 ])
@@ -155,7 +162,7 @@ Tokens([
 
 #[test]
 fn test_tokenize_subtract() {
-    let tokens = tokenize("fn start(): 5 - 10");
+    let tokens = tokenize("fn start() -> i64: 5 - 10");
     assert_eq!(
         token_string(&tokens),
         r#"
@@ -165,9 +172,11 @@ Tokens([
         Symbol(start),
         LeftParen,
         RightParen,
+        DashGreaterThan,
+        Symbol(i64),
         Colon,
         Int(5),
-        Minus,
+        Dash,
         Int(10),
     ]),
 ])
@@ -177,7 +186,7 @@ Tokens([
 
 #[test]
 fn test_tokenize_multiply() {
-    let tokens = tokenize("fn start(): 5 * 10");
+    let tokens = tokenize("fn start() -> i64: 5 * 10");
     assert_eq!(
         token_string(&tokens),
         r#"
@@ -187,6 +196,8 @@ Tokens([
         Symbol(start),
         LeftParen,
         RightParen,
+        DashGreaterThan,
+        Symbol(i64),
         Colon,
         Int(5),
         Asterisk,
@@ -199,7 +210,7 @@ Tokens([
 
 #[test]
 fn test_tokenize_divide() {
-    let tokens = tokenize("fn start(): 10 / 5");
+    let tokens = tokenize("fn start() -> i64: 10 / 5");
     assert_eq!(
         token_string(&tokens),
         r#"
@@ -209,6 +220,8 @@ Tokens([
         Symbol(start),
         LeftParen,
         RightParen,
+        DashGreaterThan,
+        Symbol(i64),
         Colon,
         Int(10),
         Slash,
@@ -221,7 +234,7 @@ Tokens([
 
 #[test]
 fn test_tokenize_modulo() {
-    let tokens = tokenize("fn start(): 10 % 5");
+    let tokens = tokenize("fn start() -> i64: 10 % 5");
     assert_eq!(
         token_string(&tokens),
         r#"
@@ -231,6 +244,8 @@ Tokens([
         Symbol(start),
         LeftParen,
         RightParen,
+        DashGreaterThan,
+        Symbol(i64),
         Colon,
         Int(10),
         Percent,
@@ -243,7 +258,7 @@ Tokens([
 
 #[test]
 fn test_tokenize_bitwise_and() {
-    let tokens = tokenize("fn start(): 2 & 1");
+    let tokens = tokenize("fn start() -> i64: 2 & 1");
     assert_eq!(
         token_string(&tokens),
         r#"
@@ -253,6 +268,8 @@ Tokens([
         Symbol(start),
         LeftParen,
         RightParen,
+        DashGreaterThan,
+        Symbol(i64),
         Colon,
         Int(2),
         Ampersand,
@@ -265,7 +282,7 @@ Tokens([
 
 #[test]
 fn test_tokenize_bitwise_or() {
-    let tokens = tokenize("fn start(): 2 | 1");
+    let tokens = tokenize("fn start() -> i64: 2 | 1");
     assert_eq!(
         token_string(&tokens),
         r#"
@@ -275,6 +292,8 @@ Tokens([
         Symbol(start),
         LeftParen,
         RightParen,
+        DashGreaterThan,
+        Symbol(i64),
         Colon,
         Int(2),
         VerticalBar,
@@ -287,7 +306,7 @@ Tokens([
 
 #[test]
 fn test_tokenize_bitwise_xor() {
-    let tokens = tokenize("fn start(): 2 ^ 1");
+    let tokens = tokenize("fn start() -> i64: 2 ^ 1");
     assert_eq!(
         token_string(&tokens),
         r#"
@@ -297,6 +316,8 @@ Tokens([
         Symbol(start),
         LeftParen,
         RightParen,
+        DashGreaterThan,
+        Symbol(i64),
         Colon,
         Int(2),
         Caret,
@@ -309,7 +330,7 @@ Tokens([
 
 #[test]
 fn test_tokenize_shift_left() {
-    let tokens = tokenize("fn start(): 2 << 1");
+    let tokens = tokenize("fn start() -> i64: 2 << 1");
     assert_eq!(
         token_string(&tokens),
         r#"
@@ -319,6 +340,8 @@ Tokens([
         Symbol(start),
         LeftParen,
         RightParen,
+        DashGreaterThan,
+        Symbol(i64),
         Colon,
         Int(2),
         LessThanLessThan,
@@ -331,7 +354,7 @@ Tokens([
 
 #[test]
 fn test_tokenize_shift_right_signed() {
-    let tokens = tokenize("fn start(): 8 >> 1");
+    let tokens = tokenize("fn start() -> i64: 8 >> 1");
     assert_eq!(
         token_string(&tokens),
         r#"
@@ -341,6 +364,8 @@ Tokens([
         Symbol(start),
         LeftParen,
         RightParen,
+        DashGreaterThan,
+        Symbol(i64),
         Colon,
         Int(8),
         GreaterThanGreaterThan,
@@ -353,7 +378,7 @@ Tokens([
 
 #[test]
 fn test_tokenize_equal() {
-    let tokens = tokenize("fn start(): 10 == 5");
+    let tokens = tokenize("fn start() -> i64: 10 == 5");
     assert_eq!(
         token_string(&tokens),
         r#"
@@ -363,6 +388,8 @@ Tokens([
         Symbol(start),
         LeftParen,
         RightParen,
+        DashGreaterThan,
+        Symbol(i64),
         Colon,
         Int(10),
         EqualEqual,
@@ -375,7 +402,7 @@ Tokens([
 
 #[test]
 fn test_tokenize_not_equal() {
-    let tokens = tokenize("fn start(): 10 != 5");
+    let tokens = tokenize("fn start() -> i64: 10 != 5");
     assert_eq!(
         token_string(&tokens),
         r#"
@@ -385,6 +412,8 @@ Tokens([
         Symbol(start),
         LeftParen,
         RightParen,
+        DashGreaterThan,
+        Symbol(i64),
         Colon,
         Int(10),
         ExclamationEqual,
@@ -397,7 +426,7 @@ Tokens([
 
 #[test]
 fn test_tokenize_less_than_signed() {
-    let tokens = tokenize("fn start(): 10 < 5");
+    let tokens = tokenize("fn start() -> i64: 10 < 5");
     assert_eq!(
         token_string(&tokens),
         r#"
@@ -407,6 +436,8 @@ Tokens([
         Symbol(start),
         LeftParen,
         RightParen,
+        DashGreaterThan,
+        Symbol(i64),
         Colon,
         Int(10),
         LessThan,
@@ -419,7 +450,7 @@ Tokens([
 
 #[test]
 fn test_tokenize_greater_than_signed() {
-    let tokens = tokenize("fn start(): 10 > 5");
+    let tokens = tokenize("fn start() -> i64: 10 > 5");
     assert_eq!(
         token_string(&tokens),
         r#"
@@ -429,6 +460,8 @@ Tokens([
         Symbol(start),
         LeftParen,
         RightParen,
+        DashGreaterThan,
+        Symbol(i64),
         Colon,
         Int(10),
         GreaterThan,
@@ -441,7 +474,7 @@ Tokens([
 
 #[test]
 fn test_tokenize_less_than_or_equal_signed() {
-    let tokens = tokenize("fn start(): 10 <= 5");
+    let tokens = tokenize("fn start() -> i64: 10 <= 5");
     assert_eq!(
         token_string(&tokens),
         r#"
@@ -451,6 +484,8 @@ Tokens([
         Symbol(start),
         LeftParen,
         RightParen,
+        DashGreaterThan,
+        Symbol(i64),
         Colon,
         Int(10),
         LessThanEqual,
@@ -463,7 +498,7 @@ Tokens([
 
 #[test]
 fn test_tokenize_greater_than_or_equal_signed() {
-    let tokens = tokenize("fn start(): 10 >= 5");
+    let tokens = tokenize("fn start() -> i64: 10 >= 5");
     assert_eq!(
         token_string(&tokens),
         r#"
@@ -473,6 +508,8 @@ Tokens([
         Symbol(start),
         LeftParen,
         RightParen,
+        DashGreaterThan,
+        Symbol(i64),
         Colon,
         Int(10),
         GreaterThanEqual,
@@ -486,7 +523,7 @@ Tokens([
 #[test]
 fn test_tokenize_local_variables() {
     let source = r#"
-fn start():
+fn start() -> i64:
     x = 5
     y = 20
     x + y"#;
@@ -500,6 +537,8 @@ Tokens([
         Symbol(start),
         LeftParen,
         RightParen,
+        DashGreaterThan,
+        Symbol(i64),
         Colon,
         Indent(4),
         Symbol(x),
@@ -511,7 +550,7 @@ Tokens([
         Int(20),
         Indent(4),
         Symbol(x),
-        Plus,
+        Cross,
         Symbol(y),
     ]),
 ])
@@ -522,14 +561,14 @@ Tokens([
 #[test]
 fn test_tokenize_multiple_functions() {
     let source = r#"
-fn square(x): x * x
+fn square(x: i64) -> i64: x * x
 
-fn sum_of_squares(x, y):
+fn sum_of_squares(x: i64, y: i64) -> i64:
     x2 = square(x)
     y2 = square(y)
     x2 + y2
 
-fn start(): sum_of_squares(5, 3)"#;
+fn start() -> i64: sum_of_squares(5, 3)"#;
     let tokens = tokenize(source);
     assert_eq!(
         token_string(&tokens),
@@ -540,7 +579,11 @@ Tokens([
         Symbol(square),
         LeftParen,
         Symbol(x),
+        Colon,
+        Symbol(i64),
         RightParen,
+        DashGreaterThan,
+        Symbol(i64),
         Colon,
         Symbol(x),
         Asterisk,
@@ -551,9 +594,15 @@ Tokens([
         Symbol(sum_of_squares),
         LeftParen,
         Symbol(x),
+        Colon,
+        Symbol(i64),
         Comma,
         Symbol(y),
+        Colon,
+        Symbol(i64),
         RightParen,
+        DashGreaterThan,
+        Symbol(i64),
         Colon,
         Indent(4),
         Symbol(x2),
@@ -571,7 +620,7 @@ Tokens([
         RightParen,
         Indent(4),
         Symbol(x2),
-        Plus,
+        Cross,
         Symbol(y2),
     ]),
     TopLevel([
@@ -579,6 +628,8 @@ Tokens([
         Symbol(start),
         LeftParen,
         RightParen,
+        DashGreaterThan,
+        Symbol(i64),
         Colon,
         Symbol(sum_of_squares),
         LeftParen,
@@ -595,7 +646,7 @@ Tokens([
 #[test]
 fn test_tokenize_if() {
     let source = r#"
-fn min(x, y):
+fn min(x: i64, y: i64) -> i64:
   if x < y:
     x
   else:
@@ -610,9 +661,15 @@ Tokens([
         Symbol(min),
         LeftParen,
         Symbol(x),
+        Colon,
+        Symbol(i64),
         Comma,
         Symbol(y),
+        Colon,
+        Symbol(i64),
         RightParen,
+        DashGreaterThan,
+        Symbol(i64),
         Colon,
         Indent(2),
         If,
@@ -666,7 +723,7 @@ Tokens([
         Symbol(i),
         Equal,
         Symbol(i),
-        Plus,
+        Cross,
         Int(1),
         Indent(4),
         Symbol(i),
@@ -680,7 +737,7 @@ Tokens([
 fn test_tokenize_comment() {
     let source = r#"
 # comments can appear above top level expressions
-fn start():
+fn start() -> i64:
     x = 10 # comments can appear to the right of expressions
     # comments can appear inbetween expressions
     x
@@ -696,6 +753,8 @@ Tokens([
         Symbol(start),
         LeftParen,
         RightParen,
+        DashGreaterThan,
+        Symbol(i64),
         Colon,
         Indent(4),
         Symbol(x),
@@ -712,9 +771,9 @@ Tokens([
 #[test]
 fn test_tokenize_pipeline() {
     let source = r#"
-fn square(x): x * x
+fn square(x: i64) -> i64: x * x
 
-fn start(): 5 |> square() |> square()
+fn start() -> i64: 5 |> square() |> square()
 "#;
     let tokens = tokenize(source);
     assert_eq!(
@@ -726,7 +785,11 @@ Tokens([
         Symbol(square),
         LeftParen,
         Symbol(x),
+        Colon,
+        Symbol(i64),
         RightParen,
+        DashGreaterThan,
+        Symbol(i64),
         Colon,
         Symbol(x),
         Asterisk,
@@ -737,6 +800,8 @@ Tokens([
         Symbol(start),
         LeftParen,
         RightParen,
+        DashGreaterThan,
+        Symbol(i64),
         Colon,
         Int(5),
         VerticalBarGreaterThan,
@@ -758,7 +823,7 @@ fn test_tokenize_import() {
     let source = r#"
 import builtin: i64_sub
 
-fn start():
+fn start() -> i64:
     x = builtin.i64_add(7, 5)
     i64_sub(x, 3)
 "#;
@@ -778,6 +843,8 @@ Tokens([
         Symbol(start),
         LeftParen,
         RightParen,
+        DashGreaterThan,
+        Symbol(i64),
         Colon,
         Indent(4),
         Symbol(x),

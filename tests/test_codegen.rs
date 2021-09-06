@@ -659,16 +659,3 @@ fn start():
     );
     assert_eq!(run(&code), Value::I64(10));
 }
-
-#[test]
-fn test_codegen_import() {
-    let source = r#"
-import foo.bar: baz
-
-fn start():
-    baz(5, 3) == foo.bar.baz(5, 3)
-"#;
-    let tokens = tokenize(source);
-    let ast = parse(tokens);
-    let wasm = codegen(&ast);
-}

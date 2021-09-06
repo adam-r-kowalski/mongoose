@@ -42,7 +42,7 @@ pub fn new_file(mut fs: MockFileSystem, file_name: &str, source: &str) -> (MockF
 }
 
 #[test]
-fn test_lower() {
+fn test_lower_import() {
     let fs = MockFileSystem::new();
     let (fs, _) = new_file(
         fs,
@@ -50,11 +50,10 @@ fn test_lower() {
         r#"
 import foo: bar
 
-fn start():
-    bar()
+fn start(): bar()
 "#,
     );
-    let (fs, _) = new_file(fs, "foo.mon", ")fn bar(): 5");
+    let (fs, _) = new_file(fs, "foo.mon", "fn bar(): 5");
     let ir = lower(fs, "start.mon");
     println!("{:?}", ir);
 }

@@ -462,8 +462,8 @@ fn infix_parser(top_level: &tokenizer::TopLevel, token: Token) -> Option<InfixPa
         .kinds
         .get(token.0)
         .map(|kind| match kind {
-            tokenizer::Kind::Plus => Some(InfixParser::BinaryOp(ADD, BinaryOp::Add)),
-            tokenizer::Kind::Minus => Some(InfixParser::BinaryOp(SUBTRACT, BinaryOp::Subtract)),
+            tokenizer::Kind::Cross => Some(InfixParser::BinaryOp(ADD, BinaryOp::Add)),
+            tokenizer::Kind::Dash => Some(InfixParser::BinaryOp(SUBTRACT, BinaryOp::Subtract)),
             tokenizer::Kind::Asterisk => Some(InfixParser::BinaryOp(MULTIPLY, BinaryOp::Multiply)),
             tokenizer::Kind::Slash => Some(InfixParser::BinaryOp(DIVIDE, BinaryOp::Divide)),
             tokenizer::Kind::Percent => Some(InfixParser::BinaryOp(MODULO, BinaryOp::Modulo)),

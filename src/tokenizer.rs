@@ -5,8 +5,9 @@ pub enum Kind {
     LeftParen,
     RightParen,
     Colon,
-    Plus,
-    Minus,
+    Cross,
+    Dash,
+    DashGreaterThan,
     Asterisk,
     Slash,
     Percent,
@@ -81,6 +82,16 @@ fn tokenize_one(mut top_level: TopLevel, source: &str, kind: Kind) -> (TopLevel,
     top_level.kinds.push(kind);
     top_level.indices.push(0);
     tokenize_top_level(top_level, &source[1..])
+}
+
+fn tokenize_dash(mut top_level: TopLevel, source: &str) -> (TopLevel, &str) {
+    let (length, kind) = match source.chars().skip(1).next() {
+        Some('>') => (2, Kind::DashGreaterThan),
+        _ => (1, Kind::Dash),
+    };
+    top_level.kinds.push(kind);
+    top_level.indices.push(0);
+    tokenize_top_level(top_level, &source[length..])
 }
 
 fn tokenize_equal(mut top_level: TopLevel, source: &str) -> (TopLevel, &str) {
@@ -173,8 +184,7 @@ fn tokenize_top_level(top_level: TopLevel, source: &str) -> (TopLevel, &str) {
         Some(c) if c.is_alphabetic() || c == '_' => tokenize_symbol(top_level, source),
         Some('(') => tokenize_one(top_level, source, Kind::LeftParen),
         Some(')') => tokenize_one(top_level, source, Kind::RightParen),
-        Some('+') => tokenize_one(top_level, source, Kind::Plus),
-        Some('-') => tokenize_one(top_level, source, Kind::Minus),
+        Some('+') => tokenize_one(top_level, source, Kind::Cross),
         Some('*') => tokenize_one(top_level, source, Kind::Asterisk),
         Some('/') => tokenize_one(top_level, source, Kind::Slash),
         Some('%') => tokenize_one(top_level, source, Kind::Percent),
@@ -183,6 +193,7 @@ fn tokenize_top_level(top_level: TopLevel, source: &str) -> (TopLevel, &str) {
         Some('&') => tokenize_one(top_level, source, Kind::Ampersand),
         Some('^') => tokenize_one(top_level, source, Kind::Caret),
         Some('.') => tokenize_one(top_level, source, Kind::Dot),
+        Some('-') => tokenize_dash(top_level, source),
         Some('=') => tokenize_equal(top_level, source),
         Some('|') => tokenize_vertical_bar(top_level, source),
         Some('!') => tokenize_exclamation(top_level, source),
