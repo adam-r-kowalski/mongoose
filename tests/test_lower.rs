@@ -50,7 +50,7 @@ fn test_lower_import() {
         r#"
 import foo: bar
 
-fn start(): bar()
+fn start() -> i64: bar()
 "#,
     );
     let (fs, _) = new_file(fs, "foo.mon", "fn bar(): 5");
