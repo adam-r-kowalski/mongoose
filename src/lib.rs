@@ -1,7 +1,7 @@
 #![feature(map_try_insert)]
 
 pub mod codegen;
-pub mod lower;
+pub mod codegen_next;
 pub mod parser;
 pub mod tokenizer;
 pub mod writer;
