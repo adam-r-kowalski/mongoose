@@ -1,4 +1,4 @@
-fn fib(n):
+fn fib(n: i64) -> i64:
   i = 0
   prev = 0
   curr = 1
@@ -10,4 +10,4 @@ fn fib(n):
   curr
 
 
-fn start(): fib(100)
+fn start() -> i64: fib(100)

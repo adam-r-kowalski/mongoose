@@ -1,10 +1,10 @@
-fn square(x): x * x
+fn square(x: i64) -> i64: x * x
 
-fn min(x, y): if x < y: x else: y
+fn min(x: i64, y: i64) -> i64: if x < y: x else: y
 
-fn line(m, x, b): m * x + b
+fn line(m: i64, x: i64, b: i64) -> i64: m * x + b
 
-fn start():
+fn start() -> i64:
   5
   |> square
   |> min(20)

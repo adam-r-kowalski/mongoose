@@ -1,11 +1,11 @@
-fn fib_impl(n, prev, curr):
+fn fib_impl(n: i64, prev: i64, curr: i64) -> i64:
   if n == 0:
     curr
   else:
     fib_impl(n - 1, curr, prev + curr)
 
 
-fn fib(n): fib_impl(n, 0, 1)
+fn fib(n: i64) -> i64: fib_impl(n, 0, 1)
 
 
-fn start(): fib(100)
+fn start() -> i64: fib(100)
