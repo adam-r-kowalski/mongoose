@@ -1,4 +1,6 @@
+use async_trait::async_trait;
 use std::collections::HashMap;
+use tokio::runtime::Runtime;
 
 use compiler::codegen_next::{codegen, FileSystem};
 
@@ -19,8 +21,9 @@ impl MockFileSystem {
     }
 }
 
+#[async_trait]
 impl FileSystem for MockFileSystem {
-    fn read_file<'a>(&self, path: Vec<&str>) -> Option<String> {
+    async fn read_file(&self, path: Vec<&str>) -> Option<String> {
         let mut index = 0;
         let last_index = path.len() - 1;
         for p in &path[..last_index] {
@@ -59,17 +62,28 @@ fn test_read_file() {
     let fs = new_file(fs, vec!["c"], "c contents");
     let fs = new_file(fs, vec!["c", "d"], "c.d contents");
     let fs = new_file(fs, vec!["c", "d", "e"], "c.d.e contents");
-    assert_eq!(fs.read_file(vec!["a"]), Some("a contents".to_string()));
-    assert_eq!(fs.read_file(vec!["b"]), Some("b contents".to_string()));
-    assert_eq!(fs.read_file(vec!["c"]), Some("c contents".to_string()));
-    assert_eq!(
-        fs.read_file(vec!["c", "d"]),
-        Some("c.d contents".to_string())
-    );
-    assert_eq!(
-        fs.read_file(vec!["c", "d", "e"]),
-        Some("c.d.e contents".to_string())
-    );
+    Runtime::new().unwrap().block_on(async {
+        assert_eq!(
+            fs.read_file(vec!["a"]).await,
+            Some("a contents".to_string())
+        );
+        assert_eq!(
+            fs.read_file(vec!["b"]).await,
+            Some("b contents".to_string())
+        );
+        assert_eq!(
+            fs.read_file(vec!["c"]).await,
+            Some("c contents".to_string())
+        );
+        assert_eq!(
+            fs.read_file(vec!["c", "d"]).await,
+            Some("c.d contents".to_string())
+        );
+        assert_eq!(
+            fs.read_file(vec!["c", "d", "e"]).await,
+            Some("c.d.e contents".to_string())
+        );
+    });
 }
 
 #[test]

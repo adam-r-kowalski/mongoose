@@ -1,3 +1,4 @@
+use async_trait::async_trait;
 use tokio::{runtime::Runtime, sync::mpsc};
 
 // use crate::{
@@ -8,8 +9,9 @@ use tokio::{runtime::Runtime, sync::mpsc};
 #[derive(Debug, PartialEq)]
 pub struct Wasm {}
 
+#[async_trait]
 pub trait FileSystem {
-    fn read_file(&self, path: Vec<&str>) -> Option<String>;
+    async fn read_file(&self, path: Vec<&str>) -> Option<String>;
 }
 
 #[derive(Debug)]
