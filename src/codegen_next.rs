@@ -1,10 +1,7 @@
 use async_trait::async_trait;
 use tokio::{runtime::Runtime, sync::mpsc};
 
-// use crate::{
-//     parser::{parse, Ast},
-//     tokenizer::tokenize,
-// };
+use crate::{parser::parse, tokenizer::tokenize};
 
 #[derive(Debug, PartialEq)]
 pub struct Wasm {}
@@ -20,7 +17,7 @@ enum Message {
     Done,
 }
 
-pub fn codegen(_fs: &impl FileSystem, _module: &str) -> Wasm {
+pub fn codegen(fs: &impl FileSystem, module: &str) -> Wasm {
     Runtime::new().unwrap().block_on(async {
         let (tx, mut rx) = mpsc::channel(32);
         let wasm = Wasm {};
@@ -31,7 +28,12 @@ pub fn codegen(_fs: &impl FileSystem, _module: &str) -> Wasm {
         loop {
             match rx.recv().await.unwrap() {
                 Message::Spawn => {
-                    println!("new spawn message");
+                    let source = fs.read_file(vec![module]).await.unwrap();
+                    let tokens = tokenize(&source);
+                    let ast = parse(tokens);
+
+                    println!("{:?}", ast);
+
                     in_flight += 1;
                     let tx2 = tx.clone();
                     tokio::spawn(async move {
