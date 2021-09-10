@@ -85,7 +85,6 @@ fn start() -> i64: baz()
 "#,
     );
     let fs = new_file(fs, vec!["bar"], "fn baz() -> i64: 5");
-    println!("\n\n\n{:?}\n\n\n", fs);
-    // let wasm = codegen(fs, "foo");
+    let wasm = codegen(&fs, "foo");
     // println!("{:?}", wasm);
 }
