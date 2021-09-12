@@ -1,274 +1,10 @@
 use pretty_assertions::assert_eq;
 
-use compiler::{
-    parser::{parse, Ast, BinaryOp, Function, Import, Kind},
-    tokenizer::tokenize,
-};
-
-fn write_indent(mut output: String, indent: usize) -> String {
-    output.push_str(&String::from_utf8(vec![b' '; indent]).unwrap());
-    output
-}
-
-fn ast_string_import(mut output: String, import: &Import) -> String {
-    output.push_str("    Import(\n");
-    output.push_str("        path=[");
-    let mut output = import.path.iter().fold(output, |mut output, &part| {
-        output.push_str(&import.symbols[part]);
-        output.push_str(", ");
-        output
-    });
-    output.push_str("],\n        unqualified=[");
-    let mut output = import.unqualified.iter().fold(output, |mut output, &name| {
-        output.push_str(&import.symbols[name]);
-        output.push_str(", ");
-        output
-    });
-    output.push_str("]\n    ),\n");
-    output
-}
-
-fn ast_string_int(mut output: String, func: &Function, expression: usize) -> String {
-    output.push_str("Int(");
-    output.push_str(&func.ints[func.indices[expression]]);
-    output.push_str("),\n");
-    output
-}
-
-fn ast_string_symbol(mut output: String, func: &Function, expression: usize) -> String {
-    output.push_str("Symbol(");
-    output.push_str(&func.symbols[func.indices[expression]]);
-    output.push_str("),\n");
-    output
-}
-
-const INDENT: usize = 4;
-
-fn ast_string_binary_op(
-    mut output: String,
-    func: &Function,
-    expression: usize,
-    indent: usize,
-) -> String {
-    output.push_str("BinaryOp(\n");
-    let mut output = write_indent(output, indent);
-    output.push_str("op=");
-    let index = func.indices[expression];
-    match func.binary_ops.ops[index] {
-        BinaryOp::Add => output.push_str("Add"),
-        BinaryOp::Subtract => output.push_str("Subtract"),
-        BinaryOp::Multiply => output.push_str("Multiply"),
-        BinaryOp::Divide => output.push_str("Divide"),
-        BinaryOp::Modulo => output.push_str("Modulo"),
-        BinaryOp::BitwiseAnd => output.push_str("BitwiseAnd"),
-        BinaryOp::BitwiseOr => output.push_str("BitwiseOr"),
-        BinaryOp::BitwiseXor => output.push_str("BitwiseXor"),
-        BinaryOp::Equal => output.push_str("Equal"),
-        BinaryOp::NotEqual => output.push_str("NotEqual"),
-        BinaryOp::ShiftLeft => output.push_str("ShiftLeft"),
-        BinaryOp::ShiftRight => output.push_str("ShiftRight"),
-        BinaryOp::LessThan => output.push_str("LessThan"),
-        BinaryOp::LessThanEqual => output.push_str("LessThanEqual"),
-        BinaryOp::GreaterThan => output.push_str("GreaterThan"),
-        BinaryOp::GreaterThanEqual => output.push_str("GreaterThanEqual"),
-        BinaryOp::Dot => output.push_str("Dot"),
-    };
-    output.push_str(",\n");
-    let mut output = write_indent(output, indent);
-    output.push_str("left=");
-    let output = ast_string_expression(output, func, func.binary_ops.lefts[index], indent);
-    let mut output = write_indent(output, indent);
-    output.push_str("right=");
-    let output = ast_string_expression(output, func, func.binary_ops.rights[index], indent);
-    let mut output = write_indent(output, indent - INDENT);
-    output.push_str("),\n");
-    output
-}
-
-fn ast_string_assignment(
-    mut output: String,
-    func: &Function,
-    expression: usize,
-    indent: usize,
-) -> String {
-    output.push_str("Assign(\n");
-    let mut output = write_indent(output, indent);
-    output.push_str("name=");
-    let index = func.indices[expression];
-    output.push_str(&func.symbols[func.indices[func.assignments.names[index]]]);
-    output.push_str(",\n");
-    let mut output = write_indent(output, indent);
-    output.push_str("value=");
-    let output = ast_string_expression(output, func, func.assignments.values[index], indent);
-    let mut output = write_indent(output, indent - INDENT);
-    output.push_str("),\n");
-    output
-}
-
-fn ast_string_function_call(
-    mut output: String,
-    func: &Function,
-    expression: usize,
-    indent: usize,
-) -> String {
-    output.push_str("FunctionCall(\n");
-    let mut output = write_indent(output, indent);
-    output.push_str("name=");
-    let index = func.indices[expression];
-    output.push_str(&func.symbols[func.indices[func.function_calls.names[index]]]);
-    output.push_str(",\n");
-    let mut output = write_indent(output, indent);
-    output.push_str("parameters=[\n");
-    let indent = indent + INDENT;
-    let output = func.function_calls.parameters[index]
-        .iter()
-        .fold(output, |output, &parameter| {
-            let output = write_indent(output, indent);
-            ast_string_expression(output, func, parameter, indent)
-        });
-    let mut output = write_indent(output, indent - INDENT);
-    output.push_str("]\n");
-    let mut output = write_indent(output, indent - 2 * INDENT);
-    output.push_str("),\n");
-    output
-}
-
-fn ast_string_if(mut output: String, func: &Function, expression: usize, indent: usize) -> String {
-    output.push_str("If(\n");
-    let mut output = write_indent(output, indent);
-    output.push_str("condition=");
-    let index = func.indices[expression];
-    let output = ast_string_expression(output, func, func.ifs.conditionals[index], indent);
-    let mut output = write_indent(output, indent);
-    output.push_str("then=[\n");
-    let next_indent = indent + INDENT;
-    let output = func.ifs.then_branches[index]
-        .iter()
-        .fold(output, |output, &parameter| {
-            let output = write_indent(output, next_indent);
-            ast_string_expression(output, func, parameter, next_indent)
-        });
-    let mut output = write_indent(output, indent);
-    output.push_str("],\n");
-    let mut output = write_indent(output, indent);
-    output.push_str("else=[\n");
-    let output = func.ifs.else_branches[index]
-        .iter()
-        .fold(output, |output, &parameter| {
-            let output = write_indent(output, next_indent);
-            ast_string_expression(output, func, parameter, next_indent)
-        });
-    let mut output = write_indent(output, indent);
-    output.push_str("]\n");
-    let mut output = write_indent(output, indent - INDENT);
-    output.push_str("),\n");
-    output
-}
-
-fn ast_string_while(
-    mut output: String,
-    func: &Function,
-    expression: usize,
-    indent: usize,
-) -> String {
-    output.push_str("While(\n");
-    let mut output = write_indent(output, indent);
-    output.push_str("condition=");
-    let index = func.indices[expression];
-    let output = ast_string_expression(output, func, func.whiles.conditionals[index], indent);
-    let mut output = write_indent(output, indent);
-    output.push_str("body=[\n");
-    let next_indent = indent + INDENT;
-    let output = func.whiles.bodies[index]
-        .iter()
-        .fold(output, |output, &parameter| {
-            let output = write_indent(output, next_indent);
-            ast_string_expression(output, func, parameter, next_indent)
-        });
-    let mut output = write_indent(output, indent);
-    output.push_str("]\n");
-    let mut output = write_indent(output, indent - INDENT);
-    output.push_str("),\n");
-    output
-}
-
-fn ast_string_grouping(
-    mut output: String,
-    func: &Function,
-    expression: usize,
-    indent: usize,
-) -> String {
-    output.push_str("Grouping(\n");
-    let output = write_indent(output, indent);
-    let index = func.indices[expression];
-    let output = ast_string_expression(output, func, func.groupings[index], indent);
-    let mut output = write_indent(output, indent - INDENT);
-    output.push_str("),\n");
-    output
-}
-
-fn ast_string_expression(
-    output: String,
-    func: &Function,
-    expression: usize,
-    indent: usize,
-) -> String {
-    match func.kinds[expression] {
-        Kind::Int => ast_string_int(output, func, expression),
-        Kind::Symbol => ast_string_symbol(output, func, expression),
-        Kind::BinaryOp => ast_string_binary_op(output, func, expression, indent + INDENT),
-        Kind::Assign => ast_string_assignment(output, func, expression, indent + INDENT),
-        Kind::FunctionCall => ast_string_function_call(output, func, expression, indent + INDENT),
-        Kind::If => ast_string_if(output, func, expression, indent + INDENT),
-        Kind::While => ast_string_while(output, func, expression, indent + INDENT),
-        Kind::Grouping => ast_string_grouping(output, func, expression, indent + INDENT),
-    }
-}
-
-fn ast_string_function(mut output: String, func: &Function) -> String {
-    output.push_str("    Function(\n");
-    output.push_str("        name=");
-    output.push_str(&func.symbols[func.name]);
-    output.push_str(",\n        arguments=[\n");
-    let indent = 12;
-    let mut output = func.arguments.iter().fold(output, |output, &argument| {
-        let mut output = write_indent(output, indent);
-        output.push_str(&func.symbols[argument]);
-        output.push_str(",\n");
-        output
-    });
-    output.push_str("        ],\n        argument_types=[\n");
-    let mut output = func
-        .argument_types
-        .iter()
-        .fold(output, |output, &expression| {
-            let output = write_indent(output, indent);
-            ast_string_expression(output, func, expression, indent)
-        });
-    output.push_str("        ],\n        return_type=");
-    let mut output = ast_string_expression(output, func, func.return_type, 0);
-    output.push_str("        body=[\n");
-    let mut output = func.expressions.iter().fold(output, |output, &expression| {
-        let output = write_indent(output, indent);
-        ast_string_expression(output, func, expression, indent)
-    });
-    output.push_str("        ]\n    ),\n");
-    output
-}
-
-fn ast_string(ast: &Ast) -> String {
-    let output = String::from("\nAst([\n");
-    let output = ast.imports.iter().fold(output, ast_string_import);
-    let mut output = ast.functions.iter().fold(output, ast_string_function);
-    output.push_str("])\n");
-    output
-}
-
-fn remove_whitespace(s: &str) -> String {
-    s.chars().filter(|c| !c.is_whitespace()).collect()
-}
+use compiler::{parser::parse, tokenizer::tokenize};
 
 fn test_parse_binary_op(function_body: &str, expected_parsing: &str) {
+    let remove_whitespace =
+        |text: &str| -> String { text.chars().filter(|c| !c.is_whitespace()).collect() };
     let function_string = format!("fn start() -> i64: {}", function_body);
     let tokens = tokenize(&function_string);
     let ast = parse(tokens);
@@ -286,7 +22,7 @@ Ast([
         expected_parsing
     );
     assert_eq!(
-        remove_whitespace(&ast_string(&ast)),
+        remove_whitespace(&format!("{:?}", ast)),
         remove_whitespace(&expected_function_parsing)
     );
 }
@@ -377,7 +113,7 @@ fn start() -> i64: sum_of_squares(5, 3)"#;
     let tokens = tokenize(source);
     let ast = parse(tokens);
     assert_eq!(
-        ast_string(&ast),
+        format!("{:?}", ast),
         r#"
 Ast([
     Function(
@@ -464,7 +200,7 @@ fn min(x: i64, y: i64) -> i64:
     let tokens = tokenize(source);
     let ast = parse(tokens);
     assert_eq!(
-        ast_string(&ast),
+        format!("{:?}", ast),
         r#"
 Ast([
     Function(
@@ -514,7 +250,7 @@ fn main() -> i64:
     let tokens = tokenize(source);
     let ast = parse(tokens);
     assert_eq!(
-        ast_string(&ast),
+        format!("{:?}", ast),
         r#"
 Ast([
     Function(
@@ -589,7 +325,7 @@ fn main() -> i64:
     let tokens = tokenize(source);
     let ast = parse(tokens);
     assert_eq!(
-        ast_string(&ast),
+        format!("{:?}", ast),
         r#"
 Ast([
     Function(
@@ -667,7 +403,7 @@ fn main() -> i64:
     let tokens = tokenize(source);
     let ast = parse(tokens);
     assert_eq!(
-        ast_string(&ast),
+        format!("{:?}", ast),
         r#"
 Ast([
     Function(
@@ -741,7 +477,7 @@ fn start() -> i64:
     let tokens = tokenize(source);
     let ast = parse(tokens);
     assert_eq!(
-        ast_string(&ast),
+        format!("{:?}", ast),
         r#"
 Ast([
     Function(
@@ -791,7 +527,7 @@ fn start() -> i64: 5 |> square() |> square()
     let tokens = tokenize(source);
     let ast = parse(tokens);
     assert_eq!(
-        ast_string(&ast),
+        format!("{:?}", ast),
         r#"
 Ast([
     Function(
@@ -847,7 +583,7 @@ fn start() -> i64: 5 |> square |> square
     let tokens = tokenize(source);
     let ast = parse(tokens);
     assert_eq!(
-        ast_string(&ast),
+        format!("{:?}", ast),
         r#"
 Ast([
     Function(
@@ -906,7 +642,7 @@ fn start() -> i64:
     let tokens = tokenize(source);
     let ast = parse(tokens);
     assert_eq!(
-        ast_string(&ast),
+        format!("{:?}", ast),
         r#"
 Ast([
     Function(
@@ -962,7 +698,7 @@ fn start() -> i64: 10 |> f(5, _, 3)
     let tokens = tokenize(source);
     let ast = parse(tokens);
     assert_eq!(
-        ast_string(&ast),
+        format!("{:?}", ast),
         r#"
 Ast([
     Function(
@@ -1023,7 +759,7 @@ fn start() -> i64: (3 + 10) |> square
     let tokens = tokenize(source);
     let ast = parse(tokens);
     assert_eq!(
-        ast_string(&ast),
+        format!("{:?}", ast),
         r#"
 Ast([
     Function(
@@ -1081,7 +817,7 @@ fn start() -> i64:
     let tokens = tokenize(source);
     let ast = parse(tokens);
     assert_eq!(
-        ast_string(&ast),
+        format!("{:?}", ast),
         r#"
 Ast([
     Import(

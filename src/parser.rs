@@ -1,5 +1,5 @@
 use rayon::prelude::*;
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt};
 
 use crate::tokenizer::{self, Tokens};
 
@@ -97,7 +97,6 @@ pub struct Function {
     pub groupings: Vec<usize>,
 }
 
-#[derive(Debug, PartialEq)]
 pub struct Ast {
     pub imports: Vec<Import>,
     pub functions: Vec<Function>,
@@ -731,5 +730,265 @@ pub fn parse(tokens: Tokens) -> Ast {
         imports,
         functions,
         top_level,
+    }
+}
+
+const INDENT: usize = 4;
+
+fn write_indent(indent: usize, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
+    write!(f, "{}", String::from_utf8(vec![b' '; indent]).unwrap())
+}
+
+fn ast_string_import(import: &Import, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
+    write!(f, "    Import(\n")?;
+    write!(f, "        path=[")?;
+    for &part in &import.path {
+        write!(f, "{}", &import.symbols[part])?;
+        write!(f, ", ")?;
+    }
+    write!(f, "],\n        unqualified=[")?;
+    for &name in &import.unqualified {
+        write!(f, "{}", &import.symbols[name])?;
+        write!(f, ", ")?;
+    }
+    write!(f, "]\n    ),\n")
+}
+
+fn ast_string_int(
+    func: &Function,
+    expression: usize,
+    f: &mut fmt::Formatter<'_>,
+) -> Result<(), fmt::Error> {
+    write!(f, "Int(")?;
+    write!(f, "{}", &func.ints[func.indices[expression]])?;
+    write!(f, "),\n")
+}
+
+fn ast_string_symbol(
+    func: &Function,
+    expression: usize,
+    f: &mut fmt::Formatter<'_>,
+) -> Result<(), fmt::Error> {
+    write!(f, "Symbol(")?;
+    write!(f, "{}", &func.symbols[func.indices[expression]])?;
+    write!(f, "),\n")
+}
+
+fn ast_string_binary_op(
+    func: &Function,
+    expression: usize,
+    indent: usize,
+    f: &mut fmt::Formatter<'_>,
+) -> Result<(), fmt::Error> {
+    write!(f, "BinaryOp(\n")?;
+    write_indent(indent, f)?;
+    write!(f, "op=")?;
+    let index = func.indices[expression];
+    match func.binary_ops.ops[index] {
+        BinaryOp::Add => write!(f, "Add"),
+        BinaryOp::Subtract => write!(f, "Subtract"),
+        BinaryOp::Multiply => write!(f, "Multiply"),
+        BinaryOp::Divide => write!(f, "Divide"),
+        BinaryOp::Modulo => write!(f, "Modulo"),
+        BinaryOp::BitwiseAnd => write!(f, "BitwiseAnd"),
+        BinaryOp::BitwiseOr => write!(f, "BitwiseOr"),
+        BinaryOp::BitwiseXor => write!(f, "BitwiseXor"),
+        BinaryOp::Equal => write!(f, "Equal"),
+        BinaryOp::NotEqual => write!(f, "NotEqual"),
+        BinaryOp::ShiftLeft => write!(f, "ShiftLeft"),
+        BinaryOp::ShiftRight => write!(f, "ShiftRight"),
+        BinaryOp::LessThan => write!(f, "LessThan"),
+        BinaryOp::LessThanEqual => write!(f, "LessThanEqual"),
+        BinaryOp::GreaterThan => write!(f, "GreaterThan"),
+        BinaryOp::GreaterThanEqual => write!(f, "GreaterThanEqual"),
+        BinaryOp::Dot => write!(f, "Dot"),
+    }?;
+    write!(f, ",\n")?;
+    write_indent(indent, f)?;
+    write!(f, "left=")?;
+    ast_string_expression(func, func.binary_ops.lefts[index], indent, f)?;
+    write_indent(indent, f)?;
+    write!(f, "right=")?;
+    ast_string_expression(func, func.binary_ops.rights[index], indent, f)?;
+    write_indent(indent - INDENT, f)?;
+    write!(f, "),\n")
+}
+
+fn ast_string_assignment(
+    func: &Function,
+    expression: usize,
+    indent: usize,
+    f: &mut fmt::Formatter<'_>,
+) -> Result<(), fmt::Error> {
+    write!(f, "Assign(\n")?;
+    write_indent(indent, f)?;
+    write!(f, "name=")?;
+    let index = func.indices[expression];
+    write!(
+        f,
+        "{}",
+        &func.symbols[func.indices[func.assignments.names[index]]]
+    )?;
+    write!(f, ",\n")?;
+    write_indent(indent, f)?;
+    write!(f, "value=")?;
+    ast_string_expression(func, func.assignments.values[index], indent, f)?;
+    write_indent(indent - INDENT, f)?;
+    write!(f, "),\n")
+}
+
+fn ast_string_function_call(
+    func: &Function,
+    expression: usize,
+    indent: usize,
+    f: &mut fmt::Formatter<'_>,
+) -> Result<(), fmt::Error> {
+    write!(f, "FunctionCall(\n")?;
+    write_indent(indent, f)?;
+    write!(f, "name=")?;
+    let index = func.indices[expression];
+    write!(
+        f,
+        "{}",
+        &func.symbols[func.indices[func.function_calls.names[index]]]
+    )?;
+    write!(f, ",\n")?;
+    write_indent(indent, f)?;
+    write!(f, "parameters=[\n")?;
+    let indent = indent + INDENT;
+    for &parameter in &func.function_calls.parameters[index] {
+        write_indent(indent, f)?;
+        ast_string_expression(func, parameter, indent, f)?
+    }
+    write_indent(indent - INDENT, f)?;
+    write!(f, "]\n")?;
+    write_indent(indent - 2 * INDENT, f)?;
+    write!(f, "),\n")
+}
+
+fn ast_string_if(
+    func: &Function,
+    expression: usize,
+    indent: usize,
+    f: &mut fmt::Formatter<'_>,
+) -> Result<(), fmt::Error> {
+    write!(f, "If(\n")?;
+    write_indent(indent, f)?;
+    write!(f, "condition=")?;
+    let index = func.indices[expression];
+    ast_string_expression(func, func.ifs.conditionals[index], indent, f)?;
+    write_indent(indent, f)?;
+    write!(f, "then=[\n")?;
+    let next_indent = indent + INDENT;
+    for &expression in &func.ifs.then_branches[index] {
+        write_indent(next_indent, f)?;
+        ast_string_expression(func, expression, next_indent, f)?;
+    }
+    write_indent(indent, f)?;
+    write!(f, "],\n")?;
+    write_indent(indent, f)?;
+    write!(f, "else=[\n")?;
+    for &expression in &func.ifs.else_branches[index] {
+        write_indent(next_indent, f)?;
+        ast_string_expression(func, expression, next_indent, f)?;
+    }
+    write_indent(indent, f)?;
+    write!(f, "]\n")?;
+    write_indent(indent - INDENT, f)?;
+    write!(f, "),\n")
+}
+
+fn ast_string_while(
+    func: &Function,
+    expression: usize,
+    indent: usize,
+    f: &mut fmt::Formatter<'_>,
+) -> Result<(), fmt::Error> {
+    write!(f, "While(\n")?;
+    write_indent(indent, f)?;
+    write!(f, "condition=")?;
+    let index = func.indices[expression];
+    ast_string_expression(func, func.whiles.conditionals[index], indent, f)?;
+    write_indent(indent, f)?;
+    write!(f, "body=[\n")?;
+    let next_indent = indent + INDENT;
+    for &expression in &func.whiles.bodies[index] {
+        write_indent(next_indent, f)?;
+        ast_string_expression(func, expression, next_indent, f)?;
+    }
+    write_indent(indent, f)?;
+    write!(f, "]\n")?;
+    write_indent(indent - INDENT, f)?;
+    write!(f, "),\n")
+}
+
+fn ast_string_grouping(
+    func: &Function,
+    expression: usize,
+    indent: usize,
+    f: &mut fmt::Formatter<'_>,
+) -> Result<(), fmt::Error> {
+    write!(f, "Grouping(\n")?;
+    write_indent(indent, f)?;
+    let index = func.indices[expression];
+    ast_string_expression(func, func.groupings[index], indent, f)?;
+    write_indent(indent - INDENT, f)?;
+    write!(f, "),\n")
+}
+
+fn ast_string_expression(
+    func: &Function,
+    expression: usize,
+    indent: usize,
+    f: &mut fmt::Formatter<'_>,
+) -> Result<(), fmt::Error> {
+    match func.kinds[expression] {
+        Kind::Int => ast_string_int(func, expression, f),
+        Kind::Symbol => ast_string_symbol(func, expression, f),
+        Kind::BinaryOp => ast_string_binary_op(func, expression, indent + INDENT, f),
+        Kind::Assign => ast_string_assignment(func, expression, indent + INDENT, f),
+        Kind::FunctionCall => ast_string_function_call(func, expression, indent + INDENT, f),
+        Kind::If => ast_string_if(func, expression, indent + INDENT, f),
+        Kind::While => ast_string_while(func, expression, indent + INDENT, f),
+        Kind::Grouping => ast_string_grouping(func, expression, indent + INDENT, f),
+    }
+}
+
+fn ast_string_function(func: &Function, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
+    write!(f, "    Function(\n")?;
+    write!(f, "        name=")?;
+    write!(f, "{}", &func.symbols[func.name])?;
+    write!(f, ",\n        arguments=[\n")?;
+    let indent = INDENT * 3;
+    for &argument in &func.arguments {
+        write_indent(indent, f)?;
+        write!(f, "{}", &func.symbols[argument])?;
+        write!(f, ",\n")?;
+    }
+    write!(f, "        ],\n        argument_types=[\n")?;
+    for &expression in &func.argument_types {
+        write_indent(indent, f)?;
+        ast_string_expression(func, expression, indent, f)?;
+    }
+    write!(f, "        ],\n        return_type=")?;
+    ast_string_expression(func, func.return_type, 0, f)?;
+    write!(f, "        body=[\n")?;
+    for &expression in &func.expressions {
+        write_indent(indent, f)?;
+        ast_string_expression(func, expression, indent, f)?;
+    }
+    write!(f, "        ]\n    ),\n")
+}
+
+impl fmt::Debug for Ast {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
+        write!(f, "\nAst([\n")?;
+        for import in &self.imports {
+            ast_string_import(import, f)?;
+        }
+        for function in &self.functions {
+            ast_string_function(function, f)?;
+        }
+        write!(f, "])\n")
     }
 }
