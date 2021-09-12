@@ -1,124 +1,12 @@
 use pretty_assertions::assert_eq;
 
-use compiler::tokenizer::{tokenize, Kind, Tokens, TopLevel};
-
-fn token_string_literal(
-    top_level: &TopLevel,
-    token: usize,
-    mut output: String,
-    text: &str,
-) -> String {
-    output.push_str("        ");
-    output.push_str(text);
-    output.push_str(",\n");
-    token_string_impl(top_level, token + 1, output)
-}
-
-fn token_string_symbol(top_level: &TopLevel, token: usize, mut output: String) -> String {
-    let text = &top_level.symbols[top_level.indices[token]];
-    output.push_str("        ");
-    output.push_str("Symbol(");
-    output.push_str(text);
-    output.push_str("),\n");
-    token_string_impl(top_level, token + 1, output)
-}
-
-fn token_string_int(top_level: &TopLevel, token: usize, mut output: String) -> String {
-    let text = &top_level.ints[top_level.indices[token]];
-    output.push_str("        ");
-    output.push_str("Int(");
-    output.push_str(text);
-    output.push_str("),\n");
-    token_string_impl(top_level, token + 1, output)
-}
-
-fn token_string_indent(top_level: &TopLevel, token: usize, mut output: String) -> String {
-    let indent = &top_level.indents[top_level.indices[token]];
-    output.push_str("        ");
-    output.push_str("Indent(");
-    output.push_str(&indent.to_string());
-    output.push_str("),\n");
-    token_string_impl(top_level, token + 1, output)
-}
-
-fn token_string_impl(top_level: &TopLevel, token: usize, output: String) -> String {
-    match top_level.kinds.get(token) {
-        Some(Kind::Fn) => token_string_literal(top_level, token, output, "Fn"),
-        Some(Kind::LeftParen) => token_string_literal(top_level, token, output, "LeftParen"),
-        Some(Kind::RightParen) => token_string_literal(top_level, token, output, "RightParen"),
-        Some(Kind::Cross) => token_string_literal(top_level, token, output, "Cross"),
-        Some(Kind::Dash) => token_string_literal(top_level, token, output, "Dash"),
-        Some(Kind::DashGreaterThan) => {
-            token_string_literal(top_level, token, output, "DashGreaterThan")
-        }
-        Some(Kind::Asterisk) => token_string_literal(top_level, token, output, "Asterisk"),
-        Some(Kind::Slash) => token_string_literal(top_level, token, output, "Slash"),
-        Some(Kind::Percent) => token_string_literal(top_level, token, output, "Percent"),
-        Some(Kind::Colon) => token_string_literal(top_level, token, output, "Colon"),
-        Some(Kind::Equal) => token_string_literal(top_level, token, output, "Equal"),
-        Some(Kind::EqualEqual) => token_string_literal(top_level, token, output, "EqualEqual"),
-        Some(Kind::ExclamationEqual) => {
-            token_string_literal(top_level, token, output, "ExclamationEqual")
-        }
-        Some(Kind::Ampersand) => token_string_literal(top_level, token, output, "Ampersand"),
-        Some(Kind::VerticalBar) => token_string_literal(top_level, token, output, "VerticalBar"),
-        Some(Kind::VerticalBarGreaterThan) => {
-            token_string_literal(top_level, token, output, "VerticalBarGreaterThan")
-        }
-        Some(Kind::Caret) => token_string_literal(top_level, token, output, "Caret"),
-        Some(Kind::Dot) => token_string_literal(top_level, token, output, "Dot"),
-        Some(Kind::LessThan) => token_string_literal(top_level, token, output, "LessThan"),
-        Some(Kind::LessThanEqual) => {
-            token_string_literal(top_level, token, output, "LessThanEqual")
-        }
-        Some(Kind::LessThanLessThan) => {
-            token_string_literal(top_level, token, output, "LessThanLessThan")
-        }
-        Some(Kind::GreaterThan) => token_string_literal(top_level, token, output, "GreaterThan"),
-        Some(Kind::GreaterThanEqual) => {
-            token_string_literal(top_level, token, output, "GreaterThanEqual")
-        }
-        Some(Kind::GreaterThanGreaterThan) => {
-            token_string_literal(top_level, token, output, "GreaterThanGreaterThan")
-        }
-        Some(Kind::Comma) => token_string_literal(top_level, token, output, "Comma"),
-        Some(Kind::If) => token_string_literal(top_level, token, output, "If"),
-        Some(Kind::Else) => token_string_literal(top_level, token, output, "Else"),
-        Some(Kind::While) => token_string_literal(top_level, token, output, "While"),
-        Some(Kind::Import) => token_string_literal(top_level, token, output, "Import"),
-        Some(Kind::Symbol) => token_string_symbol(top_level, token, output),
-        Some(Kind::Int) => token_string_int(top_level, token, output),
-        Some(Kind::Indent) => token_string_indent(top_level, token, output),
-        None => output,
-    }
-}
-
-fn token_string(tokens: &Tokens) -> String {
-    let output = String::from("\nTokens([\n");
-    let output = tokens.imports.iter().fold(output, |mut output, top_level| {
-        output.push_str("    TopLevel([\n");
-        let mut output = token_string_impl(top_level, 0, output);
-        output.push_str("    ]),\n");
-        output
-    });
-    let mut output = tokens
-        .functions
-        .iter()
-        .fold(output, |mut output, top_level| {
-            output.push_str("    TopLevel([\n");
-            let mut output = token_string_impl(top_level, 0, output);
-            output.push_str("    ]),\n");
-            output
-        });
-    output.push_str("])\n");
-    output
-}
+use compiler::tokenizer::tokenize;
 
 #[test]
 fn test_tokenize_int() {
     let tokens = tokenize("fn start() -> i64: 0");
     assert_eq!(
-        token_string(&tokens),
+        format!("{:?}", tokens),
         r#"
 Tokens([
     TopLevel([
@@ -140,7 +28,7 @@ Tokens([
 fn test_tokenize_add() {
     let tokens = tokenize("fn start() -> i64: 5 + 10");
     assert_eq!(
-        token_string(&tokens),
+        format!("{:?}", tokens),
         r#"
 Tokens([
     TopLevel([
@@ -164,7 +52,7 @@ Tokens([
 fn test_tokenize_subtract() {
     let tokens = tokenize("fn start() -> i64: 5 - 10");
     assert_eq!(
-        token_string(&tokens),
+        format!("{:?}", tokens),
         r#"
 Tokens([
     TopLevel([
@@ -188,7 +76,7 @@ Tokens([
 fn test_tokenize_multiply() {
     let tokens = tokenize("fn start() -> i64: 5 * 10");
     assert_eq!(
-        token_string(&tokens),
+        format!("{:?}", tokens),
         r#"
 Tokens([
     TopLevel([
@@ -212,7 +100,7 @@ Tokens([
 fn test_tokenize_divide() {
     let tokens = tokenize("fn start() -> i64: 10 / 5");
     assert_eq!(
-        token_string(&tokens),
+        format!("{:?}", tokens),
         r#"
 Tokens([
     TopLevel([
@@ -236,7 +124,7 @@ Tokens([
 fn test_tokenize_modulo() {
     let tokens = tokenize("fn start() -> i64: 10 % 5");
     assert_eq!(
-        token_string(&tokens),
+        format!("{:?}", tokens),
         r#"
 Tokens([
     TopLevel([
@@ -260,7 +148,7 @@ Tokens([
 fn test_tokenize_bitwise_and() {
     let tokens = tokenize("fn start() -> i64: 2 & 1");
     assert_eq!(
-        token_string(&tokens),
+        format!("{:?}", tokens),
         r#"
 Tokens([
     TopLevel([
@@ -284,7 +172,7 @@ Tokens([
 fn test_tokenize_bitwise_or() {
     let tokens = tokenize("fn start() -> i64: 2 | 1");
     assert_eq!(
-        token_string(&tokens),
+        format!("{:?}", tokens),
         r#"
 Tokens([
     TopLevel([
@@ -308,7 +196,7 @@ Tokens([
 fn test_tokenize_bitwise_xor() {
     let tokens = tokenize("fn start() -> i64: 2 ^ 1");
     assert_eq!(
-        token_string(&tokens),
+        format!("{:?}", tokens),
         r#"
 Tokens([
     TopLevel([
@@ -332,7 +220,7 @@ Tokens([
 fn test_tokenize_shift_left() {
     let tokens = tokenize("fn start() -> i64: 2 << 1");
     assert_eq!(
-        token_string(&tokens),
+        format!("{:?}", tokens),
         r#"
 Tokens([
     TopLevel([
@@ -356,7 +244,7 @@ Tokens([
 fn test_tokenize_shift_right_signed() {
     let tokens = tokenize("fn start() -> i64: 8 >> 1");
     assert_eq!(
-        token_string(&tokens),
+        format!("{:?}", tokens),
         r#"
 Tokens([
     TopLevel([
@@ -380,7 +268,7 @@ Tokens([
 fn test_tokenize_equal() {
     let tokens = tokenize("fn start() -> i64: 10 == 5");
     assert_eq!(
-        token_string(&tokens),
+        format!("{:?}", tokens),
         r#"
 Tokens([
     TopLevel([
@@ -404,7 +292,7 @@ Tokens([
 fn test_tokenize_not_equal() {
     let tokens = tokenize("fn start() -> i64: 10 != 5");
     assert_eq!(
-        token_string(&tokens),
+        format!("{:?}", tokens),
         r#"
 Tokens([
     TopLevel([
@@ -428,7 +316,7 @@ Tokens([
 fn test_tokenize_less_than_signed() {
     let tokens = tokenize("fn start() -> i64: 10 < 5");
     assert_eq!(
-        token_string(&tokens),
+        format!("{:?}", tokens),
         r#"
 Tokens([
     TopLevel([
@@ -452,7 +340,7 @@ Tokens([
 fn test_tokenize_greater_than_signed() {
     let tokens = tokenize("fn start() -> i64: 10 > 5");
     assert_eq!(
-        token_string(&tokens),
+        format!("{:?}", tokens),
         r#"
 Tokens([
     TopLevel([
@@ -476,7 +364,7 @@ Tokens([
 fn test_tokenize_less_than_or_equal_signed() {
     let tokens = tokenize("fn start() -> i64: 10 <= 5");
     assert_eq!(
-        token_string(&tokens),
+        format!("{:?}", tokens),
         r#"
 Tokens([
     TopLevel([
@@ -500,7 +388,7 @@ Tokens([
 fn test_tokenize_greater_than_or_equal_signed() {
     let tokens = tokenize("fn start() -> i64: 10 >= 5");
     assert_eq!(
-        token_string(&tokens),
+        format!("{:?}", tokens),
         r#"
 Tokens([
     TopLevel([
@@ -529,7 +417,7 @@ fn start() -> i64:
     x + y"#;
     let tokens = tokenize(source);
     assert_eq!(
-        token_string(&tokens),
+        format!("{:?}", tokens),
         r#"
 Tokens([
     TopLevel([
@@ -571,7 +459,7 @@ fn sum_of_squares(x: i64, y: i64) -> i64:
 fn start() -> i64: sum_of_squares(5, 3)"#;
     let tokens = tokenize(source);
     assert_eq!(
-        token_string(&tokens),
+        format!("{:?}", tokens),
         r#"
 Tokens([
     TopLevel([
@@ -653,7 +541,7 @@ fn min(x: i64, y: i64) -> i64:
     y"#;
     let tokens = tokenize(source);
     assert_eq!(
-        token_string(&tokens),
+        format!("{:?}", tokens),
         r#"
 Tokens([
     TopLevel([
@@ -700,7 +588,7 @@ fn start():
     i"#;
     let tokens = tokenize(source);
     assert_eq!(
-        token_string(&tokens),
+        format!("{:?}", tokens),
         r#"
 Tokens([
     TopLevel([
@@ -745,7 +633,7 @@ fn start() -> i64:
 "#;
     let tokens = tokenize(source);
     assert_eq!(
-        token_string(&tokens),
+        format!("{:?}", tokens),
         r#"
 Tokens([
     TopLevel([
@@ -777,7 +665,7 @@ fn start() -> i64: 5 |> square() |> square()
 "#;
     let tokens = tokenize(source);
     assert_eq!(
-        token_string(&tokens),
+        format!("{:?}", tokens),
         r#"
 Tokens([
     TopLevel([
@@ -829,7 +717,7 @@ fn start() -> i64:
 "#;
     let tokens = tokenize(source);
     assert_eq!(
-        token_string(&tokens),
+        format!("{:?}", tokens),
         r#"
 Tokens([
     TopLevel([

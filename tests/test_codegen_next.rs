@@ -23,7 +23,7 @@ impl MockFileSystem {
 
 #[async_trait]
 impl FileSystem for MockFileSystem {
-    async fn read_file(&self, path: Vec<&str>) -> Option<String> {
+    async fn read_file(&self, path: Vec<String>) -> Option<String> {
         let mut index = 0;
         let last_index = path.len() - 1;
         for p in &path[..last_index] {
@@ -33,7 +33,7 @@ impl FileSystem for MockFileSystem {
             }
         }
         self.files[index]
-            .get(path[last_index])
+            .get(&path[last_index].to_string())
             .map(|&i| self.sources[i].to_string())
     }
 }
@@ -54,6 +54,10 @@ pub fn new_file(mut fs: MockFileSystem, path: Vec<&str>, source: &str) -> MockFi
     fs
 }
 
+fn strings(values: &[&str]) -> Vec<String> {
+    values.iter().map(|s| s.to_string()).collect()
+}
+
 #[test]
 fn test_read_file() {
     let fs = MockFileSystem::new();
@@ -64,23 +68,23 @@ fn test_read_file() {
     let fs = new_file(fs, vec!["c", "d", "e"], "c.d.e contents");
     Runtime::new().unwrap().block_on(async {
         assert_eq!(
-            fs.read_file(vec!["a"]).await,
+            fs.read_file(strings(&["a"])).await,
             Some("a contents".to_string())
         );
         assert_eq!(
-            fs.read_file(vec!["b"]).await,
+            fs.read_file(strings(&["b"])).await,
             Some("b contents".to_string())
         );
         assert_eq!(
-            fs.read_file(vec!["c"]).await,
+            fs.read_file(strings(&["c"])).await,
             Some("c contents".to_string())
         );
         assert_eq!(
-            fs.read_file(vec!["c", "d"]).await,
+            fs.read_file(strings(&["c", "d"])).await,
             Some("c.d contents".to_string())
         );
         assert_eq!(
-            fs.read_file(vec!["c", "d", "e"]).await,
+            fs.read_file(strings(&["c", "d", "e"])).await,
             Some("c.d.e contents".to_string())
         );
     });

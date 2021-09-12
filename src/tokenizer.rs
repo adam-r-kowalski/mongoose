@@ -1,3 +1,5 @@
+use std::fmt;
+
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum Kind {
     Fn,
@@ -34,7 +36,7 @@ pub enum Kind {
     Import,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(PartialEq)]
 pub struct TopLevel {
     pub indices: Vec<usize>,
     pub kinds: Vec<Kind>,
@@ -43,7 +45,7 @@ pub struct TopLevel {
     pub indents: Vec<usize>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(PartialEq)]
 pub struct Tokens {
     pub functions: Vec<TopLevel>,
     pub imports: Vec<TopLevel>,
@@ -237,4 +239,124 @@ pub fn tokenize(source: &str) -> Tokens {
         imports: vec![],
     };
     tokenize_impl(tokens, source)
+}
+
+fn token_string_literal(
+    top_level: &TopLevel,
+    token: usize,
+    f: &mut fmt::Formatter<'_>,
+    text: &str,
+) -> Result<(), fmt::Error> {
+    write!(f, "        ")?;
+    write!(f, "{}", text)?;
+    write!(f, ",\n")?;
+    token_string_impl(top_level, token + 1, f)
+}
+
+fn token_string_symbol(
+    top_level: &TopLevel,
+    token: usize,
+    f: &mut fmt::Formatter<'_>,
+) -> Result<(), fmt::Error> {
+    let text = &top_level.symbols[top_level.indices[token]];
+    write!(f, "        ")?;
+    write!(f, "Symbol(")?;
+    write!(f, "{}", text)?;
+    write!(f, "),\n")?;
+    token_string_impl(top_level, token + 1, f)
+}
+
+fn token_string_int(
+    top_level: &TopLevel,
+    token: usize,
+    f: &mut fmt::Formatter<'_>,
+) -> Result<(), fmt::Error> {
+    let text = &top_level.ints[top_level.indices[token]];
+    write!(f, "        ")?;
+    write!(f, "Int(")?;
+    write!(f, "{}", text)?;
+    write!(f, "),\n")?;
+    token_string_impl(top_level, token + 1, f)
+}
+
+fn token_string_indent(
+    top_level: &TopLevel,
+    token: usize,
+    f: &mut fmt::Formatter<'_>,
+) -> Result<(), fmt::Error> {
+    let indent = &top_level.indents[top_level.indices[token]];
+    write!(f, "        ")?;
+    write!(f, "Indent(")?;
+    write!(f, "{}", &indent.to_string())?;
+    write!(f, "),\n")?;
+    token_string_impl(top_level, token + 1, f)
+}
+
+fn token_string_impl(
+    top_level: &TopLevel,
+    token: usize,
+    f: &mut fmt::Formatter<'_>,
+) -> Result<(), fmt::Error> {
+    match top_level.kinds.get(token) {
+        Some(Kind::Fn) => token_string_literal(top_level, token, f, "Fn"),
+        Some(Kind::LeftParen) => token_string_literal(top_level, token, f, "LeftParen"),
+        Some(Kind::RightParen) => token_string_literal(top_level, token, f, "RightParen"),
+        Some(Kind::Cross) => token_string_literal(top_level, token, f, "Cross"),
+        Some(Kind::Dash) => token_string_literal(top_level, token, f, "Dash"),
+        Some(Kind::DashGreaterThan) => token_string_literal(top_level, token, f, "DashGreaterThan"),
+        Some(Kind::Asterisk) => token_string_literal(top_level, token, f, "Asterisk"),
+        Some(Kind::Slash) => token_string_literal(top_level, token, f, "Slash"),
+        Some(Kind::Percent) => token_string_literal(top_level, token, f, "Percent"),
+        Some(Kind::Colon) => token_string_literal(top_level, token, f, "Colon"),
+        Some(Kind::Equal) => token_string_literal(top_level, token, f, "Equal"),
+        Some(Kind::EqualEqual) => token_string_literal(top_level, token, f, "EqualEqual"),
+        Some(Kind::ExclamationEqual) => {
+            token_string_literal(top_level, token, f, "ExclamationEqual")
+        }
+        Some(Kind::Ampersand) => token_string_literal(top_level, token, f, "Ampersand"),
+        Some(Kind::VerticalBar) => token_string_literal(top_level, token, f, "VerticalBar"),
+        Some(Kind::VerticalBarGreaterThan) => {
+            token_string_literal(top_level, token, f, "VerticalBarGreaterThan")
+        }
+        Some(Kind::Caret) => token_string_literal(top_level, token, f, "Caret"),
+        Some(Kind::Dot) => token_string_literal(top_level, token, f, "Dot"),
+        Some(Kind::LessThan) => token_string_literal(top_level, token, f, "LessThan"),
+        Some(Kind::LessThanEqual) => token_string_literal(top_level, token, f, "LessThanEqual"),
+        Some(Kind::LessThanLessThan) => {
+            token_string_literal(top_level, token, f, "LessThanLessThan")
+        }
+        Some(Kind::GreaterThan) => token_string_literal(top_level, token, f, "GreaterThan"),
+        Some(Kind::GreaterThanEqual) => {
+            token_string_literal(top_level, token, f, "GreaterThanEqual")
+        }
+        Some(Kind::GreaterThanGreaterThan) => {
+            token_string_literal(top_level, token, f, "GreaterThanGreaterThan")
+        }
+        Some(Kind::Comma) => token_string_literal(top_level, token, f, "Comma"),
+        Some(Kind::If) => token_string_literal(top_level, token, f, "If"),
+        Some(Kind::Else) => token_string_literal(top_level, token, f, "Else"),
+        Some(Kind::While) => token_string_literal(top_level, token, f, "While"),
+        Some(Kind::Import) => token_string_literal(top_level, token, f, "Import"),
+        Some(Kind::Symbol) => token_string_symbol(top_level, token, f),
+        Some(Kind::Int) => token_string_int(top_level, token, f),
+        Some(Kind::Indent) => token_string_indent(top_level, token, f),
+        None => Ok(()),
+    }
+}
+
+impl fmt::Debug for Tokens {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
+        write!(f, "\nTokens([\n")?;
+        for import in &self.imports {
+            write!(f, "    TopLevel([\n")?;
+            token_string_impl(&import, 0, f)?;
+            write!(f, "    ]),\n")?;
+        }
+        for function in &self.functions {
+            write!(f, "    TopLevel([\n")?;
+            token_string_impl(function, 0, f)?;
+            write!(f, "    ]),\n")?;
+        }
+        write!(f, "])\n")
+    }
 }
