@@ -1,15 +1,9 @@
-use async_trait::async_trait;
 use tokio::{runtime::Runtime, sync::mpsc};
 
-use crate::{parser::parse, tokenizer::tokenize};
+use crate::{filesystem::FileSystem, parser::parse, tokenizer::tokenize};
 
 #[derive(Debug, PartialEq)]
 pub struct Wasm {}
-
-#[async_trait]
-pub trait FileSystem {
-    async fn read_file(&self, path: Vec<String>) -> Option<String>;
-}
 
 #[derive(Debug)]
 struct Spawn {
@@ -39,7 +33,7 @@ pub fn codegen(fs: &impl FileSystem, module: &str) -> Wasm {
                 Message::Spawn(spawn) => {
                     let source = fs.read_file(spawn.path).await.unwrap();
                     let tokens = tokenize(&source);
-                    let ast = parse(tokens);
+                    let _ast = parse(tokens);
                     in_flight += 1;
                     let tx2 = tx.clone();
                     tokio::spawn(async move {
