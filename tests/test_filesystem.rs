@@ -1,6 +1,6 @@
 use tokio::runtime::Runtime;
 
-use compiler::filesystem::{new_file, FileSystem, MockFileSystem};
+use compiler::filesystem::{FileSystem, MockFileSystem};
 
 fn strings(values: &[&str]) -> Vec<String> {
     values.iter().map(|s| s.to_string()).collect()
@@ -8,12 +8,12 @@ fn strings(values: &[&str]) -> Vec<String> {
 
 #[test]
 fn test_read_file() {
-    let fs = MockFileSystem::new();
-    let fs = new_file(fs, vec!["a"], "a contents");
-    let fs = new_file(fs, vec!["b"], "b contents");
-    let fs = new_file(fs, vec!["c"], "c contents");
-    let fs = new_file(fs, vec!["c", "d"], "c.d contents");
-    let fs = new_file(fs, vec!["c", "d", "e"], "c.d.e contents");
+    let mut fs = MockFileSystem::new();
+    fs.new_file(vec!["a"], "a contents");
+    fs.new_file(vec!["b"], "b contents");
+    fs.new_file(vec!["c"], "c contents");
+    fs.new_file(vec!["c", "d"], "c.d contents");
+    fs.new_file(vec!["c", "d", "e"], "c.d.e contents");
     Runtime::new().unwrap().block_on(async {
         assert_eq!(
             fs.read_file(strings(&["a"])).await,

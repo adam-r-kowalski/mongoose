@@ -21,6 +21,21 @@ impl MockFileSystem {
             sources: vec![],
         }
     }
+
+    pub fn new_file(&mut self, path: Vec<&str>, source: &str) {
+        let mut index = 0;
+        let last_index = path.len() - 1;
+        for p in &path[..last_index] {
+            let len = self.directories.len();
+            index = *self.directories[index].entry(p.to_string()).or_insert(len);
+            if index == len {
+                self.directories.push(HashMap::new());
+                self.files.push(HashMap::new());
+            }
+        }
+        self.files[index].insert(path[last_index].to_string(), self.sources.len());
+        self.sources.push(source.to_string());
+    }
 }
 
 #[async_trait]
@@ -38,20 +53,4 @@ impl FileSystem for MockFileSystem {
             .get(&path[last_index].to_string())
             .map(|&i| self.sources[i].to_string())
     }
-}
-
-pub fn new_file(mut fs: MockFileSystem, path: Vec<&str>, source: &str) -> MockFileSystem {
-    let mut index = 0;
-    let last_index = path.len() - 1;
-    for p in &path[..last_index] {
-        let len = fs.directories.len();
-        index = *fs.directories[index].entry(p.to_string()).or_insert(len);
-        if index == len {
-            fs.directories.push(HashMap::new());
-            fs.files.push(HashMap::new());
-        }
-    }
-    fs.files[index].insert(path[last_index].to_string(), fs.sources.len());
-    fs.sources.push(source.to_string());
-    fs
 }

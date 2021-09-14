@@ -6,14 +6,14 @@ use crate::{filesystem::FileSystem, parser::parse, tokenizer::tokenize};
 pub struct Wasm {}
 
 #[derive(Debug)]
-struct Spawn {
+struct Call {
     path: Vec<String>,
     function: String,
 }
 
 #[derive(Debug)]
 enum Message {
-    Spawn(Spawn),
+    Call(Call),
     Done,
 }
 
@@ -22,7 +22,7 @@ pub fn codegen(fs: &impl FileSystem, module: &str) -> Wasm {
         let (tx, mut rx) = mpsc::channel(32);
         let wasm = Wasm {};
         let mut in_flight = 0;
-        tx.send(Message::Spawn(Spawn {
+        tx.send(Message::Call(Call {
             path: vec![module.to_string()],
             function: "start".to_string(),
         }))
@@ -30,8 +30,8 @@ pub fn codegen(fs: &impl FileSystem, module: &str) -> Wasm {
         .unwrap();
         loop {
             match rx.recv().await.unwrap() {
-                Message::Spawn(spawn) => {
-                    let source = fs.read_file(spawn.path).await.unwrap();
+                Message::Call(call) => {
+                    let source = fs.read_file(call.path).await.unwrap();
                     let tokens = tokenize(&source);
                     let _ast = parse(tokens);
                     in_flight += 1;
