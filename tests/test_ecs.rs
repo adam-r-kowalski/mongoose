@@ -1,6 +1,6 @@
 use std::{
     any::{Any, TypeId},
-    collections::HashMap,
+    collections::hash_map::{Entry, HashMap},
     ops::AddAssign,
 };
 
@@ -29,9 +29,14 @@ impl<T> Storage<T> {
     }
 
     fn set(&mut self, entity: Entity, component: T) {
-        self.lookup.insert(entity, self.data.len());
-        self.data.push(component);
-        self.inverse.push(entity);
+        match self.lookup.entry(entity) {
+            Entry::Occupied(entry) => self.data[*entry.get()] = component,
+            Entry::Vacant(entry) => {
+                entry.insert(self.data.len());
+                self.data.push(component);
+                self.inverse.push(entity);
+            }
+        }
     }
 
     fn get<'a>(&'a self, entity: Entity) -> Option<&'a T> {
@@ -86,4 +91,6 @@ fn test_get_and_set() {
     let entity = ecs.create_entity();
     ecs.set(entity, Name("Joe"));
     assert_eq!(ecs.get::<Name>(entity).unwrap(), &Name("Joe"));
+    ecs.set(entity, Name("Bob"));
+    assert_eq!(ecs.get::<Name>(entity).unwrap(), &Name("Bob"));
 }
