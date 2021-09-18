@@ -33,6 +33,10 @@ impl<T> Storage<T> {
         self.data.push(component);
         self.inverse.push(entity);
     }
+
+    fn get<'a>(&'a self, entity: Entity) -> Option<&'a T> {
+        self.lookup.get(&entity).map(|&index| &self.data[index])
+    }
 }
 
 struct ECS {
@@ -54,22 +58,32 @@ impl ECS {
         entity
     }
 
-    fn set<C: 'static>(&mut self, entity: Entity, component: C) {
+    fn set<T: 'static>(&mut self, entity: Entity, component: T) {
         self.components
-            .entry(TypeId::of::<C>())
-            .or_insert(Box::new(Storage::<C>::new()))
-            .downcast_mut::<Storage<C>>()
+            .entry(TypeId::of::<T>())
+            .or_insert(Box::new(Storage::<T>::new()))
+            .downcast_mut::<Storage<T>>()
             .unwrap()
             .set(entity, component);
     }
+
+    fn get<'a, T: 'static>(&'a self, entity: Entity) -> Option<&'a T> {
+        self.components
+            .get(&TypeId::of::<T>())
+            .unwrap()
+            .downcast_ref::<Storage<T>>()
+            .unwrap()
+            .get(entity)
+    }
 }
 
-#[test]
-fn test_any() {
-    struct Name<'a>(&'a str);
+#[derive(Debug, PartialEq, Eq)]
+struct Name<'a>(&'a str);
 
+#[test]
+fn test_get_and_set() {
     let mut ecs = ECS::new();
     let entity = ecs.create_entity();
     ecs.set(entity, Name("Joe"));
-    assert_eq!(entity.get::<Name>(), Name("J"));
+    assert_eq!(ecs.get::<Name>(entity).unwrap(), &Name("Joe"));
 }
